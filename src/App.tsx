@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
+import { DiagramEditorPage } from './pages/DiagramEditorPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProtectedRoute } from './router/ProtectedRoute'
@@ -17,6 +18,7 @@ function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<DashboardPage />} />
+        <Route path="/app/diagrams" element={<DiagramEditorPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/app" replace />} />

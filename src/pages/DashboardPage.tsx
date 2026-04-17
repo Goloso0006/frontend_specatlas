@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { projectsApi } from '../api/services/projectsApi'
 import { requirementsApi } from '../api/services/requirementsApi'
 import { useAuth } from '../auth/useAuth'
@@ -69,6 +70,12 @@ export function DashboardPage() {
           >
             Consultar requisitos
           </button>
+          <Link
+            className="rounded-md bg-emerald-600 px-3 py-2 font-medium text-center sm:col-span-2"
+            to="/app/diagrams"
+          >
+            Abrir editor de diagramas
+          </Link>
         </div>
 
         <p className="rounded-md border border-slate-700 bg-slate-900 p-3 text-sm">Estado: {status}</p>

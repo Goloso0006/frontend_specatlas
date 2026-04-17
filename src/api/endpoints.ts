@@ -18,4 +18,7 @@ export const endpoints = {
     dependency: '/requirements/dependency',
     conflicts: (id: string) => `/requirements/${id}/conflicts`,
   },
+  diagrams: {
+    base: '/api/diagrams',
+  },
 } as const
