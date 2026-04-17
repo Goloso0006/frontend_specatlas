@@ -5,6 +5,8 @@ export const SESSION_KEYS = {
   user: 'session_user',
 } as const
 
+export const AUTH_SESSION_CLEARED_EVENT = 'auth:session-cleared'
+
 export function getAccessToken(): string | null {
   return sessionStorage.getItem(SESSION_KEYS.token)
 }
@@ -38,7 +40,15 @@ export function clearSessionUser(): void {
   sessionStorage.removeItem(SESSION_KEYS.user)
 }
 
-export function clearSession(): void {
+function notifySessionCleared(): void {
+  window.dispatchEvent(new Event(AUTH_SESSION_CLEARED_EVENT))
+}
+
+export function clearSession(options?: { notify?: boolean }): void {
   clearAccessToken()
   clearSessionUser()
+
+  if (options?.notify ?? true) {
+    notifySessionCleared()
+  }
 }
