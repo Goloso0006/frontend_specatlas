@@ -1,75 +1,25 @@
-# React + TypeScript + Vite
+Primero: define el contrato de integración.
+Con la información que me pasaste, el backend ya tiene endpoints suficientes para trabajar. Entonces el siguiente paso no es “hacer pantallas”, sino crear la base de consumo: cliente Axios, rutas centralizadas, tipos TypeScript y manejo de JWT. Eso te evita repetir URLs, inventar respuestas y pelear luego con errores de formato.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Segundo: arma el módulo de autenticación y protección de rutas.
+Como el backend ya responde 401 desde SecurityConfig, el frontend debe estar preparado para capturar ese caso, limpiar sesión y redirigir al login. Aquí sí conviene dejar listo el flujo de login, register, guard de rutas y almacenamiento del token.
 
-Currently, two official plugins are available:
+Tercero: construye el módulo de diagramas como prioridad real.
+Por lo que describes, ese es el corazón del sistema. La decisión correcta es usar sourceJson como fuente de verdad y React Flow o similar para visualizar y editar. No empieces por PlantUML como editor principal; úsalo solo como exportación y derivado del JSON.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Cuarto: deja para después proyectos, requisitos y reglas de validación.
+Esos módulos también son importantes, pero ya tienen una estructura más clásica de CRUD y son más fáciles de montar cuando la base de API y auth esté estable. El módulo de diagramas, en cambio, sí requiere diseño desde el inicio para no rehacerlo después.
 
-## React Compiler
+Lo que yo haría ya mismo:
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Crear src/api con client, endpoints, interceptors y services.
+Crear src/types con los DTOs del backend.
+Crear src/store solo para auth y estado del proyecto activo.
+Crear el módulo de diagramas con React Flow y sourceJson.
+Después montar páginas y layouts.
+Sobre backend: no parece que tengas que cambiar mucho si ya expone esas rutas, pero sí debes verificar dos cosas antes de integrar completo:
 
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+CORS debe permitir el origen del frontend.
+Las respuestas de auth y errores deben ser consistentes para que el interceptor del frontend funcione bien.
+Mi recomendación concreta: empieza por la capa API + auth + diagramas. Si haces eso en ese orden, lo demás cae mucho más limpio.
+Si quieres, el siguiente paso te lo puedo convertir en una estructura de carpetas exacta para tu proyecto, ya adaptada a SpecAtlas y a esos endpoints reales.
