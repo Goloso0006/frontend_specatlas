@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: your_username
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: specatlas_db
+    ports:
+      - "5432:5432" # Puerto para la base de datos PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Volumen persistente para datos de PostgreSQL
+
+  neo4j:
+    image: neo4j:5
+    container_name: neo4j_db
+    environment:
+      NEO4J_AUTH: neo4j/password # Contraseña predeterminada de Neo4j
+    ports:
+      - "7474:7474"  # Puerto para la interfaz web de Neo4j
+      - "7687:7687"  # Puerto para la conexión con la base de datos Neo4j
+    volumes:
+      - neo4j_data:/var/lib/neo4j # Volumen persistente para datos de Neo4j
+
+  pgvector:
+    image: ankane/pgvector
+    container_name: pgvector_extension
+    environment:
+      POSTGRES_PASSWORD: your_password
+    ports:
+      - "5433:5432"  # Puerto para la conexión con pgvector (diferente del de PostgreSQL para evitar conflicto)
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  pgvector_data:
