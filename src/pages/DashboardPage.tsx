@@ -76,6 +76,24 @@ export function DashboardPage() {
           >
             Abrir editor de diagramas
           </Link>
+          <Link
+            className="rounded-md bg-slate-700 px-3 py-2 font-medium text-center sm:col-span-2"
+            to="/app/projects"
+          >
+            Gestionar proyectos
+          </Link>
+          <Link
+            className="rounded-md bg-slate-700 px-3 py-2 font-medium text-center sm:col-span-2"
+            to="/app/requirements"
+          >
+            Gestionar requisitos
+          </Link>
+          <Link
+            className="rounded-md bg-slate-700 px-3 py-2 font-medium text-center sm:col-span-2"
+            to="/app/validation-rules"
+          >
+            Gestionar reglas de validacion
+          </Link>
         </div>
 
         <p className="rounded-md border border-slate-700 bg-slate-900 p-3 text-sm">Estado: {status}</p>

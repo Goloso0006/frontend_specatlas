@@ -21,4 +21,8 @@ export const endpoints = {
   diagrams: {
     base: '/api/diagrams',
   },
+  validationRules: {
+    base: '/api/validation-rules',
+    byProject: (projectId: string) => `/api/validation-rules/project/${projectId}`,
+  },
 } as const
