@@ -1,6 +1,7 @@
 import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { adaptDiagramResponse, adaptDiagramResponseList } from '../../adapters/diagram.adapter'
 import type { ApiResponse } from '../../types/api'
 import type {
   DiagramRequest,
@@ -14,28 +15,28 @@ export const diagramsApi = {
       `${endpoints.diagrams.base}/manual`,
       payload,
     )
-    return unwrapData(data)
+    return adaptDiagramResponse(unwrapData(data))
   },
 
   async createAuto(projectId: string): Promise<DiagramResponse> {
     const { data } = await apiClient.post<DiagramResponse | ApiResponse<DiagramResponse>>(
       `${endpoints.diagrams.base}/class/auto/${projectId}`,
     )
-    return unwrapData(data)
+    return adaptDiagramResponse(unwrapData(data))
   },
 
   async getById(diagramId: string): Promise<DiagramResponse> {
     const { data } = await apiClient.get<DiagramResponse | ApiResponse<DiagramResponse>>(
       `${endpoints.diagrams.base}/${diagramId}`,
     )
-    return unwrapData(data)
+    return adaptDiagramResponse(unwrapData(data))
   },
 
   async listByProject(projectId: string): Promise<DiagramSummaryResponse[]> {
     const { data } = await apiClient.get<DiagramSummaryResponse[] | ApiResponse<DiagramSummaryResponse[]>>(
       `${endpoints.diagrams.base}/project/${projectId}`,
     )
-    return unwrapData(data)
+    return adaptDiagramResponseList(unwrapData(data))
   },
 
   async update(diagramId: string, payload: DiagramRequest): Promise<DiagramResponse> {
@@ -43,7 +44,7 @@ export const diagramsApi = {
       `${endpoints.diagrams.base}/${diagramId}`,
       payload,
     )
-    return unwrapData(data)
+    return adaptDiagramResponse(unwrapData(data))
   },
 
   async remove(diagramId: string): Promise<void> {
@@ -54,7 +55,7 @@ export const diagramsApi = {
     const { data } = await apiClient.post<DiagramResponse | ApiResponse<DiagramResponse>>(
       `${endpoints.diagrams.base}/${diagramId}/plantuml`,
     )
-    return unwrapData(data)
+    return adaptDiagramResponse(unwrapData(data))
   },
 
   async exportPlantUml(diagramId: string): Promise<Blob> {

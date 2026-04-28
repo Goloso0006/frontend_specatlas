@@ -1,6 +1,7 @@
 import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { adaptLoginResponse } from '../../adapters/auth.adapter'
 import { setAccessToken, setSessionUser } from '../../store/session'
 import type { ApiResponse } from '../../types/api'
 import type { LoginRequest, LoginResponse, RegisterRequest } from '../../types/auth'
@@ -11,7 +12,7 @@ export const authApi = {
       endpoints.auth.login,
       payload,
     )
-    const loginData = unwrapData(data)
+    const loginData = adaptLoginResponse(unwrapData(data))
     setAccessToken(loginData.token)
     setSessionUser({ userId: loginData.userId, role: loginData.role })
     return loginData

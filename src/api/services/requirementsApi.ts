@@ -1,6 +1,12 @@
 import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import {
+  adaptDuplicateMatchResponseList,
+  adaptRequirementDTO,
+  adaptRequirementNodeList,
+  adaptSearchResponseList,
+} from '../../adapters/requirements.adapter'
 import type { ApiResponse } from '../../types/api'
 import type {
   ConvertRequest,
@@ -17,7 +23,7 @@ export const requirementsApi = {
       endpoints.requirements.convert,
       payload,
     )
-    return unwrapData(data)
+    return adaptRequirementDTO(unwrapData(data))
   },
 
   async save(payload: RequirementDTO): Promise<RequirementDTO> {
@@ -25,7 +31,7 @@ export const requirementsApi = {
       endpoints.requirements.save,
       payload,
     )
-    return unwrapData(data)
+    return adaptRequirementDTO(unwrapData(data))
   },
 
   async search(query: string): Promise<SearchResponse[]> {
@@ -35,7 +41,7 @@ export const requirementsApi = {
       params: { query },
       },
     )
-    return unwrapData(data)
+    return adaptSearchResponseList(unwrapData(data))
   },
 
   async checkDuplicates(payload: DuplicateCheckRequest): Promise<DuplicateMatchResponse[]> {
@@ -45,14 +51,14 @@ export const requirementsApi = {
       endpoints.requirements.duplicates,
       payload,
     )
-    return unwrapData(data)
+    return adaptDuplicateMatchResponseList(unwrapData(data))
   },
 
   async getImpact(requirementId: string): Promise<RequirementNode[]> {
     const { data } = await apiClient.get<RequirementNode[] | ApiResponse<RequirementNode[]>>(
       endpoints.requirements.impact(requirementId),
     )
-    return unwrapData(data)
+    return adaptRequirementNodeList(unwrapData(data))
   },
 
   async createDependency(fromId: string, toId: string): Promise<void> {
@@ -65,6 +71,6 @@ export const requirementsApi = {
     const { data } = await apiClient.get<RequirementNode[] | ApiResponse<RequirementNode[]>>(
       endpoints.requirements.conflicts(requirementId),
     )
-    return unwrapData(data)
+    return adaptRequirementNodeList(unwrapData(data))
   },
 }

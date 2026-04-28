@@ -1,6 +1,7 @@
 import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { adaptProjectResponse, adaptProjectResponses } from '../../adapters/projects.adapter'
 import type { ApiResponse } from '../../types/api'
 import type { ProjectRequest, ProjectResponse } from '../../types/projects'
 
@@ -10,21 +11,21 @@ export const projectsApi = {
       endpoints.projects.base,
       payload,
     )
-    return unwrapData(data)
+    return adaptProjectResponse(unwrapData(data))
   },
 
   async getById(id: string): Promise<ProjectResponse> {
     const { data } = await apiClient.get<ProjectResponse | ApiResponse<ProjectResponse>>(
       endpoints.projects.byId(id),
     )
-    return unwrapData(data)
+    return adaptProjectResponse(unwrapData(data))
   },
 
   async listByUser(ownerId: string): Promise<ProjectResponse[]> {
     const { data } = await apiClient.get<ProjectResponse[] | ApiResponse<ProjectResponse[]>>(
       endpoints.projects.byUser(ownerId),
     )
-    return unwrapData(data)
+    return adaptProjectResponses(unwrapData(data))
   },
 
   async update(id: string, payload: ProjectRequest): Promise<ProjectResponse> {
@@ -32,7 +33,7 @@ export const projectsApi = {
       endpoints.projects.byId(id),
       payload,
     )
-    return unwrapData(data)
+    return adaptProjectResponse(unwrapData(data))
   },
 
   async remove(id: string): Promise<void> {

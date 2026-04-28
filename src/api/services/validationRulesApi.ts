@@ -1,6 +1,7 @@
 import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { adaptValidationRuleResponse, adaptValidationRuleResponses } from '../../adapters/validationRules.adapter'
 import type { ApiResponse } from '../../types/api'
 import type { ValidationRuleRequest, ValidationRuleResponse } from '../../types/validationRules'
 
@@ -9,7 +10,7 @@ export const validationRulesApi = {
     const { data } = await apiClient.get<ValidationRuleResponse[] | ApiResponse<ValidationRuleResponse[]>>(
       `${endpoints.validationRules.base}/project/${projectId}`,
     )
-    return unwrapData(data)
+    return adaptValidationRuleResponses(unwrapData(data))
   },
 
   async create(payload: ValidationRuleRequest): Promise<ValidationRuleResponse> {
@@ -17,7 +18,7 @@ export const validationRulesApi = {
       endpoints.validationRules.base,
       payload,
     )
-    return unwrapData(data)
+    return adaptValidationRuleResponse(unwrapData(data))
   },
 
   async update(id: string, payload: ValidationRuleRequest): Promise<ValidationRuleResponse> {
@@ -25,7 +26,7 @@ export const validationRulesApi = {
       `${endpoints.validationRules.base}/${id}`,
       payload,
     )
-    return unwrapData(data)
+    return adaptValidationRuleResponse(unwrapData(data))
   },
 
   async remove(id: string): Promise<void> {
