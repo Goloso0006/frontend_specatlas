@@ -53,7 +53,7 @@ Si quieres, el siguiente paso te lo puedo convertir en una estructura de carpeta
 
 
 ---
-ahora me puedes decir en un texto plano o en un parrafo lo que emos implementado ahora lo echo
+ahora me puedes decir en un texto plano o en un parrafo lo que emos implementado ahora lo echo con este patron
 
 
 ---
@@ -64,4 +64,12 @@ ahora me puedes decir en un texto plano o en un parrafo lo que emos implementado
 En esta fase implementamos el patrón Adapter en el frontend para desacoplar la UI de la estructura exacta del backend: creamos adaptadores por dominio para autenticación, proyectos, requisitos, diagramas y reglas de validación, y los conectamos en los servicios API para normalizar y validar las respuestas antes de que lleguen a los componentes. Con esto el proyecto ya no depende directamente de los DTOs crudos del backend, maneja mejor valores vacíos o inconsistentes, y queda más fácil de mantener si cambian los contratos de la API, porque solo habría que ajustar la capa de adaptación y no toda la aplicación.
 
 ✅ status: COMPLET
+
+
+2. implement pattern facade
+
+Hemos implementado el patrón Facade en el frontend creando facades para requirements, diagrams, graph y auth que coordinan las llamadas a los servicios API y adapters (por ejemplo: convertir texto a requisito, chequear duplicados, guardar requisito, generar diagrama automático e inferir relaciones) y exponen operaciones de alto nivel como createRequirementFromText y generateClassDiagram; con esto los componentes llaman una sola función, la orquestación queda fuera de la UI, las respuestas y errores se normalizan vía adapters y es mucho más sencillo mantener, reutilizar y probar los flujos complejos sin duplicar lógica.
+
+✅ status: COMPLET
+
 
