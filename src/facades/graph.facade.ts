@@ -1,7 +1,7 @@
-import { apiClient } from '../api/client'
+import { httpProxy } from '../api/httpProxy'
 
 export class GraphFacade {
-  constructor(private client = apiClient) {}
+  constructor(private client = httpProxy) {}
 
   async inferRelations(projectId: string): Promise<void> {
     await this.client.post(`/api/graph/infer-relations/${projectId}`)

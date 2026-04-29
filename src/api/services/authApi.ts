@@ -1,6 +1,6 @@
-import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { httpProxy } from '../httpProxy'
 import { adaptLoginResponse } from '../../adapters/auth.adapter'
 import { setAccessToken, setSessionUser } from '../../store/session'
 import type { ApiResponse } from '../../types/api'
@@ -8,7 +8,7 @@ import type { LoginRequest, LoginResponse, RegisterRequest } from '../../types/a
 
 export const authApi = {
   async login(payload: LoginRequest): Promise<LoginResponse> {
-    const { data } = await apiClient.post<LoginResponse | ApiResponse<LoginResponse>>(
+    const data = await httpProxy.post<LoginResponse | ApiResponse<LoginResponse>>(
       endpoints.auth.login,
       payload,
     )
@@ -19,6 +19,6 @@ export const authApi = {
   },
 
   async register(payload: RegisterRequest): Promise<void> {
-    await apiClient.post<void>(endpoints.auth.register, payload)
+    await httpProxy.post<void>(endpoints.auth.register, payload)
   },
 }

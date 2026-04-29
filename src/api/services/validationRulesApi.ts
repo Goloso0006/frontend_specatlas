@@ -1,20 +1,20 @@
-import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { httpProxy } from '../httpProxy'
 import { adaptValidationRuleResponse, adaptValidationRuleResponses } from '../../adapters/validationRules.adapter'
 import type { ApiResponse } from '../../types/api'
 import type { ValidationRuleRequest, ValidationRuleResponse } from '../../types/validationRules'
 
 export const validationRulesApi = {
   async listByProject(projectId: string): Promise<ValidationRuleResponse[]> {
-    const { data } = await apiClient.get<ValidationRuleResponse[] | ApiResponse<ValidationRuleResponse[]>>(
+    const data = await httpProxy.get<ValidationRuleResponse[] | ApiResponse<ValidationRuleResponse[]>>(
       `${endpoints.validationRules.base}/project/${projectId}`,
     )
     return adaptValidationRuleResponses(unwrapData(data))
   },
 
   async create(payload: ValidationRuleRequest): Promise<ValidationRuleResponse> {
-    const { data } = await apiClient.post<ValidationRuleResponse | ApiResponse<ValidationRuleResponse>>(
+    const data = await httpProxy.post<ValidationRuleResponse | ApiResponse<ValidationRuleResponse>>(
       endpoints.validationRules.base,
       payload,
     )
@@ -22,7 +22,7 @@ export const validationRulesApi = {
   },
 
   async update(id: string, payload: ValidationRuleRequest): Promise<ValidationRuleResponse> {
-    const { data } = await apiClient.put<ValidationRuleResponse | ApiResponse<ValidationRuleResponse>>(
+    const data = await httpProxy.put<ValidationRuleResponse | ApiResponse<ValidationRuleResponse>>(
       `${endpoints.validationRules.base}/${id}`,
       payload,
     )
@@ -30,6 +30,6 @@ export const validationRulesApi = {
   },
 
   async remove(id: string): Promise<void> {
-    await apiClient.delete(`${endpoints.validationRules.base}/${id}`)
+    await httpProxy.delete(`${endpoints.validationRules.base}/${id}`)
   },
 }

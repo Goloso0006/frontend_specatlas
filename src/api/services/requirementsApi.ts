@@ -1,6 +1,6 @@
-import { apiClient } from '../client'
 import { endpoints } from '../endpoints'
 import { unwrapData } from '../response'
+import { httpProxy } from '../httpProxy'
 import {
   adaptDuplicateMatchResponseList,
   adaptRequirementDTO,
@@ -19,7 +19,7 @@ import type {
 
 export const requirementsApi = {
   async convert(payload: ConvertRequest): Promise<RequirementDTO> {
-    const { data } = await apiClient.post<RequirementDTO | ApiResponse<RequirementDTO>>(
+    const data = await httpProxy.post<RequirementDTO | ApiResponse<RequirementDTO>>(
       endpoints.requirements.convert,
       payload,
     )
@@ -27,7 +27,7 @@ export const requirementsApi = {
   },
 
   async save(payload: RequirementDTO): Promise<RequirementDTO> {
-    const { data } = await apiClient.post<RequirementDTO | ApiResponse<RequirementDTO>>(
+    const data = await httpProxy.post<RequirementDTO | ApiResponse<RequirementDTO>>(
       endpoints.requirements.save,
       payload,
     )
@@ -35,7 +35,7 @@ export const requirementsApi = {
   },
 
   async search(query: string): Promise<SearchResponse[]> {
-    const { data } = await apiClient.get<SearchResponse[] | ApiResponse<SearchResponse[]>>(
+    const data = await httpProxy.get<SearchResponse[] | ApiResponse<SearchResponse[]>>(
       endpoints.requirements.search,
       {
       params: { query },
@@ -45,7 +45,7 @@ export const requirementsApi = {
   },
 
   async checkDuplicates(payload: DuplicateCheckRequest): Promise<DuplicateMatchResponse[]> {
-    const { data } = await apiClient.post<
+    const data = await httpProxy.post<
       DuplicateMatchResponse[] | ApiResponse<DuplicateMatchResponse[]>
     >(
       endpoints.requirements.duplicates,
@@ -55,20 +55,20 @@ export const requirementsApi = {
   },
 
   async getImpact(requirementId: string): Promise<RequirementNode[]> {
-    const { data } = await apiClient.get<RequirementNode[] | ApiResponse<RequirementNode[]>>(
+    const data = await httpProxy.get<RequirementNode[] | ApiResponse<RequirementNode[]>>(
       endpoints.requirements.impact(requirementId),
     )
     return adaptRequirementNodeList(unwrapData(data))
   },
 
   async createDependency(fromId: string, toId: string): Promise<void> {
-    await apiClient.post(endpoints.requirements.dependency, null, {
+    await httpProxy.post(endpoints.requirements.dependency, null, {
       params: { fromId, toId },
     })
   },
 
   async getConflicts(requirementId: string): Promise<RequirementNode[]> {
-    const { data } = await apiClient.get<RequirementNode[] | ApiResponse<RequirementNode[]>>(
+    const data = await httpProxy.get<RequirementNode[] | ApiResponse<RequirementNode[]>>(
       endpoints.requirements.conflicts(requirementId),
     )
     return adaptRequirementNodeList(unwrapData(data))
