@@ -17,6 +17,7 @@ import 'reactflow/dist/style.css'
 import { diagramsApi } from '../api/services/diagramsApi'
 import { useAuth } from '../auth/useAuth'
 import { ClassDiagramNode } from '../components/diagram/ClassDiagramNode'
+import { useDiagramEditorStore } from '../state/diagramEditor.store'
 import type {
   DiagramClassAttributeDTO,
   DiagramClassMethodDTO,
@@ -54,10 +55,10 @@ const relationTypes: DiagramRelationType[] = [
 
 export function DiagramEditorPage() {
   const { user, logout } = useAuth()
+  const { state: editorState, actions: editorActions } = useDiagramEditorStore()
   const [diagramId, setDiagramId] = useState('')
   const [projectId, setProjectId] = useState('')
   const [diagramName, setDiagramName] = useState('Diagrama de clases')
-  const [status, setStatus] = useState('Listo para editar diagramas')
   const [plantUmlPreview, setPlantUmlPreview] = useState('')
   const [diagramList, setDiagramList] = useState<DiagramSummaryResponse[]>([])
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -120,12 +121,12 @@ export function DiagramEditorPage() {
 
   async function handleCreateManualDiagram(): Promise<void> {
     if (!projectId.trim()) {
-      setStatus('Debes indicar un projectId antes de crear el diagrama.')
+      editorActions.error('Debes indicar un projectId antes de crear el diagrama.')
       return
     }
 
     if (!diagramName.trim()) {
-      setStatus('Debes indicar un nombre para el diagrama.')
+      editorActions.error('Debes indicar un nombre para el diagrama.')
       return
     }
 
@@ -137,77 +138,78 @@ export function DiagramEditorPage() {
     }
 
     if (!validation.isValid) {
-      setStatus(validation.errors.join(' '))
+      editorActions.error(validation.errors.join(' '))
       return
     }
 
     try {
+      editorActions.saving('Creando diagrama manual...')
       const data = await diagramsApi.createManual(payload)
-      syncDiagramResponse(data)
-      setStatus('Diagrama manual creado exitosamente.')
+      syncDiagramResponse(data, 'Diagrama manual creado exitosamente.')
     } catch {
-      setStatus('No fue posible crear el diagrama manual.')
+      editorActions.error('No fue posible crear el diagrama manual.')
     }
   }
 
   async function handleGenerateAutoDiagram(): Promise<void> {
     if (!projectId.trim()) {
-      setStatus('Debes indicar un projectId.')
+      editorActions.error('Debes indicar un projectId.')
       return
     }
 
     try {
+      editorActions.loading('Generando diagrama automatico...')
       const data = await diagramsApi.createAuto(projectId.trim())
-      syncDiagramResponse(data)
-      setStatus('Diagrama automatico generado exitosamente.')
+      syncDiagramResponse(data, 'Diagrama automatico generado exitosamente.')
     } catch {
-      setStatus('No fue posible generar el diagrama automatico.')
+      editorActions.error('No fue posible generar el diagrama automatico.')
     }
   }
 
   async function handleLoadDiagram(): Promise<void> {
     if (!diagramId.trim()) {
-      setStatus('Debes indicar un diagramId.')
+      editorActions.error('Debes indicar un diagramId.')
       return
     }
 
     try {
+      editorActions.loading('Cargando diagrama...')
       const data = await diagramsApi.getById(diagramId.trim())
-      syncDiagramResponse(data)
-      setStatus('Diagrama cargado correctamente.')
+      syncDiagramResponse(data, 'Diagrama cargado correctamente.')
     } catch {
-      setStatus('No fue posible cargar el diagrama.')
+      editorActions.error('No fue posible cargar el diagrama.')
     }
   }
 
   async function handleLoadProjectDiagrams(): Promise<void> {
     if (!projectId.trim()) {
-      setStatus('Debes indicar un projectId.')
+      editorActions.error('Debes indicar un projectId.')
       return
     }
 
     try {
+      editorActions.loading('Listando diagramas del proyecto...')
       const data = await diagramsApi.listByProject(projectId.trim())
       setDiagramList(data)
-      setStatus(`Diagramas del proyecto: ${data.length}`)
+      editorActions.editing(`Diagramas del proyecto: ${data.length}`)
     } catch {
-      setStatus('No fue posible listar los diagramas del proyecto.')
+      editorActions.error('No fue posible listar los diagramas del proyecto.')
     }
   }
 
   async function handleSaveDiagram(): Promise<void> {
     if (!projectId.trim()) {
-      setStatus('Debes indicar un projectId.')
+      editorActions.error('Debes indicar un projectId.')
       return
     }
 
     if (!diagramName.trim()) {
-      setStatus('Debes indicar un nombre para el diagrama.')
+      editorActions.error('Debes indicar un nombre para el diagrama.')
       return
     }
 
     if (!validation.isValid) {
-      setStatus(validation.errors.join(' '))
+      editorActions.error(validation.errors.join(' '))
       return
     }
 
@@ -219,51 +221,52 @@ export function DiagramEditorPage() {
     }
 
     try {
+      editorActions.saving('Guardando diagrama...')
       const data = diagramId.trim()
         ? await diagramsApi.update(diagramId.trim(), payload)
         : await diagramsApi.createManual(payload)
-      syncDiagramResponse(data)
-      setStatus('Diagrama guardado correctamente.')
+      syncDiagramResponse(data, 'Diagrama guardado correctamente.')
     } catch {
-      setStatus('No fue posible guardar el diagrama.')
+      editorActions.error('No fue posible guardar el diagrama.')
     }
   }
 
   async function handleGeneratePlantUml(): Promise<void> {
     if (!diagramId.trim()) {
-      setStatus('Primero carga o guarda un diagrama para generar PlantUML.')
+      editorActions.error('Primero carga o guarda un diagrama para generar PlantUML.')
       return
     }
 
     if (!validation.isValid) {
-      setStatus(validation.errors.join(' '))
+      editorActions.error(validation.errors.join(' '))
       return
     }
 
     try {
+      editorActions.exporting('Generando PlantUML...')
       const data = await diagramsApi.generatePlantUml(diagramId.trim())
-      syncDiagramResponse(data)
-      setStatus('PlantUML generado correctamente.')
+      syncDiagramResponse(data, 'PlantUML generado correctamente.')
     } catch {
-      setStatus('No fue posible generar PlantUML.')
+      editorActions.error('No fue posible generar PlantUML.')
     }
   }
 
   async function handleExport(format: 'puml' | 'txt'): Promise<void> {
     if (!diagramId.trim()) {
-      setStatus('Primero carga o guarda un diagrama.')
+      editorActions.error('Primero carga o guarda un diagrama.')
       return
     }
 
     try {
+      editorActions.exporting(`Exportando ${format.toUpperCase()}...`)
       const blob =
         format === 'puml'
           ? await diagramsApi.exportPlantUml(diagramId.trim())
           : await diagramsApi.exportText(diagramId.trim())
       downloadBlob(blob, `${diagramName || 'diagram'}`, format)
-      setStatus(`Exportacion ${format.toUpperCase()} completada.`)
+      editorActions.editing(`Exportacion ${format.toUpperCase()} completada.`)
     } catch {
-      setStatus(`No fue posible exportar el archivo ${format.toUpperCase()}.`)
+      editorActions.error(`No fue posible exportar el archivo ${format.toUpperCase()}.`)
     }
   }
 
@@ -296,7 +299,7 @@ export function DiagramEditorPage() {
     }
   }
 
-  function syncDiagramResponse(response: DiagramResponse): void {
+  function syncDiagramResponse(response: DiagramResponse, message = 'Diagrama cargado correctamente.'): void {
     setDiagramId(response.id)
     setProjectId(response.projectId)
     setDiagramName(response.name)
@@ -305,6 +308,7 @@ export function DiagramEditorPage() {
     setSelectedNodeId(null)
     setSelectedEdgeId(null)
     setEditorTarget(null)
+    editorActions.editing(message)
   }
 
   function updateNode(nextNode: DiagramClassNodeDTO): void {
@@ -496,7 +500,9 @@ export function DiagramEditorPage() {
           </pre>
         </section>
 
-        <p className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm">Estado: {status}</p>
+        <p className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm">
+          Estado: {editorState.status} | {editorState.message}
+        </p>
       </div>
     </main>
   )
@@ -515,11 +521,11 @@ export function DiagramEditorPage() {
 
   async function loadDiagramFromList(id: string): Promise<void> {
     try {
+      editorActions.loading('Cargando diagrama seleccionado...')
       const data = await diagramsApi.getById(id)
-      syncDiagramResponse(data)
-      setStatus('Diagrama cargado correctamente.')
+      syncDiagramResponse(data, 'Diagrama cargado correctamente.')
     } catch {
-      setStatus('No fue posible cargar el diagrama.')
+      editorActions.error('No fue posible cargar el diagrama.')
     }
   }
 }

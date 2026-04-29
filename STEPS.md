@@ -85,3 +85,12 @@ Implementamos el patrón Factory Method creando DiagramElementFactory en diagram
 Implementamos el patrón Proxy creando una capa centralizada de acceso HTTP en httpProxy.ts, que actúa como intermediario único entre el frontend y el backend: controla las peticiones, reutiliza el cliente Axios existente, aplica cache para consultas GET, invalida la cache cuando hay cambios, y normaliza los errores en una estructura consistente para que la UI no dependa de detalles de red o de axios; además, migramos los servicios de auth, proyectos, requisitos, diagramas y reglas de validación para que consuman esta capa, logrando una comunicación más limpia, segura y mantenible con la API.
 
 ✅ status: COMPLET
+
+
+5. implement pattern state
+
+En esta fase implementamos el patrón State para el editor de diagramas creando una máquina de estados explícita con variantes como idle, loading, editing, saving, exporting y error, y conectándola al flujo principal del editor para que cada acción cambie de estado de forma clara según lo que esté ocurriendo; con esto la interfaz deja de depender de varios flags sueltos o mensajes dispersos, y pasa a comportarse de manera más estable y predecible al cargar, guardar, exportar o fallar una operación. En resumen, este patrón sirve para controlar mejor el comportamiento del editor y evitar inconsistencias en la UI.
+
+✅ status: COMPLET
+
+
