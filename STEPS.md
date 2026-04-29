@@ -73,3 +73,9 @@ Hemos implementado el patrón Facade en el frontend creando facades para require
 ✅ status: COMPLET
 
 
+3. implement pattern factories
+
+Implementamos el patrón Factory Method creando DiagramElementFactory en diagramElement.factory.ts, que centraliza la creación de nodos y relaciones del editor (usa los helpers de diagramMapper para generar nodos/relaciones válidos), permite instanciar tipos como clases y distintas relaciones a partir de datos parciales, y evita tener if/switch dispersos en los componentes; con esto la conversión de DiagramSourceDTO a elementos del lienzo y la creación de nuevos elementos desde la UI queda más simple, mantenible y escalable.
+
+✅ status: COMPLET
+
