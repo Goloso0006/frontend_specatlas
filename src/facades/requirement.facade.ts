@@ -2,7 +2,11 @@ import { requirementsApi } from '../api/services/requirementsApi'
 import type { RequirementDTO } from '../types/requirements'
 
 export class RequirementFacade {
-  constructor(private api = requirementsApi) {}
+  private readonly api: typeof requirementsApi
+
+  constructor(api = requirementsApi) {
+    this.api = api
+  }
 
   async createRequirementFromText(projectId: string, text: string) {
     const converted = await this.api.convert({ projectId, text })

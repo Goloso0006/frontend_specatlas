@@ -2,7 +2,11 @@ import { authApi } from '../api/services/authApi'
 import type { LoginRequest, RegisterRequest } from '../types/auth'
 
 export class AuthFacade {
-  constructor(private api = authApi) {}
+  private readonly api: typeof authApi
+
+  constructor(api = authApi) {
+    this.api = api
+  }
 
   async login(payload: LoginRequest) {
     return this.api.login(payload)

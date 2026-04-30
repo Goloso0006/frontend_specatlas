@@ -59,14 +59,14 @@ export const diagramsApi = {
   },
 
   async exportPlantUml(diagramId: string): Promise<Blob> {
-    const data = await httpProxy.get(`${endpoints.diagrams.base}/${diagramId}/export/puml`, {
+    const data = await httpProxy.get<Blob>(`${endpoints.diagrams.base}/${diagramId}/export/puml`, {
       responseType: 'blob',
     })
     return data
   },
 
   async exportText(diagramId: string): Promise<Blob> {
-    const data = await httpProxy.get(`${endpoints.diagrams.base}/${diagramId}/export/txt`, {
+    const data = await httpProxy.get<Blob>(`${endpoints.diagrams.base}/${diagramId}/export/txt`, {
       responseType: 'blob',
     })
     return data

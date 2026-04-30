@@ -1,4 +1,4 @@
-import type { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios'
 import { apiClient } from './client'
 
 export interface ProxyErrorDetails {
@@ -35,11 +35,13 @@ interface CacheEntry<T> {
 
 export class HttpProxy {
   private readonly cache = new Map<string, CacheEntry<unknown>>()
+  private readonly client: AxiosInstance
+  private readonly cacheTtlMs: number
 
-  constructor(
-    private readonly client: AxiosInstance = apiClient,
-    private readonly cacheTtlMs = 30_000,
-  ) {}
+  constructor(client: AxiosInstance = apiClient, cacheTtlMs = 30_000) {
+    this.client = client
+    this.cacheTtlMs = cacheTtlMs
+  }
 
   async get<T>(url: string, config: AxiosRequestConfig = {}): Promise<T> {
     return this.request<T>({ ...config, method: 'get', url })

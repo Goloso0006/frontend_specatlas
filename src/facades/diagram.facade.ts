@@ -2,7 +2,11 @@ import { diagramsApi } from '../api/services/diagramsApi'
 import type { DiagramResponse } from '../types/diagrams'
 
 export class DiagramFacade {
-  constructor(private api = diagramsApi) {}
+  private readonly api: typeof diagramsApi
+
+  constructor(api = diagramsApi) {
+    this.api = api
+  }
 
   async generateClassDiagram(projectId: string): Promise<DiagramResponse> {
     const diagram = await this.api.createAuto(projectId)
