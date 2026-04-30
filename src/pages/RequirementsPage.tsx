@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useEffect } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { graphFacade } from '../facades/graph.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
@@ -16,6 +17,7 @@ import {
   SearchResultList,
 } from '../components/requirements/RequirementDataViews'
 import { DataCard } from '../components/ui/DataDisplay'
+import { RequirementGraphView } from '../components/graph/RequirementGraphView'
 
 const EMPTY_REQUIREMENT: RequirementDTO = {
   id: '',
@@ -43,7 +45,8 @@ export function RequirementsPage() {
   const [duplicateResults, setDuplicateResults] = useState<DuplicateMatchResponse[]>([])
   const [impactResults, setImpactResults] = useState<RequirementNode[]>([])
   const [conflictResults, setConflictResults] = useState<RequirementNode[]>([])
-  const [graphInferenceResult, setGraphInferenceResult] = useState('')
+  const [impactGraph, setImpactGraph] = useState<Record<string, unknown> | null>(null)
+  const [inferenceGraph, setInferenceGraph] = useState<Record<string, unknown> | null>(null)
 
   async function handleConvert(): Promise<void> {
     if (!projectId.trim() || !text.trim()) return
@@ -126,14 +129,17 @@ export function RequirementsPage() {
     if (!requirement.id.trim()) return
 
     const data = await run(
-      () => requirementFacade.getImpact(requirement.id),
+      () => graphFacade.getImpact(requirement.id),
       {
         operationName: 'getImpact',
         errorMessage: 'No fue posible consultar impacto.',
       },
     )
 
-    if (data) setImpactResults(data)
+    if (data) {
+      setImpactResults(Array.isArray(data) ? (data as RequirementNode[]) : [])
+      setImpactGraph(data)
+    }
   }
 
   async function handleInferRelations(): Promise<void> {
@@ -153,10 +159,19 @@ export function RequirementsPage() {
     )
 
     if (data) {
-      setGraphInferenceResult(JSON.stringify(data, null, 2))
+      setInferenceGraph(data)
       setStatus('Relaciones inferidas correctamente.')
     }
   }
+
+  useEffect(() => {
+    if (!requirement.id.trim()) {
+      setImpactGraph(null)
+      return
+    }
+
+    void handleImpact()
+  }, [requirement.id])
 
   async function handleConflicts(): Promise<void> {
     if (!requirement.id.trim()) return
@@ -317,11 +332,21 @@ export function RequirementsPage() {
             </section>
 
             <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
-              <h3 className="font-semibold">Inferencia de relaciones</h3>
-              <p className="text-sm text-slate-400">Resultado crudo devuelto por el backend Graph.</p>
-              <pre className="max-h-72 overflow-auto rounded-md border border-slate-700 bg-slate-900 p-3 text-xs text-slate-200">
-                {graphInferenceResult || 'Sin inferencia ejecutada.'}
-              </pre>
+              <h3 className="font-semibold">Impacto del requisito</h3>
+              <RequirementGraphView
+                title="Impacto del requisito seleccionado"
+                response={impactGraph}
+                emptyMessage="Selecciona o carga un requisito para ver su impacto."
+              />
+            </section>
+
+            <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <h3 className="font-semibold">Relaciones inferidas</h3>
+              <RequirementGraphView
+                title="Relaciones inferidas del proyecto"
+                response={inferenceGraph}
+                emptyMessage="Ejecuta inferencia para ver el grafo de relaciones."
+              />
             </section>
           </article>
         </section>
