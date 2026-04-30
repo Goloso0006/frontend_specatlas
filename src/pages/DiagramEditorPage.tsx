@@ -19,6 +19,7 @@ import { useDiagramEditorStore } from '../state/diagramEditor.store'
 import type {
   DiagramClassNodeDTO,
   DiagramRelationDTO,
+  DiagramType,
   DiagramResponse,
   DiagramSourceDTO,
   DiagramSummaryResponse,
@@ -43,6 +44,7 @@ export function DiagramEditorPage() {
   const [diagramId, setDiagramId] = useState('')
   const [projectId, setProjectId] = useState('')
   const [diagramName, setDiagramName] = useState('Diagrama de clases')
+  const [diagramType, setDiagramType] = useState<DiagramType>('CLASS')
   const [plantUmlPreview, setPlantUmlPreview] = useState('')
   const [diagramList, setDiagramList] = useState<DiagramSummaryResponse[]>([])
 
@@ -156,6 +158,7 @@ export function DiagramEditorPage() {
     setDiagramId(response.id)
     setProjectId(response.projectId)
     setDiagramName(response.name)
+    setDiagramType(response.diagramType)
     setPlantUmlPreview(response.plantUmlCode ?? '')
     setSource(parseDiagramSource(response.sourceJson))
     setSelectedNodeId(null)
@@ -184,6 +187,26 @@ export function DiagramEditorPage() {
     else editorActions.error('No fue posible crear el diagrama manual.')
   }
 
+  async function handleCreateUseCaseManualDiagram(): Promise<void> {
+    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId antes de crear el diagrama.'); return }
+    if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
+    if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
+
+    editorActions.saving('Creando caso de uso manual...')
+    const data = await run(
+      () => diagramFacade.createUseCaseManual({
+        projectId: projectId.trim(),
+        name: diagramName.trim(),
+        sourceJson: serializeDiagramSource(source),
+        plantUmlCode: null,
+        diagramType: 'USE_CASE',
+      }),
+      { operationName: 'createUseCaseManualDiagram', errorMessage: 'No fue posible crear el diagrama de caso de uso.' },
+    )
+    if (data) syncDiagramResponse(data, 'Diagrama de caso de uso creado exitosamente.')
+    else editorActions.error('No fue posible crear el diagrama de caso de uso.')
+  }
+
   async function handleGenerateAutoDiagram(): Promise<void> {
     if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
 
@@ -194,6 +217,18 @@ export function DiagramEditorPage() {
     )
     if (data) syncDiagramResponse(data, 'Diagrama automático generado exitosamente.')
     else editorActions.error('No fue posible generar el diagrama automático.')
+  }
+
+  async function handleGenerateUseCaseAutoDiagram(): Promise<void> {
+    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
+
+    editorActions.loading('Generando caso de uso automático...')
+    const data = await run(
+      () => diagramFacade.generateUseCaseDiagram(projectId.trim()),
+      { operationName: 'generateUseCaseAutoDiagram', errorMessage: 'No fue posible generar el caso de uso automático.' },
+    )
+    if (data) syncDiagramResponse(data, 'Caso de uso automático generado exitosamente.')
+    else editorActions.error('No fue posible generar el caso de uso automático.')
   }
 
   async function handleLoadDiagram(): Promise<void> {
@@ -337,6 +372,8 @@ export function DiagramEditorPage() {
                 onSave={handleSaveDiagram}
                 onCreateManual={handleCreateManualDiagram}
                 onGenerateAuto={handleGenerateAutoDiagram}
+                onCreateUseCaseManual={handleCreateUseCaseManualDiagram}
+                onGenerateUseCaseAuto={handleGenerateUseCaseAutoDiagram}
                 onDeleteSelected={handleDeleteSelected}
               />
 
@@ -348,7 +385,7 @@ export function DiagramEditorPage() {
 
             {/* Info panel */}
             <div className="space-y-2 rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
-              <p><span className="text-slate-400">Tipo:</span> CLASS</p>
+              <p><span className="text-slate-400">Tipo:</span> {diagramType}</p>
               <p><span className="text-slate-400">Modo:</span> {selectedModeLabel()}</p>
               <p><span className="text-slate-400">Usuario:</span> {user?.userId ?? 'sin sesión'}</p>
               <p className={validation.isValid ? 'text-emerald-300' : 'text-rose-300'}>

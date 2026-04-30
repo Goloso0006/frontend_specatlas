@@ -12,6 +12,8 @@ export interface DiagramToolbarProps {
   onSave: () => void
   onCreateManual: () => void
   onGenerateAuto: () => void
+  onCreateUseCaseManual: () => void
+  onGenerateUseCaseAuto: () => void
   onDeleteSelected: () => void
 }
 
@@ -24,6 +26,8 @@ export function DiagramToolbar({
   onSave,
   onCreateManual,
   onGenerateAuto,
+  onCreateUseCaseManual,
+  onGenerateUseCaseAuto,
   onDeleteSelected,
 }: DiagramToolbarProps) {
   const isBusy = status === 'loading' || status === 'saving' || status === 'exporting'
@@ -51,7 +55,7 @@ export function DiagramToolbar({
         onClick={onCreateManual}
         disabled={isBusy || !isValid}
       >
-        Crear manual
+        Crear clase manual
       </button>
 
       <button
@@ -59,7 +63,23 @@ export function DiagramToolbar({
         onClick={onGenerateAuto}
         disabled={isBusy}
       >
-        Generar automático
+        Generar clase automática
+      </button>
+
+      <button
+        className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-600 disabled:opacity-50"
+        onClick={onCreateUseCaseManual}
+        disabled={isBusy || !isValid}
+      >
+        Crear caso de uso manual
+      </button>
+
+      <button
+        className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-600 disabled:opacity-50"
+        onClick={onGenerateUseCaseAuto}
+        disabled={isBusy}
+      >
+        Generar caso de uso automático
       </button>
 
       <button

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
+import { graphFacade } from '../facades/graph.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { requirementFacade } from '../facades/requirement.facade'
 import type {
@@ -14,6 +15,7 @@ import {
   RequirementNodeList,
   SearchResultList,
 } from '../components/requirements/RequirementDataViews'
+import { DataCard } from '../components/ui/DataDisplay'
 
 const EMPTY_REQUIREMENT: RequirementDTO = {
   id: '',
@@ -35,10 +37,13 @@ export function RequirementsPage() {
   const [text, setText] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [requirement, setRequirement] = useState<RequirementDTO>(EMPTY_REQUIREMENT)
+  const [status, setStatus] = useState('Listo para administrar requisitos')
+  const [projectRequirements, setProjectRequirements] = useState<RequirementDTO[]>([])
   const [searchResults, setSearchResults] = useState<SearchResponse[]>([])
   const [duplicateResults, setDuplicateResults] = useState<DuplicateMatchResponse[]>([])
   const [impactResults, setImpactResults] = useState<RequirementNode[]>([])
   const [conflictResults, setConflictResults] = useState<RequirementNode[]>([])
+  const [graphInferenceResult, setGraphInferenceResult] = useState('')
 
   async function handleConvert(): Promise<void> {
     if (!projectId.trim() || !text.trim()) return
@@ -82,6 +87,23 @@ export function RequirementsPage() {
     if (data) setSearchResults(data)
   }
 
+  async function handleLoadProjectRequirements(): Promise<void> {
+    if (!projectId.trim()) return
+
+    const data = await run(
+      () => requirementFacade.getRequirementsByProject(projectId.trim()),
+      {
+        operationName: 'loadProjectRequirements',
+        errorMessage: 'No fue posible cargar los requisitos del proyecto.',
+      },
+    )
+
+    if (data) {
+      setProjectRequirements(data)
+      setStatus(`Requisitos del proyecto cargados: ${data.length}`)
+    }
+  }
+
   async function handleDuplicates(): Promise<void> {
     if (!projectId.trim() || !requirement.title.trim()) return
 
@@ -112,6 +134,28 @@ export function RequirementsPage() {
     )
 
     if (data) setImpactResults(data)
+  }
+
+  async function handleInferRelations(): Promise<void> {
+    if (!projectId.trim()) return
+
+    if (projectRequirements.length === 0) {
+      setStatus('Primero carga los requisitos del proyecto para inferir relaciones.')
+      return
+    }
+
+    const data = await run(
+      () => graphFacade.inferRelations(projectId.trim(), projectRequirements),
+      {
+        operationName: 'inferRelations',
+        errorMessage: 'No fue posible inferir relaciones.',
+      },
+    )
+
+    if (data) {
+      setGraphInferenceResult(JSON.stringify(data, null, 2))
+      setStatus('Relaciones inferidas correctamente.')
+    }
   }
 
   async function handleConflicts(): Promise<void> {
@@ -146,6 +190,7 @@ export function RequirementsPage() {
         <header className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Requisitos</h1>
           <p className="text-sm text-slate-300">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
+          <p className="mt-2 text-sm text-cyan-300">{status}</p>
         </header>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -222,6 +267,12 @@ export function RequirementsPage() {
               <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleConflicts}>
                 Conflictos
               </button>
+              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleLoadProjectRequirements}>
+                Cargar requisitos del proyecto
+              </button>
+              <button className="rounded-md bg-indigo-600 px-3 py-2 font-medium" onClick={handleInferRelations}>
+                Inferir relaciones
+              </button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
@@ -249,6 +300,29 @@ export function RequirementsPage() {
                 </div>
               </article>
             </div>
+
+            <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <h3 className="font-semibold">Requisitos cargados del proyecto</h3>
+              {projectRequirements.length === 0 ? (
+                <p className="text-sm text-slate-400">Todavia no se han cargado requisitos de proyecto.</p>
+              ) : (
+                <div className="max-h-72 overflow-auto space-y-2">
+                  {projectRequirements.map((item) => (
+                    <DataCard key={item.id} title={item.title} subtitle={item.code}>
+                      <p className="text-xs text-slate-300 line-clamp-3">{item.description}</p>
+                    </DataCard>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <h3 className="font-semibold">Inferencia de relaciones</h3>
+              <p className="text-sm text-slate-400">Resultado crudo devuelto por el backend Graph.</p>
+              <pre className="max-h-72 overflow-auto rounded-md border border-slate-700 bg-slate-900 p-3 text-xs text-slate-200">
+                {graphInferenceResult || 'Sin inferencia ejecutada.'}
+              </pre>
+            </section>
           </article>
         </section>
       </section>
