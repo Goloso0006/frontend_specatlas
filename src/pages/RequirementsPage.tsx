@@ -8,6 +8,12 @@ import type {
   RequirementNode,
   SearchResponse,
 } from '../types/requirements'
+import {
+  DuplicateList,
+  RequirementDetailCard,
+  RequirementNodeList,
+  SearchResultList,
+} from '../components/requirements/RequirementDataViews'
 
 const EMPTY_REQUIREMENT: RequirementDTO = {
   id: '',
@@ -193,6 +199,9 @@ export function RequirementsPage() {
                 <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.relatedCodes.join(', ')} onChange={(event) => setRequirement((current) => ({ ...current, relatedCodes: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) }))} />
               </label>
             </div>
+            <div className="mt-6 pt-4 border-t border-slate-700">
+              <RequirementDetailCard requirement={requirement} />
+            </div>
           </article>
 
           <article className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
@@ -217,19 +226,27 @@ export function RequirementsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
                 <h3 className="mb-2 font-semibold">Resultados</h3>
-                <pre className="max-h-64 overflow-auto text-xs text-slate-300">{JSON.stringify(searchResults, null, 2)}</pre>
+                <div className="max-h-64 overflow-auto">
+                  <SearchResultList results={searchResults} />
+                </div>
               </article>
               <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
                 <h3 className="mb-2 font-semibold">Duplicados</h3>
-                <pre className="max-h-64 overflow-auto text-xs text-slate-300">{JSON.stringify(duplicateResults, null, 2)}</pre>
+                <div className="max-h-64 overflow-auto">
+                  <DuplicateList results={duplicateResults} />
+                </div>
               </article>
               <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
                 <h3 className="mb-2 font-semibold">Impacto</h3>
-                <pre className="max-h-64 overflow-auto text-xs text-slate-300">{JSON.stringify(impactResults, null, 2)}</pre>
+                <div className="max-h-64 overflow-auto">
+                  <RequirementNodeList nodes={impactResults} emptyMessage="Sin análisis de impacto." />
+                </div>
               </article>
               <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
                 <h3 className="mb-2 font-semibold">Conflictos</h3>
-                <pre className="max-h-64 overflow-auto text-xs text-slate-300">{JSON.stringify(conflictResults, null, 2)}</pre>
+                <div className="max-h-64 overflow-auto">
+                  <RequirementNodeList nodes={conflictResults} emptyMessage="Sin conflictos detectados." />
+                </div>
               </article>
             </div>
           </article>

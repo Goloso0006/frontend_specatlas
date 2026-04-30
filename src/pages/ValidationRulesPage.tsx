@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { validationRulesApi } from '../api/services/validationRulesApi'
 import type { ValidationRuleRequest, ValidationRuleResponse, ValidationRuleSeverity } from '../types/validationRules'
-
+import { DataCard, DataField, EmptyState } from '../components/ui/DataDisplay'
 const EMPTY_RULE: ValidationRuleRequest = {
   projectId: '',
   name: '',
@@ -172,8 +172,34 @@ export function ValidationRulesPage() {
               <p className="text-slate-300">{status}</p>
             </div>
             <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
-              <h3 className="mb-2 font-semibold">Regla seleccionada</h3>
-              <pre className="overflow-auto text-xs text-slate-300">{JSON.stringify(selectedRule, null, 2)}</pre>
+              <h3 className="mb-3 font-semibold">Regla seleccionada</h3>
+              {selectedRule ? (
+                <dl className="space-y-3">
+                  <DataField label="ID">{selectedRule.id}</DataField>
+                  <DataField label="Nombre">{selectedRule.name}</DataField>
+                  <DataField label="Descripción">{selectedRule.description}</DataField>
+                  <DataField label="Tipo">{selectedRule.ruleType}</DataField>
+                  <DataField label="Condición">
+                    <code className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-300">
+                      {selectedRule.condition}
+                    </code>
+                  </DataField>
+                  <DataField label="Severidad">
+                    <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs uppercase tracking-wider">
+                      {selectedRule.severity}
+                    </span>
+                  </DataField>
+                  <DataField label="Estado">
+                    {selectedRule.enabled ? (
+                      <span className="text-emerald-400">Activa</span>
+                    ) : (
+                      <span className="text-rose-400">Inactiva</span>
+                    )}
+                  </DataField>
+                </dl>
+              ) : (
+                <EmptyState message="Selecciona una regla del listado." />
+              )}
             </div>
           </aside>
         </section>
@@ -182,12 +208,15 @@ export function ValidationRulesPage() {
           <h2 className="mb-3 font-semibold">Listado</h2>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {rules.length === 0 ? (
-              <p className="text-slate-400">Sin reglas cargadas</p>
+              <div className="col-span-full">
+                <EmptyState message="Sin reglas cargadas." />
+              </div>
             ) : (
               rules.map((rule) => (
-                <button
+                <DataCard
                   key={rule.id}
-                  className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-left hover:border-cyan-400"
+                  title={rule.name}
+                  subtitle={rule.ruleType}
                   onClick={() => {
                     setSelectedRule(rule)
                     setRuleId(rule.id)
@@ -203,10 +232,16 @@ export function ValidationRulesPage() {
                     })
                   }}
                 >
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{rule.severity}</p>
-                  <h3 className="text-lg font-semibold">{rule.name}</h3>
-                  <p className="mt-1 text-sm text-slate-300">{rule.ruleType}</p>
-                </button>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-widest text-slate-400">{rule.severity}</span>
+                    {rule.enabled ? (
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                    ) : (
+                      <span className="h-2 w-2 rounded-full bg-slate-600"></span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-sm text-slate-300 line-clamp-2">{rule.description}</p>
+                </DataCard>
               ))
             )}
           </div>

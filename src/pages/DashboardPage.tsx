@@ -5,6 +5,8 @@ import { requirementsApi } from '../api/services/requirementsApi'
 import { useAuth } from '../auth/useAuth'
 import type { ProjectResponse } from '../types/projects'
 import type { SearchResponse } from '../types/requirements'
+import { DataCard, EmptyState } from '../components/ui/DataDisplay'
+import { SearchResultList } from '../components/requirements/RequirementDataViews'
 
 export function DashboardPage() {
   const { user, logout } = useAuth()
@@ -100,12 +102,24 @@ export function DashboardPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-            <h2 className="mb-2 font-semibold">Proyectos</h2>
-            <pre className="overflow-auto text-xs text-slate-300">{JSON.stringify(projects, null, 2)}</pre>
+            <h2 className="mb-3 font-semibold">Proyectos</h2>
+            {projects.length === 0 ? (
+              <EmptyState message="Sin proyectos cargados." />
+            ) : (
+              <div className="max-h-72 space-y-2 overflow-auto">
+                {projects.map((project) => (
+                  <DataCard key={project.id} title={project.name} subtitle={project.status}>
+                    <p className="text-xs text-slate-300 line-clamp-2">{project.description}</p>
+                  </DataCard>
+                ))}
+              </div>
+            )}
           </article>
           <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-            <h2 className="mb-2 font-semibold">Resultados requisitos</h2>
-            <pre className="overflow-auto text-xs text-slate-300">{JSON.stringify(results, null, 2)}</pre>
+            <h2 className="mb-3 font-semibold">Resultados requisitos</h2>
+            <div className="max-h-72 overflow-auto">
+              <SearchResultList results={results} />
+            </div>
           </article>
         </div>
       </section>

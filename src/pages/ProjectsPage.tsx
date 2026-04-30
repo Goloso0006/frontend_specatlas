@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { projectsApi } from '../api/services/projectsApi'
 import type { ProjectRequest, ProjectResponse, ProjectStatus } from '../types/projects'
+import { DataField, EmptyState } from '../components/ui/DataDisplay'
 
 const EMPTY_PROJECT: ProjectRequest = {
   name: '',
@@ -176,8 +177,23 @@ export function ProjectsPage() {
             </div>
 
             <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
-              <h3 className="mb-2 font-semibold">Proyecto seleccionado</h3>
-              <pre className="overflow-auto text-xs text-slate-300">{JSON.stringify(selectedProject, null, 2)}</pre>
+              <h3 className="mb-3 font-semibold">Proyecto seleccionado</h3>
+              {selectedProject ? (
+                <dl className="space-y-3">
+                  <DataField label="Nombre">{selectedProject.name}</DataField>
+                  <DataField label="Descripción">{selectedProject.description}</DataField>
+                  <DataField label="Estado">
+                    <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs uppercase tracking-wider">
+                      {selectedProject.status}
+                    </span>
+                  </DataField>
+                  <DataField label="Owner">{selectedProject.ownerId}</DataField>
+                  <DataField label="Creado">{new Date(selectedProject.createdAt).toLocaleString()}</DataField>
+                  <DataField label="Actualizado">{new Date(selectedProject.updatedAt).toLocaleString()}</DataField>
+                </dl>
+              ) : (
+                <EmptyState message="Selecciona un proyecto del listado." />
+              )}
             </div>
           </aside>
         </section>
