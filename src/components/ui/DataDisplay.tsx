@@ -53,7 +53,7 @@ export function TagList({ items, emptyMessage = 'Sin elementos' }: { items: stri
  */
 export function SimilarityBadge({ value }: { value: number }) {
   const percent = Math.round(value * 100)
-  const color = percent >= 80 ? 'bg-rose-500' : percent >= 50 ? 'bg-amber-500' : 'bg-emerald-500'
+  const color = percent >= 80 ? 'bg-emerald-500' : percent >= 50 ? 'bg-amber-500' : 'bg-rose-500'
 
   return (
     <div className="flex items-center gap-2">
