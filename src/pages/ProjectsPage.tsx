@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { projectsApi } from '../api/services/projectsApi'
+import { projectFacade } from '../facades/project.facade'
+import { useApiOperation } from '../hooks/useLoadingError'
 import type { ProjectRequest, ProjectResponse, ProjectStatus } from '../types/projects'
 import { DataField, EmptyState } from '../components/ui/DataDisplay'
 
@@ -19,6 +20,8 @@ export function ProjectsPage() {
   const [status, setStatus] = useState('Listo para administrar proyectos')
   const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectResponse | null>(null)
+  
+  const { run } = useApiOperation()
 
   async function handleList(): Promise<void> {
     if (!ownerId.trim()) {
@@ -26,13 +29,14 @@ export function ProjectsPage() {
       return
     }
 
-    try {
-      const data = await projectsApi.listByUser(ownerId.trim())
-      setProjects(data)
-      setStatus(`Proyectos cargados: ${data.length}`)
-    } catch {
-      setStatus('No fue posible listar los proyectos.')
-    }
+    await run(
+      async () => {
+        const data = await projectFacade.getProjectsByUser(ownerId)
+        setProjects(data)
+        setStatus(`Proyectos cargados: ${data.length}`)
+      },
+      { errorMessage: 'No fue posible listar los proyectos.' }
+    )
   }
 
   async function handleLoadById(): Promise<void> {
@@ -41,20 +45,21 @@ export function ProjectsPage() {
       return
     }
 
-    try {
-      const data = await projectsApi.getById(projectId.trim())
-      setSelectedProject(data)
-      setForm({
-        name: data.name,
-        description: data.description,
-        ownerId: data.ownerId,
-        status: data.status,
-      })
-      setOwnerId(data.ownerId)
-      setStatus('Proyecto cargado correctamente.')
-    } catch {
-      setStatus('No fue posible cargar el proyecto.')
-    }
+    await run(
+      async () => {
+        const data = await projectFacade.getProject(projectId)
+        setSelectedProject(data)
+        setForm({
+          name: data.name,
+          description: data.description,
+          ownerId: data.ownerId,
+          status: data.status,
+        })
+        setOwnerId(data.ownerId)
+        setStatus('Proyecto cargado correctamente.')
+      },
+      { errorMessage: 'No fue posible cargar el proyecto.' }
+    )
   }
 
   async function handleSave(): Promise<void> {
@@ -63,18 +68,18 @@ export function ProjectsPage() {
       return
     }
 
-    try {
-      const payload = { ...form, name: form.name.trim(), description: form.description.trim(), ownerId: form.ownerId.trim() }
-      const data = selectedProject
-        ? await projectsApi.update(selectedProject.id, payload)
-        : await projectsApi.create(payload)
-      setSelectedProject(data)
-      setProjectId(data.id)
-      setForm({ name: data.name, description: data.description, ownerId: data.ownerId, status: data.status })
-      setStatus('Proyecto guardado correctamente.')
-    } catch {
-      setStatus('No fue posible guardar el proyecto.')
-    }
+    await run(
+      async () => {
+        const data = selectedProject
+          ? await projectFacade.updateProject(selectedProject.id, form)
+          : await projectFacade.createProject(form)
+        setSelectedProject(data)
+        setProjectId(data.id)
+        setForm({ name: data.name, description: data.description, ownerId: data.ownerId, status: data.status })
+        setStatus('Proyecto guardado correctamente.')
+      },
+      { errorMessage: 'No fue posible guardar el proyecto.' }
+    )
   }
 
   async function handleDelete(): Promise<void> {
@@ -83,15 +88,16 @@ export function ProjectsPage() {
       return
     }
 
-    try {
-      await projectsApi.remove(selectedProject.id)
-      setSelectedProject(null)
-      setProjectId('')
-      setForm({ ...EMPTY_PROJECT, ownerId })
-      setStatus('Proyecto eliminado correctamente.')
-    } catch {
-      setStatus('No fue posible eliminar el proyecto.')
-    }
+    await run(
+      async () => {
+        await projectFacade.deleteProject(selectedProject.id)
+        setSelectedProject(null)
+        setProjectId('')
+        setForm({ ...EMPTY_PROJECT, ownerId })
+        setStatus('Proyecto eliminado correctamente.')
+      },
+      { errorMessage: 'No fue posible eliminar el proyecto.' }
+    )
   }
 
   function updateField<K extends keyof ProjectRequest>(key: K, value: ProjectRequest[K]): void {

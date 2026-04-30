@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { validationRulesApi } from '../api/services/validationRulesApi'
+import { validationRuleFacade } from '../facades/validationRule.facade'
+import { useApiOperation } from '../hooks/useLoadingError'
 import type { ValidationRuleRequest, ValidationRuleResponse, ValidationRuleSeverity } from '../types/validationRules'
 import { DataCard, DataField, EmptyState } from '../components/ui/DataDisplay'
 const EMPTY_RULE: ValidationRuleRequest = {
@@ -20,19 +21,22 @@ export function ValidationRulesPage() {
   const [selectedRule, setSelectedRule] = useState<ValidationRuleResponse | null>(null)
   const [status, setStatus] = useState('Listo para administrar reglas de validacion')
 
+  const { run } = useApiOperation()
+
   async function handleList(): Promise<void> {
     if (!projectId.trim()) {
       setStatus('Debes indicar projectId.')
       return
     }
 
-    try {
-      const data = await validationRulesApi.listByProject(projectId.trim())
-      setRules(data)
-      setStatus(`Reglas cargadas: ${data.length}`)
-    } catch {
-      setStatus('No fue posible listar las reglas.')
-    }
+    await run(
+      async () => {
+        const data = await validationRuleFacade.getRulesByProject(projectId)
+        setRules(data)
+        setStatus(`Reglas cargadas: ${data.length}`)
+      },
+      { errorMessage: 'No fue posible listar las reglas.' }
+    )
   }
 
   async function handleLoadById(): Promise<void> {
@@ -67,33 +71,26 @@ export function ValidationRulesPage() {
       return
     }
 
-    try {
-      const payload = {
-        ...form,
-        projectId: form.projectId.trim(),
-        name: form.name.trim(),
-        description: form.description.trim(),
-        ruleType: form.ruleType.trim(),
-        condition: form.condition.trim(),
-      }
-      const data = selectedRule
-        ? await validationRulesApi.update(selectedRule.id, payload)
-        : await validationRulesApi.create(payload)
-      setSelectedRule(data)
-      setRuleId(data.id)
-      setForm({
-        projectId: data.projectId,
-        name: data.name,
-        description: data.description,
-        ruleType: data.ruleType,
-        condition: data.condition,
-        severity: data.severity,
-        enabled: data.enabled,
-      })
-      setStatus('Regla guardada correctamente.')
-    } catch {
-      setStatus('No fue posible guardar la regla.')
-    }
+    await run(
+      async () => {
+        const data = selectedRule
+          ? await validationRuleFacade.updateRule(selectedRule.id, form)
+          : await validationRuleFacade.createRule(form)
+        setSelectedRule(data)
+        setRuleId(data.id)
+        setForm({
+          projectId: data.projectId,
+          name: data.name,
+          description: data.description,
+          ruleType: data.ruleType,
+          condition: data.condition,
+          severity: data.severity,
+          enabled: data.enabled,
+        })
+        setStatus('Regla guardada correctamente.')
+      },
+      { errorMessage: 'No fue posible guardar la regla.' }
+    )
   }
 
   async function handleDelete(): Promise<void> {
@@ -102,15 +99,16 @@ export function ValidationRulesPage() {
       return
     }
 
-    try {
-      await validationRulesApi.remove(selectedRule.id)
-      setSelectedRule(null)
-      setRuleId('')
-      setForm(EMPTY_RULE)
-      setStatus('Regla eliminada correctamente.')
-    } catch {
-      setStatus('No fue posible eliminar la regla.')
-    }
+    await run(
+      async () => {
+        await validationRuleFacade.deleteRule(selectedRule.id)
+        setSelectedRule(null)
+        setRuleId('')
+        setForm(EMPTY_RULE)
+        setStatus('Regla eliminada correctamente.')
+      },
+      { errorMessage: 'No fue posible eliminar la regla.' }
+    )
   }
 
   function updateField<K extends keyof ValidationRuleRequest>(key: K, value: ValidationRuleRequest[K]): void {

@@ -34,6 +34,17 @@ export const requirementsApi = {
     return adaptRequirementDTO(unwrapData(data))
   },
 
+  async getByProject(projectId: string, requirementType?: string, category?: string): Promise<RequirementDTO[]> {
+    const data = await httpProxy.get<RequirementDTO[] | ApiResponse<RequirementDTO[]>>(
+      endpoints.requirements.byProject(projectId),
+      {
+        params: { requirementType, category },
+      }
+    )
+    const arrayData = unwrapData(data)
+    return Array.isArray(arrayData) ? arrayData.map(adaptRequirementDTO) : []
+  },
+
   async search(query: string): Promise<SearchResponse[]> {
     const data = await httpProxy.get<SearchResponse[] | ApiResponse<SearchResponse[]>>(
       endpoints.requirements.search,

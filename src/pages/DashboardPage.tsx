@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { projectsApi } from '../api/services/projectsApi'
-import { requirementsApi } from '../api/services/requirementsApi'
+import { projectFacade } from '../facades/project.facade'
+import { requirementFacade } from '../facades/requirement.facade'
+import { useApiOperation } from '../hooks/useLoadingError'
 import { useAuth } from '../auth/useAuth'
 import type { ProjectResponse } from '../types/projects'
 import type { SearchResponse } from '../types/requirements'
@@ -15,29 +16,33 @@ export function DashboardPage() {
   const [results, setResults] = useState<SearchResponse[]>([])
   const [status, setStatus] = useState('Sesion activa')
 
+  const { run } = useApiOperation()
+
   async function handleGetProjects(): Promise<void> {
     if (!user) {
       setStatus('No hay sesion activa')
       return
     }
 
-    try {
-      const data = await projectsApi.listByUser(user.userId)
-      setProjects(data)
-      setStatus(`Proyectos cargados: ${data.length}`)
-    } catch {
-      setStatus('No fue posible obtener proyectos')
-    }
+    await run(
+      async () => {
+        const data = await projectFacade.getProjectsByUser(user.userId)
+        setProjects(data)
+        setStatus(`Proyectos cargados: ${data.length}`)
+      },
+      { errorMessage: 'No fue posible obtener proyectos' }
+    )
   }
 
   async function handleSearchRequirements(): Promise<void> {
-    try {
-      const data = await requirementsApi.search(query)
-      setResults(data)
-      setStatus(`Resultados de requisitos: ${data.length}`)
-    } catch {
-      setStatus('No fue posible consultar requisitos')
-    }
+    await run(
+      async () => {
+        const data = await requirementFacade.searchRequirements(query)
+        setResults(data)
+        setStatus(`Resultados de requisitos: ${data.length}`)
+      },
+      { errorMessage: 'No fue posible consultar requisitos' }
+    )
   }
 
   return (

@@ -47,6 +47,13 @@ export class RequirementFacade {
   }
 
   /**
+   * Retrieves all requirements for a given project, optionally filtered by type or category.
+   */
+  async getRequirementsByProject(projectId: string, requirementType?: string, category?: string): Promise<RequirementDTO[]> {
+    return this.api.getByProject(projectId.trim(), requirementType, category)
+  }
+
+  /**
    * Searches requirements by a free-text query (semantic search).
    */
   async searchRequirements(query: string): Promise<SearchResponse[]> {
