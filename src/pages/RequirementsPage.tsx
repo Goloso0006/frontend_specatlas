@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { requirementsApi } from '../api/services/requirementsApi'
 import { useAuth } from '../auth/useAuth'
+import { useApiOperation } from '../hooks/useLoadingError'
+import { requirementFacade } from '../facades/requirement.facade'
 import type {
   DuplicateMatchResponse,
   RequirementDTO,
@@ -22,6 +23,8 @@ const EMPTY_REQUIREMENT: RequirementDTO = {
 
 export function RequirementsPage() {
   const { user } = useAuth()
+  const { run } = useApiOperation()
+
   const [projectId, setProjectId] = useState(user?.userId ?? '')
   const [text, setText] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -30,119 +33,105 @@ export function RequirementsPage() {
   const [duplicateResults, setDuplicateResults] = useState<DuplicateMatchResponse[]>([])
   const [impactResults, setImpactResults] = useState<RequirementNode[]>([])
   const [conflictResults, setConflictResults] = useState<RequirementNode[]>([])
-  const [status, setStatus] = useState('Listo para administrar requisitos')
 
   async function handleConvert(): Promise<void> {
-    if (!projectId.trim() || !text.trim()) {
-      setStatus('Debes indicar projectId y texto.')
-      return
-    }
+    if (!projectId.trim() || !text.trim()) return
 
-    try {
-      const data = await requirementsApi.convert({ projectId: projectId.trim(), text: text.trim() })
-      setRequirement(data)
-      setStatus('Requisito convertido correctamente.')
-    } catch {
-      setStatus('No fue posible convertir el texto a requisito.')
-    }
+    const data = await run(
+      () => requirementFacade.convertTextToRequirement(projectId.trim(), text.trim()),
+      {
+        operationName: 'convertRequirement',
+        errorMessage: 'No fue posible convertir el texto a requisito.',
+      },
+    )
+
+    if (data) setRequirement(data)
   }
 
   async function handleSave(): Promise<void> {
-    if (!requirement.title.trim() || !requirement.projectId.trim()) {
-      setStatus('El requisito necesita title y projectId.')
-      return
-    }
+    if (!requirement.title.trim() || !requirement.projectId.trim()) return
 
-    try {
-      const data = await requirementsApi.save({
-        ...requirement,
-        projectId: requirement.projectId.trim(),
-        title: requirement.title.trim(),
-        description: requirement.description.trim(),
-      })
-      setRequirement(data)
-      setStatus('Requisito guardado correctamente.')
-    } catch {
-      setStatus('No fue posible guardar el requisito.')
-    }
+    const data = await run(
+      () => requirementFacade.saveRequirement(requirement),
+      {
+        operationName: 'saveRequirement',
+        errorMessage: 'No fue posible guardar el requisito.',
+      },
+    )
+
+    if (data) setRequirement(data)
   }
 
   async function handleSearch(): Promise<void> {
-    if (!searchQuery.trim()) {
-      setStatus('Debes escribir un query de busqueda.')
-      return
-    }
+    if (!searchQuery.trim()) return
 
-    try {
-      const data = await requirementsApi.search(searchQuery.trim())
-      setSearchResults(data)
-      setStatus(`Resultados: ${data.length}`)
-    } catch {
-      setStatus('No fue posible buscar requisitos.')
-    }
+    const data = await run(
+      () => requirementFacade.searchRequirements(searchQuery),
+      {
+        operationName: 'searchRequirements',
+        errorMessage: 'No fue posible buscar requisitos.',
+      },
+    )
+
+    if (data) setSearchResults(data)
   }
 
   async function handleDuplicates(): Promise<void> {
-    if (!projectId.trim() || !requirement.title.trim()) {
-      setStatus('Debes indicar projectId y titulo.')
-      return
-    }
+    if (!projectId.trim() || !requirement.title.trim()) return
 
-    try {
-      const data = await requirementsApi.checkDuplicates({
+    const data = await run(
+      () => requirementFacade.checkDuplicates({
         projectId: projectId.trim(),
         title: requirement.title.trim(),
         description: requirement.description.trim(),
-      })
-      setDuplicateResults(data)
-      setStatus(`Posibles duplicados: ${data.length}`)
-    } catch {
-      setStatus('No fue posible validar duplicados.')
-    }
+      }),
+      {
+        operationName: 'checkDuplicates',
+        errorMessage: 'No fue posible validar duplicados.',
+      },
+    )
+
+    if (data) setDuplicateResults(data)
   }
 
   async function handleImpact(): Promise<void> {
-    if (!requirement.id.trim()) {
-      setStatus('Debes cargar un requisito con id.')
-      return
-    }
+    if (!requirement.id.trim()) return
 
-    try {
-      const data = await requirementsApi.getImpact(requirement.id.trim())
-      setImpactResults(data)
-      setStatus(`Impacto cargado: ${data.length}`)
-    } catch {
-      setStatus('No fue posible consultar impacto.')
-    }
+    const data = await run(
+      () => requirementFacade.getImpact(requirement.id),
+      {
+        operationName: 'getImpact',
+        errorMessage: 'No fue posible consultar impacto.',
+      },
+    )
+
+    if (data) setImpactResults(data)
   }
 
   async function handleConflicts(): Promise<void> {
-    if (!requirement.id.trim()) {
-      setStatus('Debes cargar un requisito con id.')
-      return
-    }
+    if (!requirement.id.trim()) return
 
-    try {
-      const data = await requirementsApi.getConflicts(requirement.id.trim())
-      setConflictResults(data)
-      setStatus(`Conflictos cargados: ${data.length}`)
-    } catch {
-      setStatus('No fue posible consultar conflictos.')
-    }
+    const data = await run(
+      () => requirementFacade.getConflicts(requirement.id),
+      {
+        operationName: 'getConflicts',
+        errorMessage: 'No fue posible consultar conflictos.',
+      },
+    )
+
+    if (data) setConflictResults(data)
   }
 
   async function handleDependency(): Promise<void> {
-    if (requirement.relatedCodes.length < 2) {
-      setStatus('Debes tener al menos 2 codigos relacionados para crear dependencia.')
-      return
-    }
+    if (requirement.relatedCodes.length < 2) return
 
-    try {
-      await requirementsApi.createDependency(requirement.relatedCodes[0], requirement.relatedCodes[1])
-      setStatus('Dependencia creada correctamente.')
-    } catch {
-      setStatus('No fue posible crear la dependencia.')
-    }
+    await run(
+      () => requirementFacade.createDependency(requirement.relatedCodes[0], requirement.relatedCodes[1]),
+      {
+        operationName: 'createDependency',
+        errorMessage: 'No fue posible crear la dependencia.',
+      },
+    )
   }
 
   return (
@@ -150,7 +139,7 @@ export function RequirementsPage() {
       <section className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Requisitos</h1>
-          <p className="text-sm text-slate-300">Conversión, guardado, busqueda, duplicados, impacto y conflictos.</p>
+          <p className="text-sm text-slate-300">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
         </header>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -184,7 +173,7 @@ export function RequirementsPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm">
-                <span>Codigo</span>
+                <span>Código</span>
                 <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.code} onChange={(event) => setRequirement((current) => ({ ...current, code: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm">
@@ -192,22 +181,22 @@ export function RequirementsPage() {
                 <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.projectId} onChange={(event) => setRequirement((current) => ({ ...current, projectId: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
-                <span>Titulo</span>
+                <span>Título</span>
                 <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.title} onChange={(event) => setRequirement((current) => ({ ...current, title: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
-                <span>Descripcion</span>
+                <span>Descripción</span>
                 <textarea className="min-h-24 w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.description} onChange={(event) => setRequirement((current) => ({ ...current, description: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
-                <span>Codigos relacionados (separados por coma)</span>
+                <span>Códigos relacionados (separados por coma)</span>
                 <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.relatedCodes.join(', ')} onChange={(event) => setRequirement((current) => ({ ...current, relatedCodes: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) }))} />
               </label>
             </div>
           </article>
 
           <article className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
-            <h2 className="font-semibold">Busqueda y analisis</h2>
+            <h2 className="font-semibold">Búsqueda y análisis</h2>
             <input
               className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
               placeholder="Search query"
@@ -224,9 +213,6 @@ export function RequirementsPage() {
               <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleConflicts}>
                 Conflictos
               </button>
-            </div>
-            <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
-              <p className="text-slate-300">{status}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">

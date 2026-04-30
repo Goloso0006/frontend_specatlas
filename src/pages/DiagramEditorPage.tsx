@@ -9,7 +9,8 @@ import {
   type OnNodesChange,
   type OnSelectionChangeFunc,
 } from 'reactflow'
-import { diagramsApi } from '../api/services/diagramsApi'
+import { diagramFacade } from '../facades/diagram.facade'
+import { useApiOperation } from '../hooks/useLoadingError'
 import { useAuth } from '../auth/useAuth'
 import { DiagramCanvas } from '../components/diagram/DiagramCanvas'
 import { DiagramSidebar, type EditorTarget } from '../components/diagram/DiagramSidebar'
@@ -36,6 +37,7 @@ import {
 export function DiagramEditorPage() {
   const { user, logout } = useAuth()
   const { state: editorState, actions: editorActions } = useDiagramEditorStore()
+  const { run } = useApiOperation()
 
   // ── Diagram metadata ──
   const [diagramId, setDiagramId] = useState('')
@@ -162,59 +164,62 @@ export function DiagramEditorPage() {
     editorActions.editing(message)
   }
 
-  // ── CRUD operations ──
+  // ── CRUD operations (via diagramFacade + useApiOperation) ──
   async function handleCreateManualDiagram(): Promise<void> {
     if (!projectId.trim()) { editorActions.error('Debes indicar un projectId antes de crear el diagrama.'); return }
     if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
     if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
 
-    try {
-      editorActions.saving('Creando diagrama manual...')
-      const data = await diagramsApi.createManual({
+    editorActions.saving('Creando diagrama manual...')
+    const data = await run(
+      () => diagramFacade.createManual({
         projectId: projectId.trim(),
         name: diagramName.trim(),
         sourceJson: serializeDiagramSource(source),
         plantUmlCode: null,
-      })
-      syncDiagramResponse(data, 'Diagrama manual creado exitosamente.')
-    } catch {
-      editorActions.error('No fue posible crear el diagrama manual.')
-    }
+      }),
+      { operationName: 'createManualDiagram', errorMessage: 'No fue posible crear el diagrama manual.' },
+    )
+    if (data) syncDiagramResponse(data, 'Diagrama manual creado exitosamente.')
+    else editorActions.error('No fue posible crear el diagrama manual.')
   }
 
   async function handleGenerateAutoDiagram(): Promise<void> {
     if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
 
-    try {
-      editorActions.loading('Generando diagrama automático...')
-      const data = await diagramsApi.createAuto(projectId.trim())
-      syncDiagramResponse(data, 'Diagrama automático generado exitosamente.')
-    } catch {
-      editorActions.error('No fue posible generar el diagrama automático.')
-    }
+    editorActions.loading('Generando diagrama automático...')
+    const data = await run(
+      () => diagramFacade.generateClassDiagram(projectId.trim()),
+      { operationName: 'generateAutoDiagram', errorMessage: 'No fue posible generar el diagrama automático.' },
+    )
+    if (data) syncDiagramResponse(data, 'Diagrama automático generado exitosamente.')
+    else editorActions.error('No fue posible generar el diagrama automático.')
   }
 
   async function handleLoadDiagram(): Promise<void> {
     if (!diagramId.trim()) { editorActions.error('Debes indicar un diagramId.'); return }
 
-    try {
-      editorActions.loading('Cargando diagrama...')
-      const data = await diagramsApi.getById(diagramId.trim())
-      syncDiagramResponse(data, 'Diagrama cargado correctamente.')
-    } catch {
-      editorActions.error('No fue posible cargar el diagrama.')
-    }
+    editorActions.loading('Cargando diagrama...')
+    const data = await run(
+      () => diagramFacade.getById(diagramId.trim()),
+      { operationName: 'loadDiagram', errorMessage: 'No fue posible cargar el diagrama.' },
+    )
+    if (data) syncDiagramResponse(data, 'Diagrama cargado correctamente.')
+    else editorActions.error('No fue posible cargar el diagrama.')
   }
 
   async function handleLoadProjectDiagrams(): Promise<void> {
     if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
 
-    try {
-      editorActions.loading('Listando diagramas del proyecto...')
-      const data = await diagramsApi.listByProject(projectId.trim())
+    editorActions.loading('Listando diagramas del proyecto...')
+    const data = await run(
+      () => diagramFacade.listByProject(projectId.trim()),
+      { operationName: 'listProjectDiagrams', errorMessage: 'No fue posible listar los diagramas del proyecto.' },
+    )
+    if (data) {
       setDiagramList(data)
       editorActions.editing(`Diagramas del proyecto: ${data.length}`)
-    } catch {
+    } else {
       editorActions.error('No fue posible listar los diagramas del proyecto.')
     }
   }
@@ -224,59 +229,60 @@ export function DiagramEditorPage() {
     if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
     if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
 
-    try {
-      editorActions.saving('Guardando diagrama...')
-      const payload = {
-        projectId: projectId.trim(),
-        name: diagramName.trim(),
-        sourceJson: serializeDiagramSource(source),
-        plantUmlCode: plantUmlPreview || null,
-      }
-      const data = diagramId.trim()
-        ? await diagramsApi.update(diagramId.trim(), payload)
-        : await diagramsApi.createManual(payload)
-      syncDiagramResponse(data, 'Diagrama guardado correctamente.')
-    } catch {
-      editorActions.error('No fue posible guardar el diagrama.')
+    editorActions.saving('Guardando diagrama...')
+    const payload = {
+      projectId: projectId.trim(),
+      name: diagramName.trim(),
+      sourceJson: serializeDiagramSource(source),
+      plantUmlCode: plantUmlPreview || null,
     }
+    const data = await run(
+      () => diagramFacade.saveOrUpdate(diagramId.trim() || null, payload),
+      { operationName: 'saveDiagram', errorMessage: 'No fue posible guardar el diagrama.' },
+    )
+    if (data) syncDiagramResponse(data, 'Diagrama guardado correctamente.')
+    else editorActions.error('No fue posible guardar el diagrama.')
   }
 
   async function handleGeneratePlantUml(): Promise<void> {
     if (!diagramId.trim()) { editorActions.error('Primero carga o guarda un diagrama para generar PlantUML.'); return }
     if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
 
-    try {
-      editorActions.exporting('Generando PlantUML...')
-      const data = await diagramsApi.generatePlantUml(diagramId.trim())
-      syncDiagramResponse(data, 'PlantUML generado correctamente.')
-    } catch {
-      editorActions.error('No fue posible generar PlantUML.')
-    }
+    editorActions.exporting('Generando PlantUML...')
+    const data = await run(
+      () => diagramFacade.generatePlantUml(diagramId.trim()),
+      { operationName: 'generatePlantUml', errorMessage: 'No fue posible generar PlantUML.' },
+    )
+    if (data) syncDiagramResponse(data, 'PlantUML generado correctamente.')
+    else editorActions.error('No fue posible generar PlantUML.')
   }
 
   async function handleExport(format: 'puml' | 'txt'): Promise<void> {
     if (!diagramId.trim()) { editorActions.error('Primero carga o guarda un diagrama.'); return }
 
-    try {
-      editorActions.exporting(`Exportando ${format.toUpperCase()}...`)
-      const blob = format === 'puml'
-        ? await diagramsApi.exportPlantUml(diagramId.trim())
-        : await diagramsApi.exportText(diagramId.trim())
+    editorActions.exporting(`Exportando ${format.toUpperCase()}...`)
+    const blob = await run(
+      () => format === 'puml'
+        ? diagramFacade.exportPlantUml(diagramId.trim())
+        : diagramFacade.exportText(diagramId.trim()),
+      { operationName: `export_${format}`, errorMessage: `No fue posible exportar el archivo ${format.toUpperCase()}.` },
+    )
+    if (blob) {
       downloadBlob(blob, diagramName || 'diagram', format)
       editorActions.editing(`Exportación ${format.toUpperCase()} completada.`)
-    } catch {
+    } else {
       editorActions.error(`No fue posible exportar el archivo ${format.toUpperCase()}.`)
     }
   }
 
   async function loadDiagramFromList(id: string): Promise<void> {
-    try {
-      editorActions.loading('Cargando diagrama seleccionado...')
-      const data = await diagramsApi.getById(id)
-      syncDiagramResponse(data, 'Diagrama cargado correctamente.')
-    } catch {
-      editorActions.error('No fue posible cargar el diagrama.')
-    }
+    editorActions.loading('Cargando diagrama seleccionado...')
+    const data = await run(
+      () => diagramFacade.getById(id),
+      { operationName: 'loadDiagramFromList', errorMessage: 'No fue posible cargar el diagrama.' },
+    )
+    if (data) syncDiagramResponse(data, 'Diagrama cargado correctamente.')
+    else editorActions.error('No fue posible cargar el diagrama.')
   }
 
   function selectedModeLabel(): string {
