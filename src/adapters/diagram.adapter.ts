@@ -3,7 +3,7 @@ import type { DiagramResponse, DiagramSummaryResponse } from '../types/diagrams'
 import { normalizeOptionalString, normalizeString } from './common'
 
 function normalizeDiagramType(value: unknown): DiagramResponse['diagramType'] {
-  return value === 'CLASS' ? 'CLASS' : 'CLASS'
+  return value === 'USE_CASE' ? 'USE_CASE' : 'CLASS'
 }
 
 function normalizeDiagramMode(value: unknown): DiagramResponse['mode'] {

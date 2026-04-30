@@ -1,4 +1,4 @@
-export type DiagramType = 'CLASS'
+export type DiagramType = 'CLASS' | 'USE_CASE'
 export type DiagramMode = 'MANUAL' | 'AUTO'
 export type DiagramRelationType = 'association' | 'inheritance' | 'aggregation' | 'composition' | 'dependency'
 export type VisibilityType = 'public' | 'private' | 'protected' | 'package'
@@ -50,6 +50,10 @@ export interface DiagramRequest {
   name: string
   sourceJson: string
   plantUmlCode: string | null
+}
+
+export interface UseCaseDiagramRequest extends DiagramRequest {
+  diagramType?: 'USE_CASE'
 }
 
 export interface DiagramResponse {

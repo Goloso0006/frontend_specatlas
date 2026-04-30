@@ -8,7 +8,7 @@ import type { ValidationRuleRequest, ValidationRuleResponse } from '../../types/
 export const validationRulesApi = {
   async listByProject(projectId: string): Promise<ValidationRuleResponse[]> {
     const data = await httpProxy.get<ValidationRuleResponse[] | ApiResponse<ValidationRuleResponse[]>>(
-      `${endpoints.validationRules.base}/project/${projectId}`,
+      endpoints.validationRules.byProject(projectId),
     )
     return adaptValidationRuleResponses(unwrapData(data))
   },
@@ -23,13 +23,13 @@ export const validationRulesApi = {
 
   async update(id: string, payload: ValidationRuleRequest): Promise<ValidationRuleResponse> {
     const data = await httpProxy.put<ValidationRuleResponse | ApiResponse<ValidationRuleResponse>>(
-      `${endpoints.validationRules.base}/${id}`,
+      endpoints.validationRules.byId(id),
       payload,
     )
     return adaptValidationRuleResponse(unwrapData(data))
   },
 
   async remove(id: string): Promise<void> {
-    await httpProxy.delete(`${endpoints.validationRules.base}/${id}`)
+    await httpProxy.delete(endpoints.validationRules.byId(id))
   },
 }

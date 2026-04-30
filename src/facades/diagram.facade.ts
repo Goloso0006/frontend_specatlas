@@ -3,6 +3,7 @@ import type {
   DiagramRequest,
   DiagramResponse,
   DiagramSummaryResponse,
+  UseCaseDiagramRequest,
 } from '../types/diagrams'
 
 /**
@@ -25,9 +26,19 @@ export class DiagramFacade {
     return this.api.createManual(payload)
   }
 
+  /** Creates a use-case diagram from a manual source definition. */
+  async createUseCaseManual(payload: UseCaseDiagramRequest): Promise<DiagramResponse> {
+    return this.api.createUseCaseManual(payload)
+  }
+
   /** Auto-generates a class diagram from existing project requirements. */
   async generateClassDiagram(projectId: string): Promise<DiagramResponse> {
     return this.api.createAuto(projectId)
+  }
+
+  /** Auto-generates a use-case diagram from existing project requirements. */
+  async generateUseCaseDiagram(projectId: string): Promise<DiagramResponse> {
+    return this.api.generateUseCaseAuto(projectId)
   }
 
   /** Loads a diagram by its ID. */

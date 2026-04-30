@@ -1,14 +1,19 @@
-import { httpProxy } from '../api/httpProxy'
+import { graphApi } from '../api/services/graphApi.ts'
+import type { RequirementDTO } from '../types/requirements'
 
 export class GraphFacade {
-  private readonly client: typeof httpProxy
+  private readonly api: typeof graphApi
 
-  constructor(client = httpProxy) {
-    this.client = client
+  constructor(api = graphApi) {
+    this.api = api
   }
 
-  async inferRelations(projectId: string): Promise<void> {
-    await this.client.post(`/api/graph/infer-relations/${projectId}`)
+  async getImpact(id: string) {
+    return this.api.getImpact(id)
+  }
+
+  async inferRelations(projectId: string, requirements: RequirementDTO[]) {
+    return this.api.inferRelations(projectId, requirements)
   }
 }
 

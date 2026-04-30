@@ -71,7 +71,7 @@ export function parseDiagramSource(input: DiagramSourceDTO | string | null | und
   }
 
   return {
-    diagramType: parsed.diagramType === 'CLASS' ? 'CLASS' : 'CLASS',
+    diagramType: parsed.diagramType === 'USE_CASE' ? 'USE_CASE' : 'CLASS',
     nodes: Array.isArray(parsed.nodes) ? parsed.nodes.map(normalizeNode) : [],
     edges: Array.isArray(parsed.edges) ? parsed.edges.map(normalizeEdge) : [],
   }
