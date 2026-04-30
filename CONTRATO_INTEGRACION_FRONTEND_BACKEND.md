@@ -314,3 +314,14 @@ Con el `docker-compose.yml` actual, ya se contemplan:
 
 Esto permite probar localmente los casos de persistencia y grafo si el backend esta corriendo con sus variables de entorno.
 
+
+
+================= Plan de acción  Miercoles 29 de Abril =================
+Refactoriza los componentes grandes (como DiagramEditorPage) en componentes más pequeños y específicos.
+Implementa un mejor manejo de carga y errores con estados centralizados (useContext o custom hooks).
+Usa las facades para abstraer las operaciones de API.
+Mejora la forma de mostrar los datos (evita JSON crudo).
+Establece una convención consistente para las rutas API.
+Escribe pruebas unitarias para componentes y servicios
+
+
