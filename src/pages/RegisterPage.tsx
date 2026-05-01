@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
+import { LoadingAnimation } from '../components/ui/LoadingAnimation'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -15,16 +16,25 @@ export function RegisterPage() {
   const [lastName, setLastName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [status, setStatus] = useState('Completa el formulario para crear tu cuenta')
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
+    setIsLoading(true)
+    setStatus('Por favor espera un momento...')
 
     try {
       await register({ email, password, name, lastName, phoneNumber, role: 'USER' })
       navigate('/login', { replace: true, state: { registered: true } })
     } catch (error: any) {
-      const backendMsg = error?.message || 'Revisa los datos.';
-      setStatus(`No fue posible registrar la cuenta. ${backendMsg}`)
+      if (error?.message?.toLowerCase().includes('timeout') || error?.message?.toLowerCase().includes('network')) {
+        setStatus('El servidor está tardando más de lo esperado. Intenta nuevamente en unos segundos.')
+      } else {
+        const backendMsg = error?.message || 'Revisa los datos.';
+        setStatus(`No fue posible registrar la cuenta. ${backendMsg}`)
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -35,6 +45,8 @@ export function RegisterPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Crear cuenta</h1>
           <p className="text-[15px] app-text-secondary">{status}</p>
         </div>
+
+        {isLoading && <LoadingAnimation />}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
@@ -76,7 +88,7 @@ export function RegisterPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          <Button className="w-full mt-2" size="lg" type="submit">
+          <Button className="w-full mt-2" size="lg" type="submit" isLoading={isLoading}>
             Crear cuenta
           </Button>
         </form>

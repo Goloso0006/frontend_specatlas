@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
+import { LoadingAnimation } from '../components/ui/LoadingAnimation'
 
 interface LoginLocationState {
   from?: string
@@ -23,16 +24,25 @@ export function LoginPage() {
       ? 'Registro exitoso. Inicia sesion para continuar.'
       : 'Ingresa tus credenciales',
   )
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
+    setIsLoading(true)
+    setStatus('Por favor espera un momento...')
 
     try {
       await login({ email, password })
       const target = state?.from || '/app'
       navigate(target, { replace: true })
-    } catch {
-      setStatus('No fue posible iniciar sesion. Verifica credenciales.')
+    } catch (error: any) {
+      if (error?.message?.toLowerCase().includes('timeout') || error?.message?.toLowerCase().includes('network')) {
+        setStatus('El servidor está tardando más de lo esperado. Intenta nuevamente en unos segundos.')
+      } else {
+        setStatus('No fue posible iniciar sesion. Verifica credenciales.')
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -43,6 +53,8 @@ export function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Iniciar Sesión</h1>
           <p className="text-[15px] app-text-secondary">{status}</p>
         </div>
+        
+        {isLoading && <LoadingAnimation />}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -63,7 +75,7 @@ export function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </div>
-          <Button className="w-full" size="lg" type="submit">
+          <Button className="w-full" size="lg" type="submit" isLoading={isLoading}>
             Entrar
           </Button>
         </form>
