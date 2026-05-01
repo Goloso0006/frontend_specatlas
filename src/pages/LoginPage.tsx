@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
 
 interface LoginLocationState {
   from?: string
@@ -34,40 +37,44 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
-      <section className="mx-auto max-w-md space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-6">
-        <h1 className="text-2xl font-semibold">Login</h1>
-        <p className="text-sm text-slate-300">{status}</p>
+    <main className="min-h-screen app-bg p-6 app-text-primary flex items-center justify-center">
+      <Card className="w-full max-w-md p-6 sm:p-8 space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">Iniciar Sesión</h1>
+          <p className="text-[15px] app-text-secondary">{status}</p>
+        </div>
 
-        <form className="space-y-3" onSubmit={handleSubmit}>
-          <input
-            required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <input
-            required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <button className="w-full rounded-md bg-emerald-600 px-3 py-2 font-medium" type="submit">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <Input
+              required
+              type="email"
+              label="Correo electrónico"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+            <Input
+              required
+              type="password"
+              label="Contraseña"
+              placeholder="••••••••"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
+          <Button className="w-full" size="lg" type="submit">
             Entrar
-          </button>
+          </Button>
         </form>
 
-        <p className="text-sm text-slate-300">
-          No tienes cuenta?{' '}
-          <Link className="text-cyan-400 hover:text-cyan-300" to="/register">
-            Registrate
+        <p className="text-[13px] text-center app-text-secondary pt-2 border-t border-app-border">
+          ¿No tienes cuenta?{' '}
+          <Link className="text-app-accent hover:text-app-accent-hover font-medium transition-colors" to="/register">
+            Regístrate aquí
           </Link>
         </p>
-      </section>
+      </Card>
     </main>
   )
 }

@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -26,61 +29,65 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
-      <section className="mx-auto max-w-md space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-6">
-        <h1 className="text-2xl font-semibold">Register</h1>
-        <p className="text-sm text-slate-300">{status}</p>
+    <main className="min-h-screen app-bg p-6 app-text-primary flex items-center justify-center">
+      <Card className="w-full max-w-md p-6 sm:p-8 space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">Crear cuenta</h1>
+          <p className="text-[15px] app-text-secondary">{status}</p>
+        </div>
 
-        <form className="space-y-3" onSubmit={handleSubmit}>
-          <input
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              required
+              label="Nombre"
+              placeholder="Juan"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+            <Input
+              required
+              label="Apellido"
+              placeholder="Pérez"
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+            />
+          </div>
+          <Input
             required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-            placeholder="Nombre"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <input
-            required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-            placeholder="Apellido"
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-          />
-          <input
-            required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
             type="email"
-            placeholder="Email"
+            label="Correo electrónico"
+            placeholder="juan@ejemplo.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          <input
+          <Input
             required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <input
-            required
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-            placeholder="Telefono"
+            label="Teléfono"
+            placeholder="+1 234 567 8900"
             value={phoneNumber}
             onChange={(event) => setPhoneNumber(event.target.value)}
           />
-          <button className="w-full rounded-md bg-indigo-600 px-3 py-2 font-medium" type="submit">
+          <Input
+            required
+            type="password"
+            label="Contraseña"
+            placeholder="••••••••"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <Button className="w-full mt-2" size="lg" type="submit">
             Crear cuenta
-          </button>
+          </Button>
         </form>
 
-        <p className="text-sm text-slate-300">
-          Ya tienes cuenta?{' '}
-          <Link className="text-cyan-400 hover:text-cyan-300" to="/login">
-            Inicia sesion
+        <p className="text-[13px] text-center app-text-secondary pt-2 border-t border-app-border">
+          ¿Ya tienes cuenta?{' '}
+          <Link className="text-app-accent hover:text-app-accent-hover font-medium transition-colors" to="/login">
+            Inicia sesión
           </Link>
         </p>
-      </section>
+      </Card>
     </main>
   )
 }

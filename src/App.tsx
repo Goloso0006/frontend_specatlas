@@ -9,6 +9,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { HomePage } from './pages/HomePage'
 import { ProtectedRoute } from './router/ProtectedRoute'
 import { PublicOnlyRoute } from './router/PublicOnlyRoute'
+import { AppShell } from './components/layout/AppShell'
 
 function App() {
   return (
@@ -21,11 +22,11 @@ function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/app" element={<DashboardPage />} />
-        <Route path="/app/diagrams" element={<DiagramEditorPage />} />
-        <Route path="/app/projects" element={<ProjectsPage />} />
-        <Route path="/app/requirements" element={<RequirementsPage />} />
-        <Route path="/app/validation-rules" element={<ValidationRulesPage />} />
+        <Route path="/app" element={<AppShell><DashboardPage /></AppShell>} />
+        <Route path="/app/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
+        <Route path="/app/projects" element={<AppShell><ProjectsPage /></AppShell>} />
+        <Route path="/app/requirements" element={<AppShell><RequirementsPage /></AppShell>} />
+        <Route path="/app/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/app" replace />} />
