@@ -6,13 +6,14 @@ import { ProjectsPage } from './pages/ProjectsPage'
 import { RequirementsPage } from './pages/RequirementsPage'
 import { ValidationRulesPage } from './pages/ValidationRulesPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { HomePage } from './pages/HomePage'
 import { ProtectedRoute } from './router/ProtectedRoute'
 import { PublicOnlyRoute } from './router/PublicOnlyRoute'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/app" replace />} />
+      <Route path="/" element={<HomePage />} />
 
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
