@@ -17,10 +17,11 @@ export function RegisterPage() {
     event.preventDefault()
 
     try {
-      await register({ email, password, name, lastName, phoneNumber })
+      await register({ email, password, name, lastName, phoneNumber, role: 'USER' })
       navigate('/login', { replace: true, state: { registered: true } })
-    } catch {
-      setStatus('No fue posible registrar la cuenta. Revisa los datos.')
+    } catch (error: any) {
+      const backendMsg = error?.message || 'Revisa los datos.';
+      setStatus(`No fue posible registrar la cuenta. ${backendMsg}`)
     }
   }
 

@@ -1,4 +1,4 @@
-export type RoleType = 'ADMIN' | 'ANALYST' | 'VIEWER'
+export type RoleType = 'ADMIN' | 'ANALYST' | 'VIEWER' | 'USER'
 
 export interface LoginRequest {
   email: string
@@ -11,6 +11,7 @@ export interface RegisterRequest {
   name: string
   lastName: string
   phoneNumber: string
+  role: RoleType | string
 }
 
 export interface LoginResponse {
