@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import GradualBlur from '../components/ui/GradualBlur'
 
 // Componente de tarjeta 3D flip - Versión monocromática
 function FlipCard({
@@ -76,7 +77,7 @@ export function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
+      <section className="relative pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -124,6 +125,17 @@ export function HomePage() {
             </div>
           </div>
         </div>
+        <GradualBlur
+          target="parent"
+          position="bottom"
+          height="8rem"
+          strength={3}
+          divCount={6}
+          curve="bezier"
+          exponential={true}
+          opacity={0.9}
+          className="z-10"
+        />
       </section>
 
       {/* Problem Section */}
@@ -231,7 +243,14 @@ export function HomePage() {
       </section>
 
       {/* Features with 3D Flip Cards */}
-      <section id="features" className="py-20 px-6 bg-[var(--color-bg-secondary)]">
+      <section id="features" className="relative py-20 px-6 bg-[var(--color-bg-secondary)]">
+        <GradualBlur
+          preset="subtle"
+          position="top"
+          target="parent"
+          strength={1.5}
+          opacity={0.7}
+        />
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
@@ -307,6 +326,13 @@ export function HomePage() {
             />
           </div>
         </div>
+        <GradualBlur
+          preset="subtle"
+          position="bottom"
+          target="parent"
+          strength={1.5}
+          opacity={0.7}
+        />
       </section>
 
       {/* Tech Stack */}
@@ -459,7 +485,13 @@ export function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--color-border)] py-12 px-6">
+      <footer className="relative border-t border-[var(--color-border)] py-12 px-6">
+        <GradualBlur
+          preset="footer"
+          target="page"
+          strength={2}
+          opacity={0.8}
+        />
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
             SpecAtlas
