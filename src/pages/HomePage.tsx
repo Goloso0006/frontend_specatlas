@@ -28,7 +28,7 @@ function FlipCard({
 
         {/* Back */}
         <div className="absolute inset-0 backface-hidden rotate-y-180">
-          <div className="h-full rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 backdrop-blur-sm">
+          <div className="h-full rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6">
             <div className="h-full flex flex-col items-center justify-center text-center">
               {backContent || (
                 <>
@@ -51,7 +51,7 @@ export function HomePage() {
   return (
     <main className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       {/* Navegación superior */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-border)]">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
             SpecAtlas
@@ -125,12 +125,12 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        <GradualBlur 
-          position="bottom" 
-          height="8rem" 
-          strength={3} 
-          exponential 
-          target="parent" 
+        <GradualBlur
+          position="bottom"
+          height="8rem"
+          strength={3}
+          exponential
+          target="parent"
           className="z-10"
         />
       </section>
