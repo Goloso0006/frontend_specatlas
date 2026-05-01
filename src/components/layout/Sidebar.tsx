@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
+import { AnimatedThemeToggler } from '../ui/AnimatedThemeToggler';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -44,7 +45,8 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* User Section (Bottom) */}
-      <div className="p-3 border-t border-app-border">
+      <div className="p-3 border-t border-app-border space-y-1">
+        <AnimatedThemeToggler />
         <button
           onClick={() => logout && logout()}
           className="flex items-center w-full h-8 px-3 rounded-md text-[13px] font-medium text-app-text-secondary hover:bg-app-surface hover:text-app-text-primary transition-colors text-left"

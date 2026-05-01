@@ -10,8 +10,10 @@ import { HomePage } from './pages/HomePage'
 import { ProtectedRoute } from './router/ProtectedRoute'
 import { PublicOnlyRoute } from './router/PublicOnlyRoute'
 import { AppShell } from './components/layout/AppShell'
+import { useTheme } from './hooks/useTheme'
 
 function App() {
+  useTheme()
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
