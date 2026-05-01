@@ -24,7 +24,7 @@ export default function GradualBlur({
   divCount = 8,
   curve = 'exponential',
   exponential = true,
-  opacity = 0.9,
+  opacity = 0.6,
   className = '',
   preset = 'default',
   color = 'var(--color-bg)',
@@ -37,13 +37,13 @@ export default function GradualBlur({
 
     if (preset === 'subtle') {
       _strength = 1.5
-      _opacity = 0.7
+      _opacity = 0.5
       _height = '4rem'
       _curve = 'bezier'
     } else if (preset === 'footer') {
       _strength = 5
-      _opacity = 0.95
-      _height = '16rem'
+      _opacity = 0.75
+      _height = '6rem'
       _curve = 'exponential'
     }
 
@@ -72,6 +72,7 @@ export default function GradualBlur({
       }
 
       const blurRadius = factor * p.strength * 10
+      const saturateVal = 100 + factor * 80 // Va de 100% a 180% (efecto cristal)
 
       const start = Math.max(0, i * stepSize - overlap)
       const mid1 = i * stepSize
@@ -80,6 +81,7 @@ export default function GradualBlur({
 
       steps.push({
         blurRadius,
+        saturateVal,
         start,
         mid1,
         mid2,
@@ -142,8 +144,8 @@ export default function GradualBlur({
             key={i}
             className="gradual-blur-layer"
             style={{
-              backdropFilter: `blur(${step.blurRadius}px)`,
-              WebkitBackdropFilter: `blur(${step.blurRadius}px)`,
+              backdropFilter: `blur(${step.blurRadius}px) saturate(${step.saturateVal}%)`,
+              WebkitBackdropFilter: `blur(${step.blurRadius}px) saturate(${step.saturateVal}%)`,
               maskImage: maskImage,
               WebkitMaskImage: maskImage,
             }}
