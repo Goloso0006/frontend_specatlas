@@ -1,0 +1,14 @@
+.gradual-blur-wrapper {
+  pointer-events: none;
+  z-index: 10;
+}
+
+.gradual-blur-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.gradual-blur-bg-overlay {
+  position: absolute;
+  inset: 0;
+}

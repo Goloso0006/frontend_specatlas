@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import * as math from 'mathjs'
+import './GradualBlur.css'
 
 export interface GradualBlurProps {
   target?: 'parent' | 'page'
@@ -127,21 +128,20 @@ export default function GradualBlur({
   const direction = getGradientDirection()
 
   return (
-    <div className={className} style={getPositionStyles()}>
+    <div className={`gradual-blur-wrapper ${className}`} style={getPositionStyles()}>
       {blurSteps.map((step, i) => {
         const maskImage = `linear-gradient(${direction}, 
-          rgba(0,0,0,0) ${step.start}%, 
-          rgba(0,0,0,1) ${step.mid1}%, 
-          rgba(0,0,0,1) ${step.mid2}%, 
-          rgba(0,0,0,0) ${step.end}%
+          transparent ${step.start}%, 
+          var(--color-bg, #2B2B2B) ${step.mid1}%, 
+          var(--color-bg, #2B2B2B) ${step.mid2}%, 
+          transparent ${step.end}%
         )`
 
         return (
           <div
             key={i}
+            className="gradual-blur-layer"
             style={{
-              position: 'absolute',
-              inset: 0,
               backdropFilter: `blur(${step.blurRadius}px)`,
               WebkitBackdropFilter: `blur(${step.blurRadius}px)`,
               maskImage: maskImage,
@@ -152,9 +152,8 @@ export default function GradualBlur({
       })}
 
       <div
+        className="gradual-blur-bg-overlay"
         style={{
-          position: 'absolute',
-          inset: 0,
           background: `linear-gradient(${direction}, ${color} 0%, transparent 100%)`,
           opacity: p.opacity,
         }}

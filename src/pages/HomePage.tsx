@@ -125,15 +125,12 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        <GradualBlur
-          target="parent"
-          position="bottom"
-          height="8rem"
-          strength={3}
-          divCount={6}
-          curve="bezier"
-          exponential={true}
-          opacity={0.9}
+        <GradualBlur 
+          position="bottom" 
+          height="8rem" 
+          strength={3} 
+          exponential 
+          target="parent" 
           className="z-10"
         />
       </section>
@@ -247,7 +244,6 @@ export function HomePage() {
         <GradualBlur
           preset="subtle"
           position="top"
-          target="parent"
           strength={1.5}
           opacity={0.7}
         />
@@ -329,7 +325,6 @@ export function HomePage() {
         <GradualBlur
           preset="subtle"
           position="bottom"
-          target="parent"
           strength={1.5}
           opacity={0.7}
         />
@@ -490,7 +485,6 @@ export function HomePage() {
           preset="footer"
           target="page"
           strength={2}
-          opacity={0.8}
         />
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
