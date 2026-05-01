@@ -57,7 +57,11 @@ export class RequirementFacade {
    * Searches requirements by a free-text query (semantic search).
    */
   async searchRequirements(query: string): Promise<SearchResponse[]> {
-    return this.api.search(query.trim())
+    const normalizedQuery = query.trim()
+    if (!normalizedQuery) {
+      return []
+    }
+    return this.api.search(normalizedQuery)
   }
 
   /**

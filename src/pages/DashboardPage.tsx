@@ -35,9 +35,16 @@ export function DashboardPage() {
   }
 
   async function handleSearchRequirements(): Promise<void> {
+    const normalizedQuery = query.trim()
+    if (!normalizedQuery) {
+      setStatus('Escribe un texto para buscar requisitos.')
+      setResults([])
+      return
+    }
+
     await run(
       async () => {
-        const data = await requirementFacade.searchRequirements(query)
+        const data = await requirementFacade.searchRequirements(normalizedQuery)
         setResults(data)
         setStatus(`Resultados de requisitos: ${data.length}`)
       },

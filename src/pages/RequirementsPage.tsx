@@ -77,10 +77,15 @@ export function RequirementsPage() {
   }
 
   async function handleSearch(): Promise<void> {
-    if (!searchQuery.trim()) return
+    const normalizedQuery = searchQuery.trim()
+    if (!normalizedQuery) {
+      setStatus('Escribe un texto para buscar requisitos.')
+      setSearchResults([])
+      return
+    }
 
     const data = await run(
-      () => requirementFacade.searchRequirements(searchQuery),
+      () => requirementFacade.searchRequirements(normalizedQuery),
       {
         operationName: 'searchRequirements',
         errorMessage: 'No fue posible buscar requisitos.',
