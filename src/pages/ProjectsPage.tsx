@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { projectFacade } from '../facades/project.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import type { ProjectRequest, ProjectResponse, ProjectStatus } from '../types/projects'
-import { DataField, EmptyState } from '../components/ui/DataDisplay'
+import { PageShell } from '../components/layout/PageShell'
+import { PageHeader } from '../components/layout/PageHeader'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
+import { Badge } from '../components/ui/Badge'
 
 const EMPTY_PROJECT: ProjectRequest = {
   name: '',
@@ -14,87 +19,67 @@ const EMPTY_PROJECT: ProjectRequest = {
 
 export function ProjectsPage() {
   const { user } = useAuth()
-  const [ownerId, setOwnerId] = useState(user?.userId ?? '')
-  const [projectId, setProjectId] = useState('')
+  const [ownerId] = useState(user?.userId ?? '')
   const [form, setForm] = useState<ProjectRequest>({ ...EMPTY_PROJECT, ownerId: user?.userId ?? '' })
-  const [status, setStatus] = useState('Listo para administrar proyectos')
   const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectResponse | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   
   const { run } = useApiOperation()
 
-  async function handleList(): Promise<void> {
-    if (!ownerId.trim()) {
-      setStatus('Debes indicar un ownerId.')
-      return
+  useEffect(() => {
+    if (ownerId) {
+      handleList()
     }
+  }, [ownerId])
+
+  async function handleList(): Promise<void> {
+    if (!ownerId.trim()) return
 
     await run(
       async () => {
         const data = await projectFacade.getProjectsByUser(ownerId)
         setProjects(data)
-        setStatus(`Proyectos cargados: ${data.length}`)
       },
       { errorMessage: 'No fue posible listar los proyectos.' }
     )
   }
 
-  async function handleLoadById(): Promise<void> {
-    if (!projectId.trim()) {
-      setStatus('Debes indicar un id de proyecto.')
-      return
-    }
+  async function handleSave(event: React.FormEvent): Promise<void> {
+    event.preventDefault()
+    if (!form.name.trim() || !form.ownerId.trim()) return
 
     await run(
       async () => {
-        const data = await projectFacade.getProject(projectId)
-        setSelectedProject(data)
-        setForm({
-          name: data.name,
-          description: data.description,
-          ownerId: data.ownerId,
-          status: data.status,
-        })
-        setOwnerId(data.ownerId)
-        setStatus('Proyecto cargado correctamente.')
-      },
-      { errorMessage: 'No fue posible cargar el proyecto.' }
-    )
-  }
-
-  async function handleSave(): Promise<void> {
-    if (!form.name.trim() || !form.ownerId.trim()) {
-      setStatus('Nombre y ownerId son obligatorios.')
-      return
-    }
-
-    await run(
-      async () => {
-        const data = selectedProject
-          ? await projectFacade.updateProject(selectedProject.id, form)
-          : await projectFacade.createProject(form)
-        setSelectedProject(data)
-        setProjectId(data.id)
-        setForm({ name: data.name, description: data.description, ownerId: data.ownerId, status: data.status })
-        setStatus('Proyecto guardado correctamente.')
+        if (selectedProject) {
+          await projectFacade.updateProject(selectedProject.id, form)
+        } else {
+          await projectFacade.createProject(form)
+        }
+        
+        await handleList()
+        setIsFormOpen(false)
+        setSelectedProject(null)
+        setForm({ ...EMPTY_PROJECT, ownerId })
       },
       { errorMessage: 'No fue posible guardar el proyecto.' }
     )
   }
 
-  async function handleDelete(): Promise<void> {
-    if (!selectedProject) {
-      setStatus('Primero carga un proyecto.')
+  async function handleDelete(id: string): Promise<void> {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.')) {
       return
     }
 
     await run(
       async () => {
-        await projectFacade.deleteProject(selectedProject.id)
-        setSelectedProject(null)
-        setProjectId('')
-        setForm({ ...EMPTY_PROJECT, ownerId })
-        setStatus('Proyecto eliminado correctamente.')
+        await projectFacade.deleteProject(id)
+        await handleList()
+        if (selectedProject?.id === id) {
+          setIsFormOpen(false)
+          setSelectedProject(null)
+          setForm({ ...EMPTY_PROJECT, ownerId })
+        }
       },
       { errorMessage: 'No fue posible eliminar el proyecto.' }
     )
@@ -104,136 +89,152 @@ export function ProjectsPage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
-      <section className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
-          <h1 className="text-3xl font-semibold tracking-tight">Proyectos</h1>
-          <p className="text-sm text-slate-300">CRUD base para listar, crear, editar y eliminar proyectos.</p>
-        </header>
+  function handleNewProject() {
+    setSelectedProject(null)
+    setForm({ ...EMPTY_PROJECT, ownerId })
+    setIsFormOpen(true)
+  }
 
-        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <article className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
-            <h2 className="font-semibold">Formulario</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-                placeholder="ownerId"
-                value={form.ownerId}
-                onChange={(event) => updateField('ownerId', event.target.value)}
-              />
-              <input
-                className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-                placeholder="projectId para cargar"
-                value={projectId}
-                onChange={(event) => setProjectId(event.target.value)}
-              />
-              <input
-                className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2 sm:col-span-2"
-                placeholder="Nombre"
-                value={form.name}
-                onChange={(event) => updateField('name', event.target.value)}
-              />
+  function handleEditProject(project: ProjectResponse) {
+    setSelectedProject(project)
+    setForm({
+      name: project.name,
+      description: project.description,
+      ownerId: project.ownerId,
+      status: project.status,
+    })
+    setIsFormOpen(true)
+  }
+
+  function getStatusBadgeVariant(status: string) {
+    switch (status) {
+      case 'ACTIVE': return 'success'
+      case 'ARCHIVED': return 'neutral'
+      case 'DRAFT': return 'warning'
+      default: return 'neutral'
+    }
+  }
+
+  return (
+    <PageShell>
+      <PageHeader 
+        title="Proyectos" 
+        description="Gestiona tus espacios de análisis, requisitos y diagramas."
+        action={
+          !isFormOpen && (
+            <Button onClick={handleNewProject}>
+              Nuevo proyecto
+            </Button>
+          )
+        }
+      />
+
+      {isFormOpen ? (
+        <Card className="max-w-2xl p-6 sm:p-8">
+          <h2 className="text-xl font-semibold mb-6 app-text-primary tracking-tight">
+            {selectedProject ? 'Editar proyecto' : 'Crear nuevo proyecto'}
+          </h2>
+          <form onSubmit={handleSave} className="space-y-5">
+            <Input
+              required
+              label="Nombre del proyecto"
+              placeholder="Ej. Sistema de E-commerce"
+              value={form.name}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('name', e.target.value)}
+            />
+            
+            <div className="space-y-1.5">
+              <label className="block text-[13px] font-medium app-text-primary">
+                Descripción
+              </label>
               <textarea
-                className="min-h-32 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 sm:col-span-2"
-                placeholder="Descripcion"
+                className="w-full app-card border border-app-border-strong rounded-md px-3 py-2 text-[15px] app-text-primary placeholder-app-text-muted focus-ring interactive min-h-[120px]"
+                placeholder="Describe brevemente el alcance del proyecto..."
                 value={form.description}
-                onChange={(event) => updateField('description', event.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('description', e.target.value)}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[13px] font-medium app-text-primary">
+                Estado
+              </label>
               <select
-                className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+                className="w-full app-card border border-app-border-strong rounded-md px-3 py-2 text-[15px] app-text-primary focus-ring interactive appearance-none"
                 value={form.status}
-                onChange={(event) => updateField('status', event.target.value as ProjectStatus)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('status', e.target.value as ProjectStatus)}
               >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="ARCHIVED">ARCHIVED</option>
-                <option value="DRAFT">DRAFT</option>
+                <option value="ACTIVE">Activo</option>
+                <option value="DRAFT">Borrador</option>
+                <option value="ARCHIVED">Archivado</option>
               </select>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-cyan-600 px-3 py-2 font-medium" onClick={handleSave}>
-                Guardar proyecto
-              </button>
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleLoadById}>
-                Cargar por id
-              </button>
-              <button className="rounded-md bg-rose-600 px-3 py-2 font-medium" onClick={handleDelete}>
-                Eliminar proyecto
-              </button>
+            <div className="flex gap-3 pt-4 border-t border-app-border">
+              <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {selectedProject ? 'Guardar cambios' : 'Crear proyecto'}
+              </Button>
             </div>
-          </article>
-
-          <aside className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
-            <div className="space-y-2">
-              <input
-                className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
-                placeholder="ownerId para listar"
-                value={ownerId}
-                onChange={(event) => setOwnerId(event.target.value)}
-              />
-              <button className="w-full rounded-md bg-indigo-600 px-3 py-2 font-medium" onClick={handleList}>
-                Listar proyectos por usuario
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
-              <h3 className="mb-2 font-semibold">Estado</h3>
-              <p className="text-slate-300">{status}</p>
-            </div>
-
-            <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
-              <h3 className="mb-3 font-semibold">Proyecto seleccionado</h3>
-              {selectedProject ? (
-                <dl className="space-y-3">
-                  <DataField label="Nombre">{selectedProject.name}</DataField>
-                  <DataField label="Descripción">{selectedProject.description}</DataField>
-                  <DataField label="Estado">
-                    <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs uppercase tracking-wider">
-                      {selectedProject.status}
-                    </span>
-                  </DataField>
-                  <DataField label="Owner">{selectedProject.ownerId}</DataField>
-                  <DataField label="Creado">{new Date(selectedProject.createdAt).toLocaleString()}</DataField>
-                  <DataField label="Actualizado">{new Date(selectedProject.updatedAt).toLocaleString()}</DataField>
-                </dl>
-              ) : (
-                <EmptyState message="Selecciona un proyecto del listado." />
-              )}
-            </div>
-          </aside>
-        </section>
-
-        <article className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
-          <h2 className="mb-3 font-semibold">Listado</h2>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {projects.length === 0 ? (
-              <p className="text-slate-400">Sin proyectos cargados</p>
-            ) : (
-              projects.map((project) => (
-                <button
-                  key={project.id}
-                  className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-left hover:border-cyan-400"
-                  onClick={() => {
-                    setSelectedProject(project)
-                    setProjectId(project.id)
-                    setForm({
-                      name: project.name,
-                      description: project.description,
-                      ownerId: project.ownerId,
-                      status: project.status,
-                    })
-                  }}
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{project.status}</p>
-                  <h3 className="text-lg font-semibold">{project.name}</h3>
-                  <p className="mt-1 text-sm text-slate-300">{project.description}</p>
-                </button>
-              ))
-            )}
+          </form>
+        </Card>
+      ) : projects.length === 0 ? (
+        <Card className="py-16 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 bg-app-surface rounded-full flex items-center justify-center mb-4">
+            <span className="text-xl">📁</span>
           </div>
-        </article>
-      </section>
-    </main>
+          <h3 className="text-lg font-medium app-text-primary mb-2">Aún no tienes proyectos</h3>
+          <p className="app-text-secondary text-[15px] max-w-md mb-6">
+            Crea tu primer proyecto para comenzar a analizar requisitos y modelar arquitecturas de software.
+          </p>
+          <Button onClick={handleNewProject}>
+            Crear proyecto
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <Card key={project.id} className="flex flex-col p-5">
+              <div className="flex items-start justify-between mb-3">
+                <Badge variant={getStatusBadgeVariant(project.status)}>
+                  {project.status}
+                </Badge>
+                <span className="text-[11px] app-text-muted uppercase tracking-wider" title="ID del Proyecto">
+                  {project.id.slice(0, 8)}
+                </span>
+              </div>
+              
+              <h3 className="text-[17px] font-semibold app-text-primary mb-1">
+                {project.name}
+              </h3>
+              
+              <p className="text-[13px] app-text-secondary line-clamp-2 mb-6 flex-1">
+                {project.description || 'Sin descripción'}
+              </p>
+              
+              <div className="flex items-center gap-2 pt-4 border-t border-app-border mt-auto">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditProject(project)}
+                >
+                  Editar
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDelete(project.id)}
+                >
+                  Eliminar
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </PageShell>
   )
 }
