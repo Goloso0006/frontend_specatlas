@@ -15,7 +15,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-[240px] flex-shrink-0 border-r border-app-border flex flex-col h-full bg-[var(--color-bg-secondary)] dark:bg-[var(--color-bg-card)]">
+    <aside className="w-[240px] flex-shrink-0 border-r border-app-border flex flex-col h-full bg-app-secondary">
       {/* App Logo */}
       <div className="h-14 flex items-center px-4 border-b border-app-border">
         <span className="font-semibold text-[15px] app-text-primary tracking-tight">

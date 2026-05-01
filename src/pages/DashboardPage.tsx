@@ -53,19 +53,19 @@ export function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
+    <main className="min-h-screen app-bg p-6 app-text-primary">
       <section className="mx-auto max-w-4xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Area privada</h1>
-            <p className="text-sm text-slate-300">Usuario: {user?.userId ?? 'sin sesion'}</p>
+            <p className="text-sm app-text-secondary">Usuario: {user?.userId ?? 'sin sesion'}</p>
           </div>
-          <button className="rounded-md bg-rose-600 px-3 py-2 font-medium" onClick={logout}>
+          <button className="rounded-md bg-app-danger text-white hover:opacity-90 px-3 py-2 font-medium" onClick={logout}>
             Logout
           </button>
         </div>
 
-        <div className="grid gap-3 rounded-xl border border-slate-700 bg-slate-900 p-4 sm:grid-cols-2">
+        <div className="grid gap-3 rounded-xl border app-border-strong app-card p-4 sm:grid-cols-2">
           <button
             className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium"
             onClick={handleGetProjects}
@@ -73,7 +73,7 @@ export function DashboardPage() {
             Obtener proyectos
           </button>
           <input
-            className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+            className="rounded-md border app-border-strong app-surface px-3 py-2"
             placeholder="Buscar requisito (query)"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -85,35 +85,35 @@ export function DashboardPage() {
             Consultar requisitos
           </button>
           <Link
-            className="rounded-md bg-emerald-600 px-3 py-2 font-medium text-center sm:col-span-2"
+            className="rounded-md bg-app-success text-white hover:opacity-90 px-3 py-2 font-medium text-center sm:col-span-2"
             to="/app/diagrams"
           >
             Abrir editor de diagramas
           </Link>
           <Link
-            className="rounded-md bg-slate-700 px-3 py-2 font-medium text-center sm:col-span-2"
+            className="rounded-md bg-app-surface border border-app-border-strong px-3 py-2 font-medium text-center sm:col-span-2"
             to="/app/projects"
           >
             Gestionar proyectos
           </Link>
           <Link
-            className="rounded-md bg-slate-700 px-3 py-2 font-medium text-center sm:col-span-2"
+            className="rounded-md bg-app-surface border border-app-border-strong px-3 py-2 font-medium text-center sm:col-span-2"
             to="/app/requirements"
           >
             Gestionar requisitos
           </Link>
           <Link
-            className="rounded-md bg-slate-700 px-3 py-2 font-medium text-center sm:col-span-2"
+            className="rounded-md bg-app-surface border border-app-border-strong px-3 py-2 font-medium text-center sm:col-span-2"
             to="/app/validation-rules"
           >
             Gestionar reglas de validacion
           </Link>
         </div>
 
-        <p className="rounded-md border border-slate-700 bg-slate-900 p-3 text-sm">Estado: {status}</p>
+        <p className="rounded-md border app-border-strong app-card p-3 text-sm">Estado: {status}</p>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+          <article className="rounded-xl border app-border-strong app-card p-4">
             <h2 className="mb-3 font-semibold">Proyectos</h2>
             {projects.length === 0 ? (
               <EmptyState message="Sin proyectos cargados." />
@@ -121,13 +121,13 @@ export function DashboardPage() {
               <div className="max-h-72 space-y-2 overflow-auto">
                 {projects.map((project) => (
                   <DataCard key={project.id} title={project.name} subtitle={project.status}>
-                    <p className="text-xs text-slate-300 line-clamp-2">{project.description}</p>
+                    <p className="text-xs app-text-secondary line-clamp-2">{project.description}</p>
                   </DataCard>
                 ))}
               </div>
             )}
           </article>
-          <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+          <article className="rounded-xl border app-border-strong app-card p-4">
             <h2 className="mb-3 font-semibold">Resultados requisitos</h2>
             <div className="max-h-72 overflow-auto">
               <SearchResultList results={results} />
