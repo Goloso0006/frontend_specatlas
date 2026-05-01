@@ -37,10 +37,10 @@ export function DiagramCanvas({
   onSelectionChange,
 }: DiagramCanvasProps) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
-      <div className="border-b border-slate-700 px-4 py-3">
+    <section className="overflow-hidden rounded-2xl border app-border-strong app-card">
+      <div className="border-b app-border-strong px-4 py-3">
         <h2 className="font-semibold">Canvas visual</h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs app-text-muted">
           Arrastra nodos, conecta relaciones y selecciona para editar.
         </p>
       </div>

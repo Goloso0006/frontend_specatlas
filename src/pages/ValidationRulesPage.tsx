@@ -116,29 +116,29 @@ export function ValidationRulesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
+    <main className="min-h-screen app-bg p-6 app-text-primary">
       <section className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+        <header className="rounded-2xl border app-border-strong app-card p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Reglas de validacion</h1>
-          <p className="text-sm text-slate-300">CRUD basico por proyecto para administrar validaciones.</p>
+          <p className="text-sm app-text-secondary">CRUD basico por proyecto para administrar validaciones.</p>
         </header>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <article className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <h2 className="font-semibold">Formulario</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <input className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2" placeholder="projectId" value={form.projectId} onChange={(event) => updateField('projectId', event.target.value)} />
-              <input className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2" placeholder="ruleId para cargar" value={ruleId} onChange={(event) => setRuleId(event.target.value)} />
-              <input className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2 sm:col-span-2" placeholder="Nombre" value={form.name} onChange={(event) => updateField('name', event.target.value)} />
-              <input className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2 sm:col-span-2" placeholder="Tipo de regla" value={form.ruleType} onChange={(event) => updateField('ruleType', event.target.value)} />
-              <textarea className="min-h-24 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 sm:col-span-2" placeholder="Descripcion" value={form.description} onChange={(event) => updateField('description', event.target.value)} />
-              <textarea className="min-h-28 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 sm:col-span-2" placeholder="Condicion" value={form.condition} onChange={(event) => updateField('condition', event.target.value)} />
-              <select className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={form.severity} onChange={(event) => updateField('severity', event.target.value as ValidationRuleSeverity)}>
+              <input className="rounded-md border app-border-strong app-surface px-3 py-2" placeholder="projectId" value={form.projectId} onChange={(event) => updateField('projectId', event.target.value)} />
+              <input className="rounded-md border app-border-strong app-surface px-3 py-2" placeholder="ruleId para cargar" value={ruleId} onChange={(event) => setRuleId(event.target.value)} />
+              <input className="rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Nombre" value={form.name} onChange={(event) => updateField('name', event.target.value)} />
+              <input className="rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Tipo de regla" value={form.ruleType} onChange={(event) => updateField('ruleType', event.target.value)} />
+              <textarea className="min-h-24 rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Descripcion" value={form.description} onChange={(event) => updateField('description', event.target.value)} />
+              <textarea className="min-h-28 rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Condicion" value={form.condition} onChange={(event) => updateField('condition', event.target.value)} />
+              <select className="rounded-md border app-border-strong app-surface px-3 py-2" value={form.severity} onChange={(event) => updateField('severity', event.target.value as ValidationRuleSeverity)}>
                 <option value="INFO">INFO</option>
                 <option value="WARN">WARN</option>
                 <option value="ERROR">ERROR</option>
               </select>
-              <label className="flex items-center gap-2 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm">
+              <label className="flex items-center gap-2 rounded-md border app-border-strong app-surface px-3 py-2 text-sm">
                 <input type="checkbox" checked={form.enabled} onChange={(event) => updateField('enabled', event.target.checked)} />
                 Activa
               </label>
@@ -147,18 +147,18 @@ export function ValidationRulesPage() {
               <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSave}>
                 Guardar regla
               </button>
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleLoadById}>
+              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleLoadById}>
                 Cargar por id
               </button>
-              <button className="rounded-md bg-rose-600 px-3 py-2 font-medium" onClick={handleDelete}>
+              <button className="rounded-md bg-app-danger text-white hover:opacity-90 px-3 py-2 font-medium" onClick={handleDelete}>
                 Eliminar regla
               </button>
             </div>
           </article>
 
-          <aside className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
               placeholder="projectId para listar"
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
@@ -166,10 +166,10 @@ export function ValidationRulesPage() {
             <button className="w-full rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleList}>
               Listar reglas por proyecto
             </button>
-            <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
-              <p className="text-slate-300">{status}</p>
+            <div className="rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
+              <p className="app-text-secondary">{status}</p>
             </div>
-            <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+            <div className="rounded-xl border app-border-strong app-bg/50 p-3">
               <h3 className="mb-3 font-semibold">Regla seleccionada</h3>
               {selectedRule ? (
                 <dl className="space-y-3">
@@ -178,12 +178,12 @@ export function ValidationRulesPage() {
                   <DataField label="Descripción">{selectedRule.description}</DataField>
                   <DataField label="Tipo">{selectedRule.ruleType}</DataField>
                   <DataField label="Condición">
-                    <code className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-300">
+                    <code className="rounded app-surface px-1.5 py-0.5 font-mono text-xs app-text-secondary">
                       {selectedRule.condition}
                     </code>
                   </DataField>
                   <DataField label="Severidad">
-                    <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs uppercase tracking-wider">
+                    <span className="rounded-md app-surface px-2 py-0.5 text-xs uppercase tracking-wider">
                       {selectedRule.severity}
                     </span>
                   </DataField>
@@ -202,7 +202,7 @@ export function ValidationRulesPage() {
           </aside>
         </section>
 
-        <article className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+        <article className="rounded-2xl border app-border-strong app-card p-4">
           <h2 className="mb-3 font-semibold">Listado</h2>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {rules.length === 0 ? (
@@ -231,14 +231,14 @@ export function ValidationRulesPage() {
                   }}
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-400">{rule.severity}</span>
+                    <span className="text-[10px] uppercase tracking-widest app-text-muted">{rule.severity}</span>
                     {rule.enabled ? (
                       <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                     ) : (
-                      <span className="h-2 w-2 rounded-full bg-slate-600"></span>
+                      <span className="h-2 w-2 rounded-full bg-app-surface"></span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-slate-300 line-clamp-2">{rule.description}</p>
+                  <p className="mt-1 text-sm app-text-secondary line-clamp-2">{rule.description}</p>
                 </DataCard>
               ))
             )}

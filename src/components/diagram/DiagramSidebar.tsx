@@ -21,7 +21,7 @@ export function DiagramSidebar({
 }: DiagramSidebarProps) {
   if (editorTarget === 'node' && selectedNode) {
     return (
-      <aside className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+      <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
         <NodeEditor node={selectedNode} onChange={onUpdateNode} />
       </aside>
     )
@@ -29,15 +29,15 @@ export function DiagramSidebar({
 
   if (editorTarget === 'edge' && selectedEdge) {
     return (
-      <aside className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+      <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
         <EdgeEditor edge={selectedEdge} onChange={onUpdateEdge} />
       </aside>
     )
   }
 
   return (
-    <aside className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
-      <div className="rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">
+    <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
+      <div className="rounded-xl border border-dashed app-border-strong p-4 text-sm app-text-muted">
         Selecciona un nodo o una relación para editar sus propiedades.
       </div>
     </aside>

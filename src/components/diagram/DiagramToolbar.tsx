@@ -51,7 +51,7 @@ export function DiagramToolbar({
       </button>
 
       <button
-        className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-600 disabled:opacity-50"
+        className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
         onClick={onCreateManual}
         disabled={isBusy || !isValid}
       >
@@ -59,7 +59,7 @@ export function DiagramToolbar({
       </button>
 
       <button
-        className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-600 disabled:opacity-50"
+        className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
         onClick={onGenerateAuto}
         disabled={isBusy}
       >
@@ -67,7 +67,7 @@ export function DiagramToolbar({
       </button>
 
       <button
-        className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-600 disabled:opacity-50"
+        className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
         onClick={onCreateUseCaseManual}
         disabled={isBusy || !isValid}
       >
@@ -75,7 +75,7 @@ export function DiagramToolbar({
       </button>
 
       <button
-        className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-600 disabled:opacity-50"
+        className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
         onClick={onGenerateUseCaseAuto}
         disabled={isBusy}
       >

@@ -205,25 +205,25 @@ export function RequirementsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
+    <main className="min-h-screen app-bg p-6 app-text-primary">
       <section className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+        <header className="rounded-2xl border app-border-strong app-card p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Requisitos</h1>
-          <p className="text-sm text-slate-300">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
+          <p className="text-sm app-text-secondary">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
           <p className="mt-2 text-sm text-app-accent">{status}</p>
         </header>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <article className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <h2 className="font-semibold">Asistente de requisitos</h2>
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
               placeholder="projectId"
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
             />
             <textarea
-              className="min-h-28 w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+              className="min-h-28 w-full rounded-md border app-border-strong app-surface px-3 py-2"
               placeholder="Texto libre para convertir"
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -235,44 +235,44 @@ export function RequirementsPage() {
               <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSave}>
                 Guardar
               </button>
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleDuplicates}>
+              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleDuplicates}>
                 Buscar duplicados
               </button>
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleDependency}>
+              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleDependency}>
                 Crear dependencia
               </button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm">
                 <span>Código</span>
-                <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.code} onChange={(event) => setRequirement((current) => ({ ...current, code: event.target.value }))} />
+                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.code} onChange={(event) => setRequirement((current) => ({ ...current, code: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm">
                 <span>ProjectId</span>
-                <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.projectId} onChange={(event) => setRequirement((current) => ({ ...current, projectId: event.target.value }))} />
+                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.projectId} onChange={(event) => setRequirement((current) => ({ ...current, projectId: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
                 <span>Título</span>
-                <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.title} onChange={(event) => setRequirement((current) => ({ ...current, title: event.target.value }))} />
+                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.title} onChange={(event) => setRequirement((current) => ({ ...current, title: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
                 <span>Descripción</span>
-                <textarea className="min-h-24 w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.description} onChange={(event) => setRequirement((current) => ({ ...current, description: event.target.value }))} />
+                <textarea className="min-h-24 w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.description} onChange={(event) => setRequirement((current) => ({ ...current, description: event.target.value }))} />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
                 <span>Códigos relacionados (separados por coma)</span>
-                <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" value={requirement.relatedCodes.join(', ')} onChange={(event) => setRequirement((current) => ({ ...current, relatedCodes: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) }))} />
+                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.relatedCodes.join(', ')} onChange={(event) => setRequirement((current) => ({ ...current, relatedCodes: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) }))} />
               </label>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-700">
+            <div className="mt-6 pt-4 border-t app-border-strong">
               <RequirementDetailCard requirement={requirement} />
             </div>
           </article>
 
-          <article className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <h2 className="font-semibold">Búsqueda y análisis</h2>
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
               placeholder="Search query"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -281,13 +281,13 @@ export function RequirementsPage() {
               Buscar
             </button>
             <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleImpact}>
+              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleImpact}>
                 Impacto
               </button>
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleConflicts}>
+              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleConflicts}>
                 Conflictos
               </button>
-              <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleLoadProjectRequirements}>
+              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleLoadProjectRequirements}>
                 Cargar requisitos del proyecto
               </button>
               <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleInferRelations}>
@@ -295,25 +295,25 @@ export function RequirementsPage() {
               </button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
                 <h3 className="mb-2 font-semibold">Resultados</h3>
                 <div className="max-h-64 overflow-auto">
                   <SearchResultList results={searchResults} />
                 </div>
               </article>
-              <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
                 <h3 className="mb-2 font-semibold">Duplicados</h3>
                 <div className="max-h-64 overflow-auto">
                   <DuplicateList results={duplicateResults} />
                 </div>
               </article>
-              <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
                 <h3 className="mb-2 font-semibold">Impacto</h3>
                 <div className="max-h-64 overflow-auto">
                   <RequirementNodeList nodes={impactResults} emptyMessage="Sin análisis de impacto." />
                 </div>
               </article>
-              <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
                 <h3 className="mb-2 font-semibold">Conflictos</h3>
                 <div className="max-h-64 overflow-auto">
                   <RequirementNodeList nodes={conflictResults} emptyMessage="Sin conflictos detectados." />
@@ -321,22 +321,22 @@ export function RequirementsPage() {
               </article>
             </div>
 
-            <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+            <section className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
               <h3 className="font-semibold">Requisitos cargados del proyecto</h3>
               {projectRequirements.length === 0 ? (
-                <p className="text-sm text-slate-400">Todavia no se han cargado requisitos de proyecto.</p>
+                <p className="text-sm app-text-muted">Todavia no se han cargado requisitos de proyecto.</p>
               ) : (
                 <div className="max-h-72 overflow-auto space-y-2">
                   {projectRequirements.map((item) => (
                     <DataCard key={item.id} title={item.title} subtitle={item.code}>
-                      <p className="text-xs text-slate-300 line-clamp-3">{item.description}</p>
+                      <p className="text-xs app-text-secondary line-clamp-3">{item.description}</p>
                     </DataCard>
                   ))}
                 </div>
               )}
             </section>
 
-            <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+            <section className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
               <h3 className="font-semibold">Impacto del requisito</h3>
               <RequirementGraphView
                 title="Impacto del requisito seleccionado"
@@ -345,7 +345,7 @@ export function RequirementsPage() {
               />
             </section>
 
-            <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+            <section className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
               <h3 className="font-semibold">Relaciones inferidas</h3>
               <RequirementGraphView
                 title="Relaciones inferidas del proyecto"

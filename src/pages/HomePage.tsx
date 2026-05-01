@@ -50,7 +50,7 @@ export function HomePage() {
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center justify-center px-8 py-4 border app-border-strong hover:border-slate-600 rounded-lg text-lg font-semibold transition-all"
+                  className="inline-flex items-center justify-center px-8 py-4 border app-border-strong hover:border-app-border rounded-lg text-lg font-semibold transition-all"
                 >
                   Ver demostración
                 </Link>
@@ -135,7 +135,7 @@ export function HomePage() {
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="group p-6 rounded-2xl app-surface/40 border app-border-strong/50 hover:border-slate-600 transition-all duration-300 hover:-translate-y-1"
+                className="group p-6 rounded-2xl app-surface/40 border app-border-strong/50 hover:border-app-border transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="text-4xl mb-4">{feature.icon}</div>
                 <h3 className="text-xl font-semibold mb-2 app-text-primary">{feature.title}</h3>
@@ -177,12 +177,12 @@ export function HomePage() {
               }
             ].map((item, idx) => (
               <div key={idx} className="relative">
-                <div className="text-7xl font-bold text-slate-800 mb-4">{item.step}</div>
+                <div className="text-7xl font-bold app-text-primary mb-4">{item.step}</div>
                 <h3 className="text-2xl font-semibold mb-3">{item.title}</h3>
                 <p className="app-text-muted text-lg">{item.description}</p>
                 {idx < 2 && (
                   <div className="hidden md:block absolute top-12 right-0 transform translate-x-1/2">
-                    <svg className="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 app-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -279,7 +279,7 @@ export function HomePage() {
             </Link>
             <Link
               to="/login"
-              className="inline-flex items-center justify-center px-8 py-4 border app-border-strong hover:border-slate-600 rounded-lg text-lg font-semibold transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 border app-border-strong hover:border-app-border rounded-lg text-lg font-semibold transition-all"
             >
               Iniciar sesión
             </Link>

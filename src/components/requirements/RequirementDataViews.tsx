@@ -16,7 +16,7 @@ export function SearchResultList({ results }: { results: SearchResponse[] }) {
     <div className="space-y-2">
       {results.map((item) => (
         <DataCard key={item.id} title={item.title} subtitle={item.code}>
-          <p className="text-xs text-slate-300 line-clamp-2">{item.description}</p>
+          <p className="text-xs app-text-secondary line-clamp-2">{item.description}</p>
           {item.similarity !== undefined && (
             <div className="mt-2">
               <SimilarityBadge value={item.similarity} />
@@ -62,7 +62,7 @@ export function RequirementNodeList({ nodes, emptyMessage }: {
     <div className="space-y-2">
       {nodes.map((node) => (
         <DataCard key={node.id} title={node.title} subtitle={node.code}>
-          <p className="text-xs text-slate-300 line-clamp-2">{node.description}</p>
+          <p className="text-xs app-text-secondary line-clamp-2">{node.description}</p>
         </DataCard>
       ))}
     </div>
@@ -76,8 +76,8 @@ export function RequirementDetailCard({ requirement }: { requirement: Requiremen
   if (!requirement.title) return <EmptyState message="No hay un requisito cargado." />
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-4">
-      <h3 className="mb-4 text-lg font-semibold text-slate-100">
+    <div className="rounded-xl border app-border-strong app-bg/50 p-4">
+      <h3 className="mb-4 text-lg font-semibold app-text-primary">
         {requirement.code && <span className="mr-2 text-app-accent">{requirement.code}</span>}
         {requirement.title}
       </h3>
@@ -99,9 +99,9 @@ export function RequirementDetailCard({ requirement }: { requirement: Requiremen
 
         <DataField label="Criterios de Aceptación">
           {(requirement.acceptanceCriteria ?? []).length === 0 ? (
-            <span className="text-slate-500 text-sm">Sin criterios definidos</span>
+            <span className="app-text-muted text-sm">Sin criterios definidos</span>
           ) : (
-            <ul className="list-inside list-disc space-y-1 text-sm text-slate-300">
+            <ul className="list-inside list-disc space-y-1 text-sm app-text-secondary">
               {requirement.acceptanceCriteria.map((crit, i) => (
                 <li key={i}>{crit}</li>
               ))}

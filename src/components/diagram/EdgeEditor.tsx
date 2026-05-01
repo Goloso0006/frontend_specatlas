@@ -18,13 +18,13 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
     <div className="space-y-4">
       <div>
         <h3 className="font-semibold">Relación seleccionada</h3>
-        <p className="text-xs text-slate-400">{edge.id}</p>
+        <p className="text-xs app-text-muted">{edge.id}</p>
       </div>
 
       <label className="block space-y-1 text-sm">
         <span>Label</span>
         <input
-          className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+          className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
           value={edge.label}
           onChange={(event) => onChange({ ...edge, label: event.target.value })}
         />
@@ -33,7 +33,7 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
       <label className="block space-y-1 text-sm">
         <span>Tipo</span>
         <select
-          className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+          className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
           value={edge.type}
           onChange={(event) =>
             onChange({
@@ -51,12 +51,12 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
       </label>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="rounded-md border border-slate-700 p-3">
-          <p className="text-slate-400">From</p>
+        <div className="rounded-md border app-border-strong p-3">
+          <p className="app-text-muted">From</p>
           <p>{edge.from}</p>
         </div>
-        <div className="rounded-md border border-slate-700 p-3">
-          <p className="text-slate-400">To</p>
+        <div className="rounded-md border app-border-strong p-3">
+          <p className="app-text-muted">To</p>
           <p>{edge.to}</p>
         </div>
       </div>
@@ -64,7 +64,7 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
       <label className="block space-y-1 text-sm">
         <span>Derived from requirements</span>
         <input
-          className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+          className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
           value={edge.derivedFromRequirements.join(', ')}
           onChange={(event) => {
             const next = event.target.value

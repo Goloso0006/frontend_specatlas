@@ -5,8 +5,8 @@ import type { ReactNode } from 'react'
  */
 export function EmptyState({ message = 'No se encontraron datos.' }: { message?: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 text-base">
+    <div className="flex items-center gap-3 rounded-xl border border-dashed app-border-strong p-4 text-sm app-text-muted">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full app-surface text-base">
         ∅
       </span>
       <p>{message}</p>
@@ -20,8 +20,8 @@ export function EmptyState({ message = 'No se encontraron datos.' }: { message?:
 export function DataField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-0.5">
-      <dt className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</dt>
-      <dd className="text-sm text-slate-100">{children || <span className="text-slate-500">—</span>}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wider app-text-muted">{label}</dt>
+      <dd className="text-sm app-text-primary">{children || <span className="app-text-muted opacity-80">—</span>}</dd>
     </div>
   )
 }
@@ -31,7 +31,7 @@ export function DataField({ label, children }: { label: string; children: ReactN
  */
 export function TagList({ items, emptyMessage = 'Sin elementos' }: { items: string[]; emptyMessage?: string }) {
   if (items.length === 0) {
-    return <span className="text-xs text-slate-500">{emptyMessage}</span>
+    return <span className="text-xs app-text-muted opacity-80">{emptyMessage}</span>
   }
 
   return (
@@ -39,7 +39,7 @@ export function TagList({ items, emptyMessage = 'Sin elementos' }: { items: stri
       {items.map((item, index) => (
         <span
           key={`${item}-${index}`}
-          className="rounded-md bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
+          className="rounded-md app-surface px-2 py-0.5 text-xs app-text-primary"
         >
           {item}
         </span>
@@ -57,10 +57,10 @@ export function SimilarityBadge({ value }: { value: number }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-700">
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-app-surface">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
       </div>
-      <span className="text-xs text-slate-300">{percent}%</span>
+      <span className="text-xs app-text-secondary">{percent}%</span>
     </div>
   )
 }
@@ -76,13 +76,13 @@ export function DataCard({ title, subtitle, children, onClick }: {
 }) {
   return (
     <div
-      className={`rounded-xl border border-slate-700 bg-slate-950/50 p-3 transition-colors ${onClick ? 'cursor-pointer hover:border-app-accent' : ''}`}
+      className={`rounded-xl border app-border-strong app-bg/50 p-3 transition-colors ${onClick ? 'cursor-pointer hover:border-app-accent' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold text-slate-100">{title}</h4>
-        {subtitle && <span className="shrink-0 text-xs text-slate-400">{subtitle}</span>}
+        <h4 className="text-sm font-semibold app-text-primary">{title}</h4>
+        {subtitle && <span className="shrink-0 text-xs app-text-muted">{subtitle}</span>}
       </div>
       {children}
     </div>

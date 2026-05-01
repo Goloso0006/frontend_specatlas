@@ -328,21 +328,21 @@ export function DiagramEditorPage() {
 
   // ── Render ──
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen app-bg app-text-primary">
       <div className="flex min-h-screen flex-col gap-4 p-4 lg:p-6">
 
         {/* ── Header ── */}
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border app-border-strong app-card px-4 py-3">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-app-accent">Fase 3</p>
             <h1 className="text-2xl font-semibold">Editor visual de diagramas</h1>
-            <p className="text-sm text-slate-300">Fuente de verdad: sourceJson</p>
+            <p className="text-sm app-text-secondary">Fuente de verdad: sourceJson</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="rounded-md border border-slate-600 px-3 py-2 text-sm" to="/app">
+            <Link className="rounded-md border app-border-strong px-3 py-2 text-sm" to="/app">
               Volver al dashboard
             </Link>
-            <button className="rounded-md bg-rose-600 px-3 py-2 text-sm font-medium" onClick={logout}>
+            <button className="rounded-md bg-app-danger text-white hover:opacity-90 px-3 py-2 text-sm font-medium" onClick={logout}>
               Logout
             </button>
           </div>
@@ -352,15 +352,15 @@ export function DiagramEditorPage() {
         <section className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)_340px]">
 
           {/* ── Left panel ── */}
-          <aside className="space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <div className="space-y-3">
               <div>
                 <h2 className="font-semibold">Datos del diagrama</h2>
-                <p className="text-xs text-slate-400">Usa projectId para crear, cargar y guardar.</p>
+                <p className="text-xs app-text-muted">Usa projectId para crear, cargar y guardar.</p>
               </div>
-              <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" placeholder="projectId" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
-              <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" placeholder="diagramId" value={diagramId} onChange={(e) => setDiagramId(e.target.value)} />
-              <input className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2" placeholder="Nombre del diagrama" value={diagramName} onChange={(e) => setDiagramName(e.target.value)} />
+              <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="projectId" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
+              <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="diagramId" value={diagramId} onChange={(e) => setDiagramId(e.target.value)} />
+              <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="Nombre del diagrama" value={diagramName} onChange={(e) => setDiagramName(e.target.value)} />
 
               {/* Toolbar component */}
               <DiagramToolbar
@@ -378,37 +378,37 @@ export function DiagramEditorPage() {
               />
 
               <div className="flex flex-wrap gap-2">
-                <button className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium" onClick={handleLoadDiagram}>Cargar por id</button>
-                <button className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium" onClick={handleLoadProjectDiagrams}>Listar proyecto</button>
+                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={handleLoadDiagram}>Cargar por id</button>
+                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={handleLoadProjectDiagrams}>Listar proyecto</button>
               </div>
             </div>
 
             {/* Info panel */}
-            <div className="space-y-2 rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
-              <p><span className="text-slate-400">Tipo:</span> {diagramType}</p>
-              <p><span className="text-slate-400">Modo:</span> {selectedModeLabel()}</p>
-              <p><span className="text-slate-400">Usuario:</span> {user?.userId ?? 'sin sesión'}</p>
+            <div className="space-y-2 rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
+              <p><span className="app-text-muted">Tipo:</span> {diagramType}</p>
+              <p><span className="app-text-muted">Modo:</span> {selectedModeLabel()}</p>
+              <p><span className="app-text-muted">Usuario:</span> {user?.userId ?? 'sin sesión'}</p>
               <p className={validation.isValid ? 'text-emerald-300' : 'text-rose-300'}>
                 {validation.isValid ? 'Diagrama válido' : validation.errors.join(' ')}
               </p>
             </div>
 
             {/* Diagram list */}
-            <div className="space-y-2 rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
+            <div className="space-y-2 rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
               <h3 className="font-semibold">Proyecto</h3>
-              <p className="text-xs text-slate-400">Diagramas del proyecto actual</p>
+              <p className="text-xs app-text-muted">Diagramas del proyecto actual</p>
               <div className="max-h-56 space-y-2 overflow-auto pr-1">
                 {diagramList.length === 0 ? (
-                  <p className="text-slate-500">Sin diagramas cargados</p>
+                  <p className="app-text-muted opacity-80">Sin diagramas cargados</p>
                 ) : (
                   diagramList.map((diagram) => (
                     <button
                       key={diagram.id}
-                      className="flex w-full items-center justify-between rounded-lg border border-slate-700 px-3 py-2 text-left text-sm hover:border-app-accent"
+                      className="flex w-full items-center justify-between rounded-lg border app-border-strong px-3 py-2 text-left text-sm hover:border-app-accent"
                       onClick={() => void loadDiagramFromList(diagram.id)}
                     >
                       <span>{diagram.name}</span>
-                      <span className="text-xs text-slate-400">{diagram.mode}</span>
+                      <span className="text-xs app-text-muted">{diagram.mode}</span>
                     </button>
                   ))
                 )}
@@ -416,16 +416,16 @@ export function DiagramEditorPage() {
             </div>
 
             {/* Export actions */}
-            <div className="space-y-2 rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">
+            <div className="space-y-2 rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
               <h3 className="font-semibold">Acciones de exportación</h3>
               <div className="flex flex-wrap gap-2">
-                <button className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium" onClick={handleGeneratePlantUml}>Generar PlantUML</button>
-                <button className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium" onClick={() => handleExport('puml')}>Descargar .puml</button>
-                <button className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium" onClick={() => handleExport('txt')}>Descargar .txt</button>
+                <button className="rounded-md bg-app-success text-white hover:opacity-90 px-3 py-2 text-sm font-medium" onClick={handleGeneratePlantUml}>Generar PlantUML</button>
+                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={() => handleExport('puml')}>Descargar .puml</button>
+                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={() => handleExport('txt')}>Descargar .txt</button>
               </div>
               <textarea
                 readOnly
-                className="h-40 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-xs text-slate-300"
+                className="h-40 w-full rounded-md border app-border-strong app-bg p-2 text-xs app-text-secondary"
                 value={plantUmlPreview}
                 placeholder="PlantUML generado aparecerá aquí"
               />
@@ -453,15 +453,15 @@ export function DiagramEditorPage() {
         </section>
 
         {/* ── Source JSON preview ── */}
-        <section className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+        <section className="rounded-2xl border app-border-strong app-card p-4">
           <h2 className="mb-3 font-semibold">sourceJson actual</h2>
-          <pre className="max-h-72 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-300">
+          <pre className="max-h-72 overflow-auto rounded-lg app-bg p-4 text-xs app-text-secondary">
             {serializeDiagramSource(source)}
           </pre>
         </section>
 
         {/* ── Status bar ── */}
-        <p className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm">
+        <p className="rounded-xl border app-border-strong app-card p-3 text-sm">
           Estado: {editorState.status} | {editorState.message}
         </p>
       </div>

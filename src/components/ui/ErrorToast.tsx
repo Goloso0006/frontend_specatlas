@@ -10,7 +10,7 @@ export function ErrorToast() {
       {errors.map((entry) => (
         <div
           key={entry.id}
-          className="flex max-w-sm items-start gap-3 rounded-xl border border-rose-500/40 bg-slate-900 p-4 shadow-2xl animate-in fade-in slide-in-from-bottom-4"
+          className="flex max-w-sm items-start gap-3 rounded-xl border border-rose-500/40 app-card p-4 shadow-2xl animate-in fade-in slide-in-from-bottom-4"
         >
           {/* Icon */}
           <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white">
@@ -19,12 +19,12 @@ export function ErrorToast() {
 
           {/* Content */}
           <div className="flex-1 space-y-2">
-            <p className="text-sm text-slate-100">{entry.message}</p>
+            <p className="text-sm app-text-primary">{entry.message}</p>
 
             <div className="flex gap-2">
               {entry.retry && (
                 <button
-                  className="rounded-md bg-slate-700 px-3 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-600"
+                  className="rounded-md bg-app-surface px-3 py-1 text-xs font-medium app-text-primary transition-colors hover:opacity-80"
                   onClick={() => {
                     clearError(entry.id)
                     entry.retry?.()
@@ -34,7 +34,7 @@ export function ErrorToast() {
                 </button>
               )}
               <button
-                className="rounded-md px-3 py-1 text-xs text-slate-400 transition-colors hover:text-slate-200"
+                className="rounded-md px-3 py-1 text-xs app-text-muted transition-colors hover:app-text-primary"
                 onClick={() => clearError(entry.id)}
               >
                 Cerrar

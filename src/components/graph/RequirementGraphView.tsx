@@ -112,7 +112,7 @@ export function RequirementGraphView({
       <div className="space-y-3">
         <EmptyState message={emptyMessage} />
         {graph.rawJson ? (
-          <pre className="max-h-72 overflow-auto rounded-md border border-slate-700 bg-slate-900 p-3 text-xs text-slate-200">
+          <pre className="max-h-72 overflow-auto rounded-md border app-border-strong app-card p-3 text-xs app-text-primary">
             {graph.rawJson}
           </pre>
         ) : null}
@@ -122,9 +122,9 @@ export function RequirementGraphView({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
-        <h4 className="mb-3 font-semibold text-slate-100">{graph.title}</h4>
-        <div className="h-[420px] overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
+      <div className="rounded-xl border app-border-strong app-card p-3">
+        <h4 className="mb-3 font-semibold app-text-primary">{graph.title}</h4>
+        <div className="h-[420px] overflow-hidden rounded-lg border app-border-strong app-bg">
           <ReactFlow nodes={graph.nodes} edges={graph.edges} fitView nodesDraggable={false} nodesConnectable={false} zoomOnScroll>
             <MiniMap zoomable pannable />
             <Controls />
@@ -134,9 +134,9 @@ export function RequirementGraphView({
       </div>
 
       {graph.rawJson ? (
-        <details className="rounded-xl border border-slate-700 bg-slate-900 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-slate-200">Ver respuesta cruda</summary>
-          <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-200">{graph.rawJson}</pre>
+        <details className="rounded-xl border app-border-strong app-card p-3">
+          <summary className="cursor-pointer text-sm font-medium app-text-primary">Ver respuesta cruda</summary>
+          <pre className="mt-3 max-h-72 overflow-auto rounded-md app-bg p-3 text-xs app-text-primary">{graph.rawJson}</pre>
         </details>
       ) : null}
     </div>

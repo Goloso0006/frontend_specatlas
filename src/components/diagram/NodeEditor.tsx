@@ -33,13 +33,13 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
     <div className="space-y-4">
       <div>
         <h3 className="font-semibold">Nodo seleccionado</h3>
-        <p className="text-xs text-slate-400">{node.id}</p>
+        <p className="text-xs app-text-muted">{node.id}</p>
       </div>
 
       <label className="block space-y-1 text-sm">
         <span>Nombre</span>
         <input
-          className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+          className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
           value={node.name}
           onChange={(event) => onChange({ ...node, name: event.target.value })}
         />
@@ -50,7 +50,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
           <span>X</span>
           <input
             type="number"
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+            className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
             value={node.position.x}
             onChange={(event) =>
               onChange({
@@ -64,7 +64,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
           <span>Y</span>
           <input
             type="number"
-            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+            className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
             value={node.position.y}
             onChange={(event) =>
               onChange({
@@ -79,7 +79,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
       <label className="block space-y-1 text-sm">
         <span>Derived from requirements</span>
         <input
-          className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2"
+          className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
           value={node.derivedFromRequirements.join(', ')}
           onChange={(event) => {
             const next = event.target.value
@@ -107,21 +107,21 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
         }
       >
         {node.attributes.map((attribute, index) => (
-          <div key={`${attribute.name}-${index}`} className="space-y-2 rounded-lg border border-slate-700 p-3">
+          <div key={`${attribute.name}-${index}`} className="space-y-2 rounded-lg border app-border-strong p-3">
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2 text-sm"
               value={attribute.name}
               onChange={(event) => updateAttribute(index, 'name', event.target.value)}
               placeholder="Nombre"
             />
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2 text-sm"
               value={attribute.type}
               onChange={(event) => updateAttribute(index, 'type', event.target.value)}
               placeholder="Tipo"
             />
             <select
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2 text-sm"
               value={attribute.visibility}
               onChange={(event) => updateAttribute(index, 'visibility', event.target.value)}
             >
@@ -144,21 +144,21 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
         }
       >
         {node.methods.map((method, index) => (
-          <div key={`${method.name}-${index}`} className="space-y-2 rounded-lg border border-slate-700 p-3">
+          <div key={`${method.name}-${index}`} className="space-y-2 rounded-lg border app-border-strong p-3">
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2 text-sm"
               value={method.name}
               onChange={(event) => updateMethod(index, 'name', event.target.value)}
               placeholder="Nombre"
             />
             <input
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2 text-sm"
               value={method.returnType}
               onChange={(event) => updateMethod(index, 'returnType', event.target.value)}
               placeholder="Tipo retorno"
             />
             <select
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border app-border-strong app-surface px-3 py-2 text-sm"
               value={method.visibility}
               onChange={(event) => updateMethod(index, 'visibility', event.target.value)}
             >
@@ -184,7 +184,7 @@ function EditorList({
   children: ReactNode
 }) {
   return (
-    <div className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+    <div className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
       <div className="flex items-center justify-between gap-2">
         <h4 className="font-semibold">{title}</h4>
         <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-1 text-xs font-medium" onClick={onAdd}>
