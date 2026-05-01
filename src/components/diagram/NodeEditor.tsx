@@ -187,7 +187,7 @@ function EditorList({
     <div className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
       <div className="flex items-center justify-between gap-2">
         <h4 className="font-semibold">{title}</h4>
-        <button className="rounded-md bg-cyan-600 px-3 py-1 text-xs font-medium" onClick={onAdd}>
+        <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-1 text-xs font-medium" onClick={onAdd}>
           Agregar
         </button>
       </div>

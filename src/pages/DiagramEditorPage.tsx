@@ -334,7 +334,7 @@ export function DiagramEditorPage() {
         {/* ── Header ── */}
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Fase 3</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-app-accent">Fase 3</p>
             <h1 className="text-2xl font-semibold">Editor visual de diagramas</h1>
             <p className="text-sm text-slate-300">Fuente de verdad: sourceJson</p>
           </div>
@@ -404,7 +404,7 @@ export function DiagramEditorPage() {
                   diagramList.map((diagram) => (
                     <button
                       key={diagram.id}
-                      className="flex w-full items-center justify-between rounded-lg border border-slate-700 px-3 py-2 text-left text-sm hover:border-cyan-400"
+                      className="flex w-full items-center justify-between rounded-lg border border-slate-700 px-3 py-2 text-left text-sm hover:border-app-accent"
                       onClick={() => void loadDiagramFromList(diagram.id)}
                     >
                       <span>{diagram.name}</span>

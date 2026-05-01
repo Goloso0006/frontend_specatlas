@@ -6,7 +6,7 @@ export function HomePage() {
       {/* Navegación superior */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+          <div className="text-2xl font-bold bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-success)] bg-clip-text text-transparent">
             SpecAtlas
           </div>
           <div className="hidden md:flex items-center gap-8">
@@ -18,7 +18,7 @@ export function HomePage() {
             <Link to="/login" className="text-slate-300 hover:text-white font-medium transition-colors">
               Iniciar sesión
             </Link>
-            <Link to="/register" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-medium transition-colors">
+            <Link to="/register" className="px-4 py-2 bg-app-accent hover:bg-app-accent-hover text-app-accent-foreground rounded-lg font-medium transition-colors">
               Crear cuenta
             </Link>
           </div>
@@ -32,7 +32,7 @@ export function HomePage() {
             <div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
                 Análisis de requisitos{' '}
-                <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-success)] bg-clip-text text-transparent">
                   inteligente
                 </span>{' '}
                 y modelado de software
@@ -44,7 +44,7 @@ export function HomePage() {
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-lg font-semibold transition-all hover:scale-105"
+                  className="inline-flex items-center justify-center px-8 py-4 bg-app-accent hover:bg-app-accent-hover text-app-accent-foreground rounded-lg text-lg font-semibold transition-all hover:scale-105"
                 >
                   Comenzar gratis
                 </Link>
@@ -57,7 +57,7 @@ export function HomePage() {
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-3xl" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/20 to-[var(--color-success)]/20 rounded-3xl blur-3xl" />
               <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
@@ -69,7 +69,7 @@ export function HomePage() {
                   <div className="h-4 bg-slate-800 rounded w-1/2" />
                   <div className="h-4 bg-slate-800 rounded w-5/6" />
                   <div className="mt-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                    <div className="h-3 bg-indigo-500/30 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-app-accent-subtle rounded w-1/3 mb-2" />
                     <div className="h-2 bg-slate-700 rounded w-full" />
                   </div>
                 </div>
@@ -85,7 +85,7 @@ export function HomePage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold">
               Todo lo que necesitas para{' '}
-              <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-success)] bg-clip-text text-transparent">
                 gestionar requisitos
               </span>
             </h2>
@@ -100,7 +100,7 @@ export function HomePage() {
                 title: 'Conversión automática',
                 description: 'Transforma texto libre en requisitos estructurados con validación inteligente y detección de ambigüedades.',
                 icon: '📝',
-                color: 'indigo'
+                color: 'accent'
               },
               {
                 title: 'Detección de duplicados',
@@ -112,7 +112,7 @@ export function HomePage() {
                 title: 'Análisis de relaciones',
                 description: 'Mapea dependencias y conexiones entre requisitos para mantener la coherencia del proyecto.',
                 icon: '🔗',
-                color: 'sky'
+                color: 'accent'
               },
               {
                 title: 'Diagramas automáticos',
@@ -200,7 +200,7 @@ export function HomePage() {
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 ¿Por qué elegir{' '}
-                <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-success)] bg-clip-text text-transparent">
                   SpecAtlas?
                 </span>
               </h2>
@@ -224,7 +224,7 @@ export function HomePage() {
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-3xl" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/20 to-[var(--color-success)]/20 rounded-3xl blur-3xl" />
               <div className="relative bg-slate-800 border border-slate-700 rounded-2xl p-8">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg">
@@ -241,7 +241,7 @@ export function HomePage() {
                       <div className="font-semibold">Sistema Beta</div>
                       <div className="text-sm text-slate-400">87 requisitos</div>
                     </div>
-                    <div className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-sm">
+                    <div className="px-3 py-1 bg-app-accent-subtle text-app-accent rounded-full text-sm">
                       En progreso
                     </div>
                   </div>
@@ -273,7 +273,7 @@ export function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
-              className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-lg font-semibold transition-all hover:scale-105"
+              className="inline-flex items-center justify-center px-8 py-4 bg-app-accent hover:bg-app-accent-hover text-app-accent-foreground rounded-lg text-lg font-semibold transition-all hover:scale-105"
             >
               Crear cuenta gratuita
             </Link>
@@ -291,7 +291,7 @@ export function HomePage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+          <div className="text-2xl font-bold bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-success)] bg-clip-text text-transparent">
             SpecAtlas
           </div>
           <div className="text-slate-400 text-sm">

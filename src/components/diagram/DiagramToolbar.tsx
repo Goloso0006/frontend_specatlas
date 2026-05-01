@@ -35,7 +35,7 @@ export function DiagramToolbar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
-        className="rounded-md bg-cyan-600 px-3 py-2 text-sm font-medium transition-colors hover:bg-cyan-500 disabled:opacity-50"
+        className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50"
         onClick={onAddNode}
         disabled={isBusy}
       >
@@ -43,7 +43,7 @@ export function DiagramToolbar({
       </button>
 
       <button
-        className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium transition-colors hover:bg-indigo-500 disabled:opacity-50"
+        className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50"
         onClick={onSave}
         disabled={isBusy || !isValid}
       >

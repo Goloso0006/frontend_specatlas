@@ -78,7 +78,7 @@ export function RequirementDetailCard({ requirement }: { requirement: Requiremen
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-4">
       <h3 className="mb-4 text-lg font-semibold text-slate-100">
-        {requirement.code && <span className="mr-2 text-cyan-400">{requirement.code}</span>}
+        {requirement.code && <span className="mr-2 text-app-accent">{requirement.code}</span>}
         {requirement.title}
       </h3>
       

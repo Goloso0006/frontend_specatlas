@@ -144,7 +144,7 @@ export function ValidationRulesPage() {
               </label>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-cyan-600 px-3 py-2 font-medium" onClick={handleSave}>
+              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSave}>
                 Guardar regla
               </button>
               <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleLoadById}>
@@ -163,7 +163,7 @@ export function ValidationRulesPage() {
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
             />
-            <button className="w-full rounded-md bg-indigo-600 px-3 py-2 font-medium" onClick={handleList}>
+            <button className="w-full rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleList}>
               Listar reglas por proyecto
             </button>
             <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3 text-sm">

@@ -210,7 +210,7 @@ export function RequirementsPage() {
         <header className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Requisitos</h1>
           <p className="text-sm text-slate-300">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
-          <p className="mt-2 text-sm text-cyan-300">{status}</p>
+          <p className="mt-2 text-sm text-app-accent">{status}</p>
         </header>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -229,10 +229,10 @@ export function RequirementsPage() {
               onChange={(event) => setText(event.target.value)}
             />
             <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-cyan-600 px-3 py-2 font-medium" onClick={handleConvert}>
+              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleConvert}>
                 Convertir
               </button>
-              <button className="rounded-md bg-indigo-600 px-3 py-2 font-medium" onClick={handleSave}>
+              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSave}>
                 Guardar
               </button>
               <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleDuplicates}>
@@ -277,7 +277,7 @@ export function RequirementsPage() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
-            <button className="rounded-md bg-cyan-600 px-3 py-2 font-medium" onClick={handleSearch}>
+            <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSearch}>
               Buscar
             </button>
             <div className="flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ export function RequirementsPage() {
               <button className="rounded-md bg-slate-700 px-3 py-2 font-medium" onClick={handleLoadProjectRequirements}>
                 Cargar requisitos del proyecto
               </button>
-              <button className="rounded-md bg-indigo-600 px-3 py-2 font-medium" onClick={handleInferRelations}>
+              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleInferRelations}>
                 Inferir relaciones
               </button>
             </div>

@@ -67,7 +67,7 @@ export function DashboardPage() {
 
         <div className="grid gap-3 rounded-xl border border-slate-700 bg-slate-900 p-4 sm:grid-cols-2">
           <button
-            className="rounded-md bg-indigo-600 px-3 py-2 font-medium"
+            className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium"
             onClick={handleGetProjects}
           >
             Obtener proyectos
@@ -79,7 +79,7 @@ export function DashboardPage() {
             onChange={(event) => setQuery(event.target.value)}
           />
           <button
-            className="rounded-md bg-cyan-600 px-3 py-2 font-medium sm:col-span-2"
+            className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium sm:col-span-2"
             onClick={handleSearchRequirements}
           >
             Consultar requisitos

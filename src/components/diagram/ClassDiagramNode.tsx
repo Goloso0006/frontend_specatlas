@@ -5,12 +5,12 @@ export function ClassDiagramNode({ data, selected }: NodeProps<DiagramClassNodeD
   return (
     <article
       className={`min-w-56 rounded-xl border bg-slate-900 shadow-lg ${
-        selected ? 'border-cyan-400 ring-2 ring-cyan-400/40' : 'border-slate-600'
+        selected ? 'border-app-accent ring-2 ring-app-accent/40' : 'border-slate-600'
       }`}
     >
-      <Handle type="target" position={Position.Top} className="!h-3 !w-3 !border-0 !bg-cyan-400" />
+      <Handle type="target" position={Position.Top} className="!h-3 !w-3 !border-0 !bg-app-accent" />
       <header className="border-b border-slate-700 px-4 py-3">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">Class</p>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-app-accent">Class</p>
         <h3 className="text-lg font-semibold text-white">{data.name}</h3>
       </header>
       <section className="border-b border-slate-700 px-4 py-3 text-sm text-slate-200">
@@ -44,7 +44,7 @@ export function ClassDiagramNode({ data, selected }: NodeProps<DiagramClassNodeD
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!h-3 !w-3 !border-0 !bg-cyan-400"
+        className="!h-3 !w-3 !border-0 !bg-app-accent"
       />
     </article>
   )

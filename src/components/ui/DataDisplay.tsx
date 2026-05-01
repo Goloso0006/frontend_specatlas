@@ -76,7 +76,7 @@ export function DataCard({ title, subtitle, children, onClick }: {
 }) {
   return (
     <div
-      className={`rounded-xl border border-slate-700 bg-slate-950/50 p-3 transition-colors ${onClick ? 'cursor-pointer hover:border-cyan-400' : ''}`}
+      className={`rounded-xl border border-slate-700 bg-slate-950/50 p-3 transition-colors ${onClick ? 'cursor-pointer hover:border-app-accent' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
     >
