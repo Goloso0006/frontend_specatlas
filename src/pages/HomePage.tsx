@@ -5,7 +5,7 @@ function FlipCard({
   title,
   description,
   icon,
-  frontColor = "from-amber-500/20 to-orange-500/20",
+  frontColor = "from-indigo-500/20 to-emerald-500/20",
   backContent
 }: {
   title: string
@@ -33,7 +33,7 @@ function FlipCard({
             <div className="h-full flex flex-col items-center justify-center text-center">
               {backContent || (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-500/30 flex items-center justify-center mb-4">
                     <span className="text-3xl">{icon}</span>
                   </div>
                   <h4 className="text-lg font-semibold text-slate-100 mb-2">{title}</h4>
@@ -50,24 +50,24 @@ function FlipCard({
 
 export function HomePage() {
   return (
-    <main className="min-h-screen app-bg app-text-primary">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
       {/* Navegación superior */}
-      <nav className="fixed top-0 left-0 right-0 z-50 app-bg/80 backdrop-blur-md border-b app-border">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+          <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
             SpecAtlas
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#problem" className="app-text-secondary hover:text-white transition-colors">Problema</a>
-            <a href="#solution" className="app-text-secondary hover:text-white transition-colors">Solución</a>
-            <a href="#features" className="app-text-secondary hover:text-white transition-colors">Características</a>
-            <a href="#tech" className="app-text-secondary hover:text-white transition-colors">Tecnología</a>
+            <a href="#problem" className="text-slate-300 hover:text-white transition-colors">Problema</a>
+            <a href="#solution" className="text-slate-300 hover:text-white transition-colors">Solución</a>
+            <a href="#features" className="text-slate-300 hover:text-white transition-colors">Características</a>
+            <a href="#tech" className="text-slate-300 hover:text-white transition-colors">Tecnología</a>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="app-text-secondary hover:text-white font-medium transition-colors">
+            <Link to="/login" className="text-slate-300 hover:text-white font-medium transition-colors">
               Iniciar sesión
             </Link>
-            <Link to="/register" className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-medium transition-colors">
+            <Link to="/register" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-medium transition-colors">
               Crear cuenta
             </Link>
           </div>
@@ -79,25 +79,21 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="inline-block px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium mb-6">
-                Proyecto Final — Estructuras de Datos
-              </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                Plataforma inteligente para{' '}
-                <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                  análisis de requisitos
+                Análisis de requisitos{' '}
+                <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+                  inteligente
                 </span>{' '}
                 y modelado de software
               </h1>
-              <p className="mt-6 text-xl app-text-secondary max-w-2xl">
-                SpecAtlas transforma texto no estructurado en especificaciones formales,
-                detecta ambigüedades con IA (Google Gemini), analiza dependencias y genera
-                diagramas UML automáticamente.
+              <p className="mt-6 text-xl text-slate-300 max-w-2xl">
+                SpecAtlas es una plataforma que transforma texto en especificaciones estructuradas,
+                detecta duplicados automáticamente y genera diagramas profesionales.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center px-8 py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-lg font-semibold transition-all hover:scale-105"
+                  className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-lg font-semibold transition-all hover:scale-105"
                 >
                   Comenzar gratis
                 </Link>
@@ -105,37 +101,25 @@ export function HomePage() {
                   to="/login"
                   className="inline-flex items-center justify-center px-8 py-4 border border-slate-700 hover:border-slate-600 rounded-lg text-lg font-semibold transition-all"
                 >
-                  Ver documentación
+                  Ver demostración
                 </Link>
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-3xl blur-3xl" />
-              <div className="relative app-card border app-border rounded-2xl p-8 shadow-2xl">
-                <div className="flex items-center gap-2 mb-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-emerald-500/20 rounded-3xl blur-3xl" />
+              <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                <div className="flex items-center gap-2 mb-4">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700">
-                    <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    <div className="flex-1">
-                      <div className="h-3 bg-slate-700 rounded w-3/4 mb-2" />
-                      <div className="h-2 bg-slate-800 rounded w-1/2" />
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs text-amber-400 font-semibold">IA Detectó:</span>
-                      <span className="text-xs text-slate-500">IEEE 830 Violation</span>
-                    </div>
-                    <div className="h-2 bg-slate-700 rounded w-full mb-2" />
-                    <div className="h-2 bg-slate-800 rounded w-5/6" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 h-16 rounded-lg bg-slate-800/50 border border-slate-700" />
-                    <div className="flex-1 h-16 rounded-lg bg-slate-800/50 border border-slate-700" />
+                <div className="space-y-3">
+                  <div className="h-4 bg-slate-800 rounded w-3/4" />
+                  <div className="h-4 bg-slate-800 rounded w-1/2" />
+                  <div className="h-4 bg-slate-800 rounded w-5/6" />
+                  <div className="mt-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <div className="h-3 bg-indigo-500/30 rounded w-1/3 mb-2" />
+                    <div className="h-2 bg-slate-700 rounded w-full" />
                   </div>
                 </div>
               </div>
@@ -145,13 +129,13 @@ export function HomePage() {
       </section>
 
       {/* Problem Section */}
-      <section id="problem" className="py-20 px-6 app-card/50">
+      <section id="problem" className="py-20 px-6 bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               ¿Por qué fallan los proyectos de software?
             </h2>
-            <p className="text-xl app-text-secondary max-w-3xl mx-auto">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               El 70% de los proyectos fallan no por errores de código, sino por problemas en el análisis
             </p>
           </div>
@@ -182,7 +166,7 @@ export function HomePage() {
               <div key={idx} className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-red-500/30 transition-colors">
                 <div className="text-4xl mb-3">{problem.icon}</div>
                 <h3 className="text-lg font-semibold text-slate-100 mb-2">{problem.title}</h3>
-                <p className="text-sm app-text-muted">{problem.description}</p>
+                <p className="text-sm text-slate-400">{problem.description}</p>
               </div>
             ))}
           </div>
@@ -196,11 +180,11 @@ export function HomePage() {
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 SpecAtlas: Análisis{' '}
-                <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
                   activo e inteligente
                 </span>
               </h2>
-              <p className="text-lg app-text-secondary mb-6">
+              <p className="text-lg text-slate-300 mb-6">
                 A diferencia de herramientas que solo almacenan requisitos, SpecAtlas es un entorno
                 activo que analiza, valida y cuestiona la información usando IA.
               </p>
@@ -218,21 +202,21 @@ export function HomePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <p className="app-text-secondary">{item}</p>
+                    <p className="text-slate-300">{item}</p>
                   </div>
                 ))}
               </div>
             </div>
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-3xl blur-3xl" />
-              <div className="relative app-surface border app-border rounded-2xl p-8">
+              <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-8">
                 <div className="space-y-3">
                   <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
                     <div className="text-xs text-slate-500 mb-2">Texto original:</div>
                     <div className="text-sm text-slate-300">"El sistema debe ser rápido y fácil de usar"</div>
                   </div>
                   <div className="flex justify-center">
-                    <svg className="w-6 h-6 text-amber-500 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-indigo-500 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                     </svg>
                   </div>
@@ -252,13 +236,13 @@ export function HomePage() {
       </section>
 
       {/* Features with 3D Flip Cards */}
-      <section id="features" className="py-20 px-6 app-card/50">
+      <section id="features" className="py-20 px-6 bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Módulos principales
             </h2>
-            <p className="text-xl app-text-secondary max-w-3xl mx-auto">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Tres pilares fundamentales para el análisis y diseño de software
             </p>
           </div>
@@ -268,10 +252,10 @@ export function HomePage() {
               icon="📋"
               title="Gestión de Requisitos"
               description="Conversión de texto libre, validación IEEE 830/ISO 25010, exportación PDF/Excel"
-              frontColor="from-amber-500/20 to-orange-500/20"
+              frontColor="from-indigo-500/20 to-blue-500/20"
               backContent={
                 <>
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500/30 to-blue-500/30 flex items-center justify-center mb-4">
                     <span className="text-3xl">📋</span>
                   </div>
                   <h4 className="text-lg font-semibold text-slate-100 mb-3">Gestión de Requisitos</h4>
@@ -340,7 +324,7 @@ export function HomePage() {
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Stack tecnológico
             </h2>
-            <p className="text-xl app-text-secondary max-w-3xl mx-auto">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Arquitectura de triple almacenamiento optimizada para cada tipo de dato
             </p>
           </div>
@@ -373,7 +357,7 @@ export function HomePage() {
                 description: 'Inteligencia Artificial',
                 details: 'gemini-2.5-flash para análisis y generación de contenido',
                 icon: '✨',
-                color: 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+                color: 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
               },
               {
                 name: 'Spring Boot 3',
@@ -402,13 +386,13 @@ export function HomePage() {
       </section>
 
       {/* Architecture: 4 Memories */}
-      <section className="py-20 px-6 app-card/50">
+      <section className="py-20 px-6 bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Arquitectura de las 4 Memorias
             </h2>
-            <p className="text-xl app-text-secondary max-w-3xl mx-auto">
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               Modelo cognitivo inspirado en la memoria humana para gestión inteligente de requisitos
             </p>
           </div>
@@ -444,13 +428,13 @@ export function HomePage() {
                 icon: '📅'
               }
             ].map((memory, idx) => (
-              <div key={idx} className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+              <div key={idx} className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-indigo-500/30 transition-colors">
                 <div className="text-3xl mb-3">{memory.icon}</div>
                 <h3 className="text-lg font-bold text-slate-100 mb-2">{memory.name}</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="text-amber-400 font-medium">{memory.tech}</div>
+                  <div className="text-indigo-400 font-medium">{memory.tech}</div>
                   <div className="text-slate-500 font-mono text-xs">{memory.table}</div>
-                  <div className="app-text-muted">{memory.function}</div>
+                  <div className="text-slate-400">{memory.function}</div>
                 </div>
               </div>
             ))}
@@ -464,14 +448,14 @@ export function HomePage() {
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Comienza a transformar tu proceso de análisis hoy
           </h2>
-          <p className="text-xl app-text-secondary mb-8">
+          <p className="text-xl text-slate-300 mb-8">
             Únete a equipos de desarrollo que ya están ahorrando tiempo y mejorando
             la calidad de sus especificaciones con SpecAtlas
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
-              className="inline-flex items-center justify-center px-8 py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-lg font-semibold transition-all hover:scale-105"
+              className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-lg font-semibold transition-all hover:scale-105"
             >
               Crear cuenta gratuita
             </Link>
@@ -482,25 +466,25 @@ export function HomePage() {
               Iniciar sesión
             </Link>
           </div>
-          <p className="mt-6 app-text-muted">
+          <p className="mt-6 text-slate-400">
             Sin tarjeta de crédito • 14 días de prueba gratis • Cumple normas ISO 25010
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t app-border py-12 px-6">
+      <footer className="border-t border-slate-800 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+          <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
             SpecAtlas
           </div>
-          <div className="app-text-muted text-sm">
-            © 2026 SpecAtlas — Proyecto Final Estructuras de Datos. Todos los derechos reservados.
+          <div className="text-slate-400 text-sm">
+            © 2026 SpecAtlas. Todos los derechos reservados.
           </div>
           <div className="flex items-center gap-6">
-            <a href="#" className="app-text-muted hover:text-white transition-colors">Documentación</a>
-            <a href="#" className="app-text-muted hover:text-white transition-colors">GitHub</a>
-            <a href="#" className="app-text-muted hover:text-white transition-colors">Contacto</a>
+            <a href="#" className="text-slate-400 hover:text-white transition-colors">Documentación</a>
+            <a href="#" className="text-slate-400 hover:text-white transition-colors">GitHub</a>
+            <a href="#" className="text-slate-400 hover:text-white transition-colors">Contacto</a>
           </div>
         </div>
       </footer>
