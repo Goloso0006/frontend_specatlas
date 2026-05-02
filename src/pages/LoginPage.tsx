@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
 import { LoadingAnimation } from '../components/ui/LoadingAnimation'
+import ParticleBackground from '../components/ui/ParticleBackground'
 
 interface LoginLocationState {
   from?: string
@@ -47,8 +48,10 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen app-bg p-6 app-text-primary flex items-center justify-center">
-      <Card className="w-full max-w-md p-6 sm:p-8 space-y-6">
+    <main className="relative isolate min-h-screen overflow-hidden bg-[#0a0a0a] p-6 app-text-primary flex items-center justify-center">
+      <ParticleBackground />
+      <div className="relative z-10 w-full flex justify-center">
+        <Card className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-[#121212]/90 backdrop-blur-xl border border-white/10 shadow-2xl">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Iniciar Sesión</h1>
           <p className="text-[15px] app-text-secondary">{status}</p>
@@ -86,7 +89,8 @@ export function LoginPage() {
             Regístrate aquí
           </Link>
         </p>
-      </Card>
+        </Card>
+      </div>
     </main>
   )
 }

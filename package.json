@@ -12,6 +12,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
     "@xyflow/react": "^12.10.2",
     "axios": "^1.15.0",
     "d3-force": "^3.0.0",
