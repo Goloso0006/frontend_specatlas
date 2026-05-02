@@ -17,6 +17,7 @@ interface DustParticlesProps {
   speed?: number;
   opacityMax?: number;
   color?: string;
+  zIndex?: number;
 }
 
 export default function DustParticles({
@@ -24,7 +25,8 @@ export default function DustParticles({
   maxRadius = 2.5,
   speed = 0.3,
   opacityMax = 0.6,
-  color = '255, 255, 255'
+  color = '255, 255, 255',
+  zIndex = 0,
 }: DustParticlesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -119,7 +121,7 @@ export default function DustParticles({
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 0 }}
+      style={{ zIndex }}
     />
   );
 }

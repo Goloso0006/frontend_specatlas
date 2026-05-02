@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import HeroAIGraph from '../components/ui/KnowledgeGraph'
 import DustParticles from '../components/ui/DustParticles'
+import DecryptedText from '../components/ui/DecryptedText'
 // Componente de tarjeta 3D flip optimizado
 function FlipCard({
   title,
@@ -67,9 +69,51 @@ function Button({ children, variant = 'primary', className = '', ...props }: any
 }
 
 export function HomePage() {
+  const [showPreloader, setShowPreloader] = useState(true);
+  const [hidePreloader, setHidePreloader] = useState(false);
+
+  const preloaderTextSpeed = 45;
+  const preloaderTextIterations = 30;
+  const preloaderHoldMs = 900;
+  const preloaderFadeMs = 700;
+
+  useEffect(() => {
+    // Wait until the decrypted text is likely complete, then fade out smoothly.
+    const textDuration = preloaderTextSpeed * preloaderTextIterations;
+    const showDuration = textDuration + preloaderHoldMs;
+
+    const startFadeTimer = window.setTimeout(() => setHidePreloader(true), showDuration);
+    const removeTimer = window.setTimeout(() => setShowPreloader(false), showDuration + preloaderFadeMs);
+
+    return () => {
+      window.clearTimeout(startFadeTimer);
+      window.clearTimeout(removeTimer);
+    };
+  }, []);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[var(--color-bg)] text-[var(--color-text-primary)] font-s antialiased">
       <DustParticles />
+
+      {showPreloader && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[#070707] transition-all duration-700 ease-out ${hidePreloader ? 'opacity-0 blur-sm scale-[1.02]' : 'opacity-100'}`}
+        >
+          <DustParticles count={45} zIndex={48} />
+          <div className="relative z-[49] text-center text-white">
+            <DecryptedText
+              text="Bienvenido a SpecAtlas"
+              speed={preloaderTextSpeed}
+              maxIterations={preloaderTextIterations}
+              className="text-2xl font-bold"
+              parentClassName="text-2xl font-bold"
+              encryptedClassName="text-2xl font-bold opacity-60"
+              animateOn="view"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="relative z-10">
       {/* Navegación superior */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-border)]">
