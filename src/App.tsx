@@ -7,6 +7,7 @@ import { RequirementsPage } from './pages/RequirementsPage'
 import { ValidationRulesPage } from './pages/ValidationRulesPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { HomePage } from './pages/HomePage'
+import { ProjectWorkspacePage } from './pages/ProjectWorkspacePage'
 import { ProtectedRoute } from './router/ProtectedRoute'
 import { PublicOnlyRoute } from './router/PublicOnlyRoute'
 import { AppShell } from './components/layout/AppShell'
@@ -27,6 +28,7 @@ function App() {
         <Route path="/app" element={<AppShell><DashboardPage /></AppShell>} />
         <Route path="/app/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
         <Route path="/app/projects" element={<AppShell><ProjectsPage /></AppShell>} />
+        <Route path="/app/projects/:id" element={<AppShell><ProjectWorkspacePage /></AppShell>} />
         <Route path="/app/requirements" element={<AppShell><RequirementsPage /></AppShell>} />
         <Route path="/app/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
       </Route>
