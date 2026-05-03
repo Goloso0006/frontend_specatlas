@@ -200,7 +200,7 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '❓', title: 'Ambigüedad', description: 'Requisitos poco claros generan diferentes interpretaciones desde el inicio' },
+              { icon: (<img src="/dist/icons/noun-confusion-6213917.svg" alt="Ambigüedad" className="w-10 h-10 mx-auto" />), title: 'Ambigüedad', description: 'Requisitos poco claros generan diferentes interpretaciones desde el inicio' },
               { icon: '🔗', title: 'Sin trazabilidad', description: 'Imposible entender cómo un cambio afecta al resto del sistema' },
               { icon: '📄', title: 'Información fragmentada', description: 'Documentación dispersa en múltiples archivos y formatos' },
               { icon: '💰', title: 'Alto costo de corrección', description: 'Corregir errores tarde es 100x más costoso que en el análisis' }
