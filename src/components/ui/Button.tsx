@@ -4,10 +4,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  cursor?: React.CSSProperties['cursor'];
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className = '', variant = 'primary', size = 'md', isLoading, children, ...props }, ref) => {
+  ({ className = '', variant = 'primary', size = 'md', isLoading, children, cursor, style, ...props }, ref) => {
     const baseStyles = 'inline-flex items-center justify-center font-medium rounded-md focus-ring interactive disabled:opacity-50 disabled:cursor-not-allowed';
     
     const variants = {
@@ -23,11 +24,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'h-10 px-6 text-[15px]',
     };
 
+    const finalStyle = { ...(style || {}), ...(cursor ? { cursor } : {}) };
+
     return (
       <button
         ref={ref}
         className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
         disabled={isLoading || props.disabled}
+        style={finalStyle}
         {...props}
       >
         {isLoading ? (

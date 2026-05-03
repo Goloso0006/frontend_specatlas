@@ -78,7 +78,7 @@ export function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </div>
-          <Button className="w-full" size="lg" type="submit" isLoading={isLoading}>
+          <Button className="w-full cursor-pointer" size="lg" type="submit" isLoading={isLoading}>
             Entrar
           </Button>
         </form>

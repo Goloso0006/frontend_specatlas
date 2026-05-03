@@ -91,7 +91,7 @@ export function RegisterPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          <Button className="w-full mt-2" size="lg" type="submit" isLoading={isLoading}>
+          <Button className="w-full cursor-pointer mt-2" size="lg" type="submit" isLoading={isLoading}>
             Crear cuenta
           </Button>
         </form>
