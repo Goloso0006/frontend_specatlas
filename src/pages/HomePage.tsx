@@ -251,7 +251,10 @@ export function HomePage() {
               <div className="relative bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-8 shadow-lg">
                 <div className="space-y-5">
                   <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
-                    <div className="text-xs font-mono text-[var(--color-text-muted)] mb-2">📝 Texto original:</div>
+                    <div className="text-xs font-mono text-[var(--color-text-muted)] mb-2">
+                      <img src="/iconsHomeSectionSolution/noun-text-5035477.svg" alt="Texto original" className="inline-block w-4 h-4 mr-2 align-text-bottom" />
+                      Texto original:
+                    </div>
                     <div className="text-sm text-[var(--color-text-secondary)] italic">"El sistema debe ser rápido y fácil de usar"</div>
                   </div>
                   <div className="flex justify-center">
@@ -262,12 +265,12 @@ export function HomePage() {
                     </div>
                   </div>
                   <div className="p-4 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-border-strong)]">
-                    <div className="text-xs font-mono text-[var(--color-accent)] mb-2 font-semibold">✨ Requisito estructurado:</div>
+                    <div className="text-xs font-mono text-[var(--color-accent)] mb-2 font-semibold"><img src="/iconsHomeSectionSolution/noun-item-7552539.svg" alt="Requisito estructurado" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Requisito estructurado:</div>
                     <div className="text-sm text-[var(--color-text-primary)] space-y-2">
                       <div><span className="font-medium">Título:</span> Tiempo de respuesta del sistema</div>
                       <div><span className="font-medium">Criterio BDD:</span> Dado que el usuario realiza una acción, cuando el sistema procesa la solicitud, entonces la respuesta debe ser menor a 2 segundos</div>
                       <div className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-card)] p-2 rounded-md mt-2">
-                        ⚠️ Ambigüedad detectada: "fácil" sin métrica definida
+                        <img src="/iconsHomeSectionSolution/noun-warning-6740277.svg" alt="Advertencia" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Ambigüedad detectada: "fácil" sin métrica definida
                       </div>
                     </div>
                   </div>
@@ -292,7 +295,7 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <FlipCard
-              icon={(<img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="w-12 h-12" />)}
+              icon={(<img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="w-16 h-16" />)}
               title="Gestión de Requisitos"
               description="Conversión de texto libre, validación IEEE 830/ISO 25010, exportación PDF/Excel"
               backContent={
@@ -312,7 +315,7 @@ export function HomePage() {
               }
             />
             <FlipCard
-              icon={(<img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="w-12 h-12" />)}
+              icon={(<img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="w-16 h-16" />)}
               title="Análisis y Calidad"
               description="Búsqueda semántica pgvector, análisis de impacto Neo4j, trazabilidad completa"
               backContent={
@@ -332,7 +335,7 @@ export function HomePage() {
               }
             />
             <FlipCard
-              icon={(<img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="w-12 h-12" />)}
+              icon={(<img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="w-16 h-16" />)}
               title="Modelado UML"
               description="Diagramas de casos de uso, clases, secuencia, componentes y despliegue"
               backContent={

@@ -150,7 +150,7 @@ export function HeroFlowGraph() {
           
           <Panel position="bottom-center" className="mb-6">
              <div className="bg-[#1e1e1e]/80 backdrop-blur-md border border-[#333] px-5 py-2.5 rounded-xl text-[11px] tracking-wider font-semibold text-[#a3a3a3] flex gap-3 shadow-xl">
-               <span className="text-white">💡 Tip:</span> 
+               <span className="text-white inline-flex items-center gap-1"><img src="/iconKnowledgeGraph/noun-tips-7740167.svg" alt="Tip" className="w-4 h-4" />Tip:</span> 
                <span>Arrastra las tarjetas para interactuar con la arquitectura.</span>
              </div>
           </Panel>
