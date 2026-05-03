@@ -270,7 +270,7 @@ export function HomePage() {
                       <div><span className="font-medium">Título:</span> Tiempo de respuesta del sistema</div>
                       <div><span className="font-medium">Criterio BDD:</span> Dado que el usuario realiza una acción, cuando el sistema procesa la solicitud, entonces la respuesta debe ser menor a 2 segundos</div>
                       <div className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-card)] p-2 rounded-md mt-2">
-                        <img src="/iconsHomeSectionSolution/noun-warning-6740277.svg" alt="Advertencia" className="inline-block w-5 h-5 mt-0.5 mr-2 align-text-bottom" />Ambigüedad detectada: "fácil" sin métrica definida
+                        <img src="/iconsHomeSectionSolution/noun-warning-6740277.svg" alt="Advertencia" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Ambigüedad detectada: "fácil" sin métrica definida
                       </div>
                     </div>
                   </div>
