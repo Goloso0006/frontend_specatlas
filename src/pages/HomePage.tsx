@@ -206,7 +206,7 @@ export function HomePage() {
               { icon: '💰', title: 'Alto costo de corrección', description: 'Corregir errores tarde es 100x más costoso que en el análisis' }
             ].map((problem, idx) => (
               <div key={idx} className="group p-6 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all duration-300 hover:shadow-md">
-                <div className="text-4xl mb-4 opacity-80 group-hover:scale-105 transition-transform flex justify-center">{problem.icon}</div>
+              <div className="text-4xl mb-4 opacity-80 group-hover:scale-105 transition-transform">{problem.icon}</div>
                 <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">{problem.title}</h3>
                 <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{problem.description}</p>
               </div>
