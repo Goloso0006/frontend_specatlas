@@ -13,7 +13,7 @@ function FlipCard({
 }: {
   title: string
   description: string
-  icon: string
+  icon: React.ReactNode
   backContent?: React.ReactNode
 }) {
   return (
@@ -292,13 +292,13 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <FlipCard
-              icon="📋"
+              icon={(<img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="w-12 h-12" />)}
               title="Gestión de Requisitos"
               description="Conversión de texto libre, validación IEEE 830/ISO 25010, exportación PDF/Excel"
               backContent={
                 <div className="space-y-3 text-left w-full px-2">
                   <div className="w-12 h-12 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">📋</span>
+                    <span className="text-2xl"><img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="w-8 h-8" /></span>
                   </div>
                   <h4 className="text-lg font-semibold text-[var(--color-text-primary)] text-center">Gestión de Requisitos</h4>
                   <ul className="text-sm text-[var(--color-text-secondary)] space-y-2 mt-3">
@@ -312,13 +312,13 @@ export function HomePage() {
               }
             />
             <FlipCard
-              icon="🔍"
+              icon={(<img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="w-12 h-12" />)}
               title="Análisis y Calidad"
               description="Búsqueda semántica pgvector, análisis de impacto Neo4j, trazabilidad completa"
               backContent={
                 <div className="space-y-3 text-left w-full px-2">
                   <div className="w-12 h-12 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">🔍</span>
+                    <span className="text-2xl"><img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="w-8 h-8" /></span>
                   </div>
                   <h4 className="text-lg font-semibold text-[var(--color-text-primary)] text-center">Análisis y Calidad</h4>
                   <ul className="text-sm text-[var(--color-text-secondary)] space-y-2 mt-3">
@@ -332,13 +332,13 @@ export function HomePage() {
               }
             />
             <FlipCard
-              icon="📊"
+              icon={(<img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="w-12 h-12" />)}
               title="Modelado UML"
               description="Diagramas de casos de uso, clases, secuencia, componentes y despliegue"
               backContent={
                 <div className="space-y-3 text-left w-full px-2">
                   <div className="w-12 h-12 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">📊</span>
+                    <span className="text-2xl"><img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="w-8 h-8" /></span>
                   </div>
                   <h4 className="text-lg font-semibold text-[var(--color-text-primary)] text-center">Modelado UML</h4>
                   <ul className="text-sm text-[var(--color-text-secondary)] space-y-2 mt-3">
