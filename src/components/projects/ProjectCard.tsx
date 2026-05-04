@@ -16,7 +16,7 @@ export const ProjectCard: React.FC<{
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h3 className="text-[16px] font-semibold app-text-primary truncate">{project.name}</h3>
-          <span className="text-[11px] app-text-muted uppercase tracking-wider">{project.id.slice(0,8)}</span>
+          <span className="text-[11px] app-text-muted uppercase tracking-wider">{project.id}</span>
         </div>
 
         <p className="text-[13px] app-text-secondary line-clamp-2 mb-4">{project.description || 'Sin descripción'}</p>

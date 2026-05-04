@@ -202,7 +202,7 @@ export function ProjectsPage() {
                   {project.status}
                 </Badge>
                 <span className="text-[11px] app-text-muted uppercase tracking-wider" title="ID del Proyecto">
-                  {project.id.slice(0, 8)}
+                  {project.id}
                 </span>
               </div>
               
