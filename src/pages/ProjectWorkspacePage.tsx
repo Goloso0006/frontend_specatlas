@@ -1,25 +1,39 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { projectFacade } from '../facades/project.facade'
+import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { PageShell } from '../components/layout/PageShell'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Button } from '../components/ui/Button'
+import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type { ProjectResponse } from '../types/projects'
 
 export function ProjectWorkspacePage() {
-  const { id } = useParams()
+  const { projectId } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectResponse | null>(null)
   const { run } = useApiOperation()
+  const { selectProject } = useProject()
 
   useEffect(() => {
-    if (!id) return
+    if (!isValidProjectId(projectId)) return
+
     run(async () => {
-      const data = await projectFacade.getProject(id)
+      const data = await projectFacade.getProject(projectId)
       setProject(data)
+      // Also set this project in the global context so other pages can access it
+      await selectProject(projectId)
     })
-  }, [id])
+  }, [projectId])
+
+  if (!isValidProjectId(projectId)) {
+    return (
+      <PageShell>
+        <NoProjectSelected message="El ID de proyecto en la URL no es válido." />
+      </PageShell>
+    )
+  }
 
   if (!project) {
     return (
@@ -48,9 +62,9 @@ export function ProjectWorkspacePage() {
             <div className="rounded-xl border app-border-strong app-card p-6">
               <h3 className="font-semibold mb-3">Módulos</h3>
               <div className="space-y-2">
-                <Button onClick={() => navigate('/app/requirements')} variant="secondary">Requisitos</Button>
-                <Button onClick={() => navigate('/app/diagrams')} variant="secondary">Diagramas</Button>
-                <Button onClick={() => navigate('/app/validation-rules')} variant="secondary">Reglas</Button>
+                <Button onClick={() => navigate(`/app/projects/${project.id}/requirements`)} variant="secondary">Requisitos</Button>
+                <Button onClick={() => navigate(`/app/projects/${project.id}/diagrams`)} variant="secondary">Diagramas</Button>
+                <Button onClick={() => navigate(`/app/projects/${project.id}/validation-rules`)} variant="secondary">Reglas</Button>
               </div>
             </div>
           </div>

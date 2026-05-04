@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
-import { useAuth } from '../auth/useAuth'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { graphFacade } from '../facades/graph.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { requirementFacade } from '../facades/requirement.facade'
+import { isValidProjectId } from '../context/ProjectContext'
+import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type {
   DuplicateMatchResponse,
   RequirementDTO,
@@ -32,13 +33,18 @@ const EMPTY_REQUIREMENT: RequirementDTO = {
 }
 
 export function RequirementsPage() {
-  const { user } = useAuth()
+  // ── projectId comes from route params, NOT from userId ──
+  const { projectId: routeProjectId } = useParams()
   const { run } = useApiOperation()
 
-  const [projectId, setProjectId] = useState(user?.userId ?? '')
+  const projectId = routeProjectId ?? ''
+
   const [text, setText] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [requirement, setRequirement] = useState<RequirementDTO>(EMPTY_REQUIREMENT)
+  const [requirement, setRequirement] = useState<RequirementDTO>({
+    ...EMPTY_REQUIREMENT,
+    projectId,
+  })
   const [status, setStatus] = useState('Listo para administrar requisitos')
   const [projectRequirements, setProjectRequirements] = useState<RequirementDTO[]>([])
   const [searchResults, setSearchResults] = useState<SearchResponse[]>([])
@@ -48,11 +54,29 @@ export function RequirementsPage() {
   const [impactGraph, setImpactGraph] = useState<Record<string, unknown> | null>(null)
   const [inferenceGraph, setInferenceGraph] = useState<Record<string, unknown> | null>(null)
 
+  // ── Guard: Show empty state if no valid projectId ──
+  if (!isValidProjectId(projectId)) {
+    return (
+      <main className="min-h-screen app-bg p-6 app-text-primary">
+        <section className="mx-auto max-w-6xl py-12">
+          <NoProjectSelected message="Para gestionar requisitos, primero selecciona un proyecto desde el dashboard." />
+        </section>
+      </main>
+    )
+  }
+
+  // Keep requirement.projectId in sync with route param
+  useEffect(() => {
+    if (isValidProjectId(projectId)) {
+      setRequirement((current) => ({ ...current, projectId }))
+    }
+  }, [projectId])
+
   async function handleConvert(): Promise<void> {
-    if (!projectId.trim() || !text.trim()) return
+    if (!isValidProjectId(projectId) || !text.trim()) return
 
     const data = await run(
-      () => requirementFacade.convertTextToRequirement(projectId.trim(), text.trim()),
+      () => requirementFacade.convertTextToRequirement(projectId, text.trim()),
       {
         operationName: 'convertRequirement',
         errorMessage: 'No fue posible convertir el texto a requisito.',
@@ -63,7 +87,7 @@ export function RequirementsPage() {
   }
 
   async function handleSave(): Promise<void> {
-    if (!requirement.title.trim() || !requirement.projectId.trim()) return
+    if (!requirement.title.trim() || !isValidProjectId(requirement.projectId)) return
 
     const data = await run(
       () => requirementFacade.saveRequirement(requirement),
@@ -96,10 +120,10 @@ export function RequirementsPage() {
   }
 
   async function handleLoadProjectRequirements(): Promise<void> {
-    if (!projectId.trim()) return
+    if (!isValidProjectId(projectId)) return
 
     const data = await run(
-      () => requirementFacade.getRequirementsByProject(projectId.trim()),
+      () => requirementFacade.getRequirementsByProject(projectId),
       {
         operationName: 'loadProjectRequirements',
         errorMessage: 'No fue posible cargar los requisitos del proyecto.',
@@ -113,11 +137,11 @@ export function RequirementsPage() {
   }
 
   async function handleDuplicates(): Promise<void> {
-    if (!projectId.trim() || !requirement.title.trim()) return
+    if (!isValidProjectId(projectId) || !requirement.title.trim()) return
 
     const data = await run(
       () => requirementFacade.checkDuplicates({
-        projectId: projectId.trim(),
+        projectId,
         title: requirement.title.trim(),
         description: requirement.description.trim(),
       }),
@@ -148,7 +172,7 @@ export function RequirementsPage() {
   }
 
   async function handleInferRelations(): Promise<void> {
-    if (!projectId.trim()) return
+    if (!isValidProjectId(projectId)) return
 
     if (projectRequirements.length === 0) {
       setStatus('Primero carga los requisitos del proyecto para inferir relaciones.')
@@ -156,7 +180,7 @@ export function RequirementsPage() {
     }
 
     const data = await run(
-      () => graphFacade.inferRelations(projectId.trim(), projectRequirements),
+      () => graphFacade.inferRelations(projectId, projectRequirements),
       {
         operationName: 'inferRelations',
         errorMessage: 'No fue posible inferir relaciones.',
@@ -210,18 +234,13 @@ export function RequirementsPage() {
         <header className="rounded-2xl border app-border-strong app-card p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Requisitos</h1>
           <p className="text-sm app-text-secondary">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
+          <p className="mt-1 text-xs app-text-muted">Proyecto: <code className="rounded app-surface px-1.5 py-0.5 font-mono">{projectId}</code></p>
           <p className="mt-2 text-sm text-app-accent">{status}</p>
         </header>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
           <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <h2 className="font-semibold">Asistente de requisitos</h2>
-            <input
-              className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
-              placeholder="projectId"
-              value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
-            />
             <textarea
               className="min-h-28 w-full rounded-md border app-border-strong app-surface px-3 py-2"
               placeholder="Texto libre para convertir"
@@ -249,7 +268,7 @@ export function RequirementsPage() {
               </label>
               <label className="space-y-1 text-sm">
                 <span>ProjectId</span>
-                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.projectId} onChange={(event) => setRequirement((current) => ({ ...current, projectId: event.target.value }))} />
+                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2 app-text-muted cursor-not-allowed" value={requirement.projectId} readOnly title="El projectId se obtiene del proyecto seleccionado" />
               </label>
               <label className="space-y-1 text-sm sm:col-span-2">
                 <span>Título</span>

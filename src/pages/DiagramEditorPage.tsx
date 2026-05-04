@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -12,6 +12,8 @@ import {
 import { diagramFacade } from '../facades/diagram.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { useAuth } from '../auth/useAuth'
+import { isValidProjectId } from '../context/ProjectContext'
+import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { DiagramCanvas } from '../components/diagram/DiagramCanvas'
 import { DiagramSidebar, type EditorTarget } from '../components/diagram/DiagramSidebar'
 import { DiagramToolbar } from '../components/diagram/DiagramToolbar'
@@ -37,12 +39,15 @@ import {
 
 export function DiagramEditorPage() {
   const { user, logout } = useAuth()
+  const { projectId: routeProjectId } = useParams()
   const { state: editorState, actions: editorActions } = useDiagramEditorStore()
   const { run } = useApiOperation()
 
+  // projectId comes from route params, NOT from manual input or userId
+  const [projectId, setProjectId] = useState(routeProjectId ?? '')
+
   // ── Diagram metadata ──
   const [diagramId, setDiagramId] = useState('')
-  const [projectId, setProjectId] = useState('')
   const [diagramName, setDiagramName] = useState('Diagrama de clases')
   const [diagramType, setDiagramType] = useState<DiagramType>('CLASS')
   const [plantUmlPreview, setPlantUmlPreview] = useState('')
@@ -61,6 +66,17 @@ export function DiagramEditorPage() {
   const selectedNode = source.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedEdge = source.edges.find((edge) => edge.id === selectedEdgeId) ?? null
   const validation = useMemo(() => validateDiagramSource(source), [source])
+
+  // ── Guard: Show empty state if no valid projectId ──
+  if (!isValidProjectId(routeProjectId)) {
+    return (
+      <main className="min-h-screen app-bg p-6 app-text-primary">
+        <section className="mx-auto max-w-6xl py-12">
+          <NoProjectSelected message="Para usar el editor de diagramas, primero selecciona un proyecto desde el dashboard." />
+        </section>
+      </main>
+    )
+  }
 
   // ── Canvas handlers ──
   const handleNodesChange: OnNodesChange = useCallback((changes) => {
@@ -169,7 +185,7 @@ export function DiagramEditorPage() {
 
   // ── CRUD operations (via diagramFacade + useApiOperation) ──
   async function handleCreateManualDiagram(): Promise<void> {
-    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId antes de crear el diagrama.'); return }
+    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido antes de crear el diagrama.'); return }
     if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
     if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
 
@@ -188,7 +204,7 @@ export function DiagramEditorPage() {
   }
 
   async function handleCreateUseCaseManualDiagram(): Promise<void> {
-    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId antes de crear el diagrama.'); return }
+    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido antes de crear el diagrama.'); return }
     if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
     if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
 
@@ -208,7 +224,7 @@ export function DiagramEditorPage() {
   }
 
   async function handleGenerateAutoDiagram(): Promise<void> {
-    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
+    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
 
     editorActions.loading('Generando diagrama automático...')
     const data = await run(
@@ -220,7 +236,7 @@ export function DiagramEditorPage() {
   }
 
   async function handleGenerateUseCaseAutoDiagram(): Promise<void> {
-    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
+    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
 
     editorActions.loading('Generando caso de uso automático...')
     const data = await run(
@@ -244,7 +260,7 @@ export function DiagramEditorPage() {
   }
 
   async function handleLoadProjectDiagrams(): Promise<void> {
-    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
+    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
 
     editorActions.loading('Listando diagramas del proyecto...')
     const data = await run(
@@ -260,7 +276,7 @@ export function DiagramEditorPage() {
   }
 
   async function handleSaveDiagram(): Promise<void> {
-    if (!projectId.trim()) { editorActions.error('Debes indicar un projectId.'); return }
+    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
     if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
     if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
 
@@ -337,6 +353,7 @@ export function DiagramEditorPage() {
             <p className="text-xs uppercase tracking-[0.3em] text-app-accent">Fase 3</p>
             <h1 className="text-2xl font-semibold">Editor visual de diagramas</h1>
             <p className="text-sm app-text-secondary">Fuente de verdad: sourceJson</p>
+            <p className="mt-1 text-xs app-text-muted">Proyecto: <code className="rounded app-surface px-1.5 py-0.5 font-mono">{projectId}</code></p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link className="rounded-md border app-border-strong px-3 py-2 text-sm" to="/app">
@@ -356,9 +373,8 @@ export function DiagramEditorPage() {
             <div className="space-y-3">
               <div>
                 <h2 className="font-semibold">Datos del diagrama</h2>
-                <p className="text-xs app-text-muted">Usa projectId para crear, cargar y guardar.</p>
+                <p className="text-xs app-text-muted">Proyecto seleccionado: {projectId}</p>
               </div>
-              <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="projectId" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
               <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="diagramId" value={diagramId} onChange={(e) => setDiagramId(e.target.value)} />
               <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="Nombre del diagrama" value={diagramName} onChange={(e) => setDiagramName(e.target.value)} />
 

@@ -1,20 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { validationRuleFacade } from '../facades/validationRule.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
+import { isValidProjectId } from '../context/ProjectContext'
+import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type { ValidationRuleRequest, ValidationRuleResponse, ValidationRuleSeverity } from '../types/validationRules'
 import { DataCard, DataField, EmptyState } from '../components/ui/DataDisplay'
-const EMPTY_RULE: ValidationRuleRequest = {
-  projectId: '',
-  name: '',
-  description: '',
-  ruleType: '',
-  condition: '',
-  severity: 'WARN',
-  enabled: true,
-}
 
 export function ValidationRulesPage() {
-  const [projectId, setProjectId] = useState('')
+  // ── projectId comes from route params, NOT from manual input ──
+  const { projectId: routeProjectId } = useParams()
+  const projectId = routeProjectId ?? ''
+
+  const EMPTY_RULE: ValidationRuleRequest = {
+    projectId,
+    name: '',
+    description: '',
+    ruleType: '',
+    condition: '',
+    severity: 'WARN',
+    enabled: true,
+  }
+
   const [ruleId, setRuleId] = useState('')
   const [form, setForm] = useState<ValidationRuleRequest>(EMPTY_RULE)
   const [rules, setRules] = useState<ValidationRuleResponse[]>([])
@@ -23,9 +30,34 @@ export function ValidationRulesPage() {
 
   const { run } = useApiOperation()
 
+  // ── Guard: Show empty state if no valid projectId ──
+  if (!isValidProjectId(projectId)) {
+    return (
+      <main className="min-h-screen app-bg p-6 app-text-primary">
+        <section className="mx-auto max-w-5xl py-12">
+          <NoProjectSelected message="Para gestionar reglas de validación, primero selecciona un proyecto desde el dashboard." />
+        </section>
+      </main>
+    )
+  }
+
+  // Keep form.projectId in sync with route param
+  useEffect(() => {
+    if (isValidProjectId(projectId)) {
+      setForm((current) => ({ ...current, projectId }))
+    }
+  }, [projectId])
+
+  // Auto-load rules when projectId is available
+  useEffect(() => {
+    if (isValidProjectId(projectId)) {
+      void handleList()
+    }
+  }, [projectId])
+
   async function handleList(): Promise<void> {
-    if (!projectId.trim()) {
-      setStatus('Debes indicar projectId.')
+    if (!isValidProjectId(projectId)) {
+      setStatus('Debes seleccionar un proyecto válido.')
       return
     }
 
@@ -61,12 +93,11 @@ export function ValidationRulesPage() {
       severity: match.severity,
       enabled: match.enabled,
     })
-    setProjectId(match.projectId)
     setStatus('Regla cargada para edicion.')
   }
 
   async function handleSave(): Promise<void> {
-    if (!form.projectId.trim() || !form.name.trim() || !form.ruleType.trim() || !form.condition.trim()) {
+    if (!isValidProjectId(form.projectId) || !form.name.trim() || !form.ruleType.trim() || !form.condition.trim()) {
       setStatus('Completa projectId, nombre, tipo y condicion.')
       return
     }
@@ -104,7 +135,7 @@ export function ValidationRulesPage() {
         await validationRuleFacade.deleteRule(selectedRule.id)
         setSelectedRule(null)
         setRuleId('')
-        setForm(EMPTY_RULE)
+        setForm({ ...EMPTY_RULE, projectId })
         setStatus('Regla eliminada correctamente.')
       },
       { errorMessage: 'No fue posible eliminar la regla.' }
@@ -121,13 +152,14 @@ export function ValidationRulesPage() {
         <header className="rounded-2xl border app-border-strong app-card p-4">
           <h1 className="text-3xl font-semibold tracking-tight">Reglas de validacion</h1>
           <p className="text-sm app-text-secondary">CRUD basico por proyecto para administrar validaciones.</p>
+          <p className="mt-1 text-xs app-text-muted">Proyecto: <code className="rounded app-surface px-1.5 py-0.5 font-mono">{projectId}</code></p>
         </header>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
             <h2 className="font-semibold">Formulario</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <input className="rounded-md border app-border-strong app-surface px-3 py-2" placeholder="projectId" value={form.projectId} onChange={(event) => updateField('projectId', event.target.value)} />
+              <input className="rounded-md border app-border-strong app-surface px-3 py-2 app-text-muted cursor-not-allowed" placeholder="projectId" value={form.projectId} readOnly title="El projectId se obtiene del proyecto seleccionado" />
               <input className="rounded-md border app-border-strong app-surface px-3 py-2" placeholder="ruleId para cargar" value={ruleId} onChange={(event) => setRuleId(event.target.value)} />
               <input className="rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Nombre" value={form.name} onChange={(event) => updateField('name', event.target.value)} />
               <input className="rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Tipo de regla" value={form.ruleType} onChange={(event) => updateField('ruleType', event.target.value)} />
@@ -157,14 +189,8 @@ export function ValidationRulesPage() {
           </article>
 
           <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
-            <input
-              className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
-              placeholder="projectId para listar"
-              value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
-            />
             <button className="w-full rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleList}>
-              Listar reglas por proyecto
+              Recargar reglas del proyecto
             </button>
             <div className="rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
               <p className="app-text-secondary">{status}</p>
@@ -218,7 +244,6 @@ export function ValidationRulesPage() {
                   onClick={() => {
                     setSelectedRule(rule)
                     setRuleId(rule.id)
-                    setProjectId(rule.projectId)
                     setForm({
                       projectId: rule.projectId,
                       name: rule.name,

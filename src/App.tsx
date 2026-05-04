@@ -26,10 +26,17 @@ function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<AppShell><DashboardPage /></AppShell>} />
-        <Route path="/app/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
         <Route path="/app/projects" element={<AppShell><ProjectsPage /></AppShell>} />
-        <Route path="/app/projects/:id" element={<AppShell><ProjectWorkspacePage /></AppShell>} />
+        <Route path="/app/projects/:projectId" element={<AppShell><ProjectWorkspacePage /></AppShell>} />
+
+        {/* Project-scoped routes (with projectId) */}
+        <Route path="/app/projects/:projectId/requirements" element={<AppShell><RequirementsPage /></AppShell>} />
+        <Route path="/app/projects/:projectId/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
+        <Route path="/app/projects/:projectId/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
+
+        {/* Legacy routes (without projectId) — show "select a project" state */}
         <Route path="/app/requirements" element={<AppShell><RequirementsPage /></AppShell>} />
+        <Route path="/app/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
         <Route path="/app/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
       </Route>
 
