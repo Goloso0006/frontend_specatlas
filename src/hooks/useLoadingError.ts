@@ -23,7 +23,7 @@ export function useLoadingError(): LoadingErrorContextValue {
  * ```
  */
 export function useApiOperation() {
-  const { startLoading, stopLoading, addError } = useLoadingError()
+  const { isLoading, startLoading, stopLoading, addError } = useLoadingError()
 
   const run = useCallback(
     async <T>(
@@ -53,6 +53,6 @@ export function useApiOperation() {
     [startLoading, stopLoading, addError],
   )
 
-  return { run }
+  return { run, isLoading }
 }
 

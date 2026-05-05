@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { validationRuleFacade } from '../facades/validationRule.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type { ValidationRuleRequest, ValidationRuleResponse, ValidationRuleSeverity } from '../types/validationRules'
-import { DataCard, DataField, EmptyState } from '../components/ui/DataDisplay'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Badge } from '../components/ui/Badge'
 
 export function ValidationRulesPage() {
-  // ── projectId comes from route params, NOT from manual input ──
   const { projectId: routeProjectId } = useParams()
+  const navigate = useNavigate()
   const projectId = routeProjectId ?? ''
 
   const EMPTY_RULE: ValidationRuleRequest = {
@@ -22,254 +24,217 @@ export function ValidationRulesPage() {
     enabled: true,
   }
 
-  const [ruleId, setRuleId] = useState('')
   const [form, setForm] = useState<ValidationRuleRequest>(EMPTY_RULE)
   const [rules, setRules] = useState<ValidationRuleResponse[]>([])
-  const [selectedRule, setSelectedRule] = useState<ValidationRuleResponse | null>(null)
-  const [status, setStatus] = useState('Listo para administrar reglas de validacion')
+  const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null)
+  const { run, isLoading } = useApiOperation()
 
-  const { run } = useApiOperation()
-
-  // ── Guard: Show empty state if no valid projectId ──
-  if (!isValidProjectId(projectId)) {
-    return (
-      <main className="min-h-screen app-bg p-6 app-text-primary">
-        <section className="mx-auto max-w-5xl py-12">
-          <NoProjectSelected message="Para gestionar reglas de validación, primero selecciona un proyecto desde el dashboard." />
-        </section>
-      </main>
-    )
-  }
-
-  // Keep form.projectId in sync with route param
   useEffect(() => {
     if (isValidProjectId(projectId)) {
-      setForm((current) => ({ ...current, projectId }))
+      handleList()
     }
   }, [projectId])
 
-  // Auto-load rules when projectId is available
-  useEffect(() => {
-    if (isValidProjectId(projectId)) {
-      void handleList()
-    }
-  }, [projectId])
-
-  async function handleList(): Promise<void> {
-    if (!isValidProjectId(projectId)) {
-      setStatus('Debes seleccionar un proyecto válido.')
-      return
-    }
-
-    await run(
-      async () => {
-        const data = await validationRuleFacade.getRulesByProject(projectId)
-        setRules(data)
-        setStatus(`Reglas cargadas: ${data.length}`)
-      },
-      { errorMessage: 'No fue posible listar las reglas.' }
-    )
-  }
-
-  async function handleLoadById(): Promise<void> {
-    if (!ruleId.trim()) {
-      setStatus('Debes indicar ruleId.')
-      return
-    }
-
-    const match = rules.find((rule) => rule.id === ruleId.trim())
-    if (!match) {
-      setStatus('La regla no esta en el listado actual.')
-      return
-    }
-
-    setSelectedRule(match)
-    setForm({
-      projectId: match.projectId,
-      name: match.name,
-      description: match.description,
-      ruleType: match.ruleType,
-      condition: match.condition,
-      severity: match.severity,
-      enabled: match.enabled,
+  async function handleList() {
+    await run(async () => {
+      const data = await validationRuleFacade.getRulesByProject(projectId)
+      setRules(data)
     })
-    setStatus('Regla cargada para edicion.')
   }
 
-  async function handleSave(): Promise<void> {
-    if (!isValidProjectId(form.projectId) || !form.name.trim() || !form.ruleType.trim() || !form.condition.trim()) {
-      setStatus('Completa projectId, nombre, tipo y condicion.')
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    
+    // Validations: All fields mandatory
+    if (!form.name.trim() || !form.ruleType.trim() || !form.condition.trim() || !form.description.trim()) {
+      alert('Todos los campos son obligatorios.')
       return
     }
 
-    await run(
-      async () => {
-        const data = selectedRule
-          ? await validationRuleFacade.updateRule(selectedRule.id, form)
-          : await validationRuleFacade.createRule(form)
-        setSelectedRule(data)
-        setRuleId(data.id)
-        setForm({
-          projectId: data.projectId,
-          name: data.name,
-          description: data.description,
-          ruleType: data.ruleType,
-          condition: data.condition,
-          severity: data.severity,
-          enabled: data.enabled,
-        })
-        setStatus('Regla guardada correctamente.')
-      },
-      { errorMessage: 'No fue posible guardar la regla.' }
-    )
+    await run(async () => {
+      if (selectedRuleId) {
+        await validationRuleFacade.updateRule(selectedRuleId, form)
+      } else {
+        await validationRuleFacade.createRule(form)
+      }
+      await handleList()
+      handleReset()
+    }, { errorMessage: 'Error al guardar la regla.' })
   }
 
-  async function handleDelete(): Promise<void> {
-    if (!selectedRule) {
-      setStatus('Primero carga una regla.')
-      return
-    }
-
-    await run(
-      async () => {
-        await validationRuleFacade.deleteRule(selectedRule.id)
-        setSelectedRule(null)
-        setRuleId('')
-        setForm({ ...EMPTY_RULE, projectId })
-        setStatus('Regla eliminada correctamente.')
-      },
-      { errorMessage: 'No fue posible eliminar la regla.' }
-    )
+  async function handleDelete(id: string) {
+    if (!window.confirm('¿Eliminar esta regla?')) return
+    await run(async () => {
+      await validationRuleFacade.deleteRule(id)
+      await handleList()
+      if (selectedRuleId === id) handleReset()
+    })
   }
 
-  function updateField<K extends keyof ValidationRuleRequest>(key: K, value: ValidationRuleRequest[K]): void {
-    setForm((current) => ({ ...current, [key]: value }))
+  function handleSelect(rule: ValidationRuleResponse) {
+    setSelectedRuleId(rule.id)
+    setForm({
+      projectId: rule.projectId,
+      name: rule.name,
+      description: rule.description,
+      ruleType: rule.ruleType,
+      condition: rule.condition,
+      severity: rule.severity,
+      enabled: rule.enabled,
+    })
+  }
+
+  function handleReset() {
+    setSelectedRuleId(null)
+    setForm(EMPTY_RULE)
+  }
+
+  if (!isValidProjectId(projectId)) {
+    return <NoProjectSelected message="Selecciona un proyecto para gestionar sus reglas." />
   }
 
   return (
-    <main className="min-h-screen app-bg p-6 app-text-primary">
-      <section className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-2xl border app-border-strong app-card p-4">
-          <h1 className="text-3xl font-semibold tracking-tight">Reglas de validacion</h1>
-          <p className="text-sm app-text-secondary">CRUD basico por proyecto para administrar validaciones.</p>
-          <p className="mt-1 text-xs app-text-muted">Proyecto: <code className="rounded app-surface px-1.5 py-0.5 font-mono">{projectId}</code></p>
-        </header>
+    <div className="min-h-screen bg-app-bg flex flex-col">
+      <nav className="h-16 px-8 flex items-center justify-between border-b border-app-border bg-white dark:bg-[#1e1e1e]">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(`/app/projects/${projectId}`)}
+            className="text-app-text-muted hover:text-app-text-primary transition-colors text-sm font-medium"
+          >
+            ← Hub
+          </button>
+          <div className="h-4 w-[1px] bg-app-border" />
+          <span className="font-semibold app-text-primary tracking-tight">Reglas de Validación</span>
+        </div>
+      </nav>
 
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
-            <h2 className="font-semibold">Formulario</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input className="rounded-md border app-border-strong app-surface px-3 py-2 app-text-muted cursor-not-allowed" placeholder="projectId" value={form.projectId} readOnly title="El projectId se obtiene del proyecto seleccionado" />
-              <input className="rounded-md border app-border-strong app-surface px-3 py-2" placeholder="ruleId para cargar" value={ruleId} onChange={(event) => setRuleId(event.target.value)} />
-              <input className="rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Nombre" value={form.name} onChange={(event) => updateField('name', event.target.value)} />
-              <input className="rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Tipo de regla" value={form.ruleType} onChange={(event) => updateField('ruleType', event.target.value)} />
-              <textarea className="min-h-24 rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Descripcion" value={form.description} onChange={(event) => updateField('description', event.target.value)} />
-              <textarea className="min-h-28 rounded-md border app-border-strong app-surface px-3 py-2 sm:col-span-2" placeholder="Condicion" value={form.condition} onChange={(event) => updateField('condition', event.target.value)} />
-              <select className="rounded-md border app-border-strong app-surface px-3 py-2" value={form.severity} onChange={(event) => updateField('severity', event.target.value as ValidationRuleSeverity)}>
-                <option value="INFO">INFO</option>
-                <option value="WARN">WARN</option>
-                <option value="ERROR">ERROR</option>
-              </select>
-              <label className="flex items-center gap-2 rounded-md border app-border-strong app-surface px-3 py-2 text-sm">
-                <input type="checkbox" checked={form.enabled} onChange={(event) => updateField('enabled', event.target.checked)} />
-                Activa
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSave}>
-                Guardar regla
-              </button>
-              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleLoadById}>
-                Cargar por id
-              </button>
-              <button className="rounded-md bg-app-danger text-white hover:opacity-90 px-3 py-2 font-medium" onClick={handleDelete}>
-                Eliminar regla
-              </button>
-            </div>
-          </article>
+      <main className="max-w-6xl mx-auto w-full py-12 px-8 grid gap-12 lg:grid-cols-[1fr_400px]">
+        {/* Left: List */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-app-border pb-4">
+            <h2 className="text-2xl font-bold tracking-tight">Reglas Existentes</h2>
+            <Badge variant="neutral">{rules.length} Reglas</Badge>
+          </div>
 
-          <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
-            <button className="w-full rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleList}>
-              Recargar reglas del proyecto
-            </button>
-            <div className="rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
-              <p className="app-text-secondary">{status}</p>
+          {rules.length === 0 ? (
+            <div className="py-20 text-center bg-white dark:bg-[#1e1e1e] border border-dashed border-app-border rounded-2xl">
+              <p className="app-text-secondary">No hay reglas definidas.</p>
             </div>
-            <div className="rounded-xl border app-border-strong app-bg/50 p-3">
-              <h3 className="mb-3 font-semibold">Regla seleccionada</h3>
-              {selectedRule ? (
-                <dl className="space-y-3">
-                  <DataField label="ID">{selectedRule.id}</DataField>
-                  <DataField label="Nombre">{selectedRule.name}</DataField>
-                  <DataField label="Descripción">{selectedRule.description}</DataField>
-                  <DataField label="Tipo">{selectedRule.ruleType}</DataField>
-                  <DataField label="Condición">
-                    <code className="rounded app-surface px-1.5 py-0.5 font-mono text-xs app-text-secondary">
-                      {selectedRule.condition}
-                    </code>
-                  </DataField>
-                  <DataField label="Severidad">
-                    <span className="rounded-md app-surface px-2 py-0.5 text-xs uppercase tracking-wider">
-                      {selectedRule.severity}
-                    </span>
-                  </DataField>
-                  <DataField label="Estado">
-                    {selectedRule.enabled ? (
-                      <span className="text-emerald-400">Activa</span>
-                    ) : (
-                      <span className="text-rose-400">Inactiva</span>
-                    )}
-                  </DataField>
-                </dl>
-              ) : (
-                <EmptyState message="Selecciona una regla del listado." />
-              )}
+          ) : (
+            <div className="grid gap-4">
+              {rules.map(rule => (
+                <div 
+                  key={rule.id}
+                  onClick={() => handleSelect(rule)}
+                  className={`p-5 bg-white dark:bg-[#1e1e1e] border rounded-xl cursor-pointer transition-all hover:shadow-md ${selectedRuleId === rule.id ? 'border-app-accent ring-1 ring-app-accent' : 'border-app-border'}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold">{rule.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={rule.severity === 'ERROR' ? 'danger' : rule.severity === 'WARN' ? 'warning' : 'neutral'}>
+                        {rule.severity}
+                      </Badge>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(rule.id); }}
+                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-md transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-sm app-text-secondary line-clamp-1">{rule.description}</p>
+                </div>
+              ))}
             </div>
-          </aside>
+          )}
         </section>
 
-        <article className="rounded-2xl border app-border-strong app-card p-4">
-          <h2 className="mb-3 font-semibold">Listado</h2>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {rules.length === 0 ? (
-              <div className="col-span-full">
-                <EmptyState message="Sin reglas cargadas." />
+        {/* Right: Form */}
+        <section className="space-y-6">
+          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm sticky top-8">
+            <h2 className="text-xl font-bold mb-6 tracking-tight">
+              {selectedRuleId ? 'Editar Regla' : 'Nueva Regla'}
+            </h2>
+
+            <form onSubmit={handleSave} className="space-y-4">
+              <Input
+                required
+                label="Nombre"
+                placeholder="Ej. Formato de Email"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+              />
+
+              <Input
+                required
+                label="Tipo"
+                placeholder="Ej. Regex, Presence"
+                value={form.ruleType}
+                onChange={e => setForm({ ...form, ruleType: e.target.value })}
+              />
+
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium app-text-secondary">Descripción</label>
+                <textarea
+                  required
+                  className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-3 text-[15px] focus:ring-2 focus:ring-app-accent/20 outline-none min-h-[100px] transition-all"
+                  placeholder="Explica qué valida esta regla..."
+                  value={form.description}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                />
               </div>
-            ) : (
-              rules.map((rule) => (
-                <DataCard
-                  key={rule.id}
-                  title={rule.name}
-                  subtitle={rule.ruleType}
-                  onClick={() => {
-                    setSelectedRule(rule)
-                    setRuleId(rule.id)
-                    setForm({
-                      projectId: rule.projectId,
-                      name: rule.name,
-                      description: rule.description,
-                      ruleType: rule.ruleType,
-                      condition: rule.condition,
-                      severity: rule.severity,
-                      enabled: rule.enabled,
-                    })
-                  }}
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-widest app-text-muted">{rule.severity}</span>
-                    {rule.enabled ? (
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                    ) : (
-                      <span className="h-2 w-2 rounded-full bg-app-surface"></span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm app-text-secondary line-clamp-2">{rule.description}</p>
-                </DataCard>
-              ))
-            )}
+
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium app-text-secondary">Condición (Lógica)</label>
+                <textarea
+                  required
+                  className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-3 text-[15px] font-mono focus:ring-2 focus:ring-app-accent/20 outline-none min-h-[100px] transition-all"
+                  placeholder="Ej. value.match(/^[a-z]+$/)"
+                  value={form.condition}
+                  onChange={e => setForm({ ...form, condition: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium app-text-secondary">Severidad</label>
+                  <select
+                    className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-2.5 text-sm appearance-none"
+                    value={form.severity}
+                    onChange={e => setForm({ ...form, severity: e.target.value as ValidationRuleSeverity })}
+                  >
+                    <option value="INFO">INFO</option>
+                    <option value="WARN">WARN</option>
+                    <option value="ERROR">ERROR</option>
+                  </select>
+                </div>
+                <div className="flex flex-col justify-end">
+                  <label className="flex items-center gap-3 px-4 py-2.5 bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={form.enabled} 
+                      onChange={e => setForm({ ...form, enabled: e.target.checked })} 
+                      className="w-4 h-4 rounded border-app-border"
+                    />
+                    <span className="text-sm font-medium">Activa</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                {selectedRuleId && (
+                  <Button type="button" variant="ghost" onClick={handleReset} className="flex-1">
+                    Limpiar
+                  </Button>
+                )}
+                <Button type="submit" className="flex-1" isLoading={isLoading}>
+                  {selectedRuleId ? 'Actualizar' : 'Crear Regla'}
+                </Button>
+              </div>
+            </form>
           </div>
-        </article>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
   )
 }

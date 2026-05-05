@@ -12,8 +12,8 @@ export interface DiagramToolbarProps {
   onSave: () => void
   onCreateManual: () => void
   onGenerateAuto: () => void
-  onCreateUseCaseManual: () => void
-  onGenerateUseCaseAuto: () => void
+  onCreateUseCaseManual?: () => void
+  onGenerateUseCaseAuto?: () => void
   onDeleteSelected: () => void
 }
 
@@ -66,21 +66,25 @@ export function DiagramToolbar({
         Generar clase automática
       </button>
 
-      <button
-        className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
-        onClick={onCreateUseCaseManual}
-        disabled={isBusy || !isValid}
-      >
-        Crear caso de uso manual
-      </button>
+      {onCreateUseCaseManual && (
+        <button
+          className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
+          onClick={onCreateUseCaseManual}
+          disabled={isBusy || !isValid}
+        >
+          Crear caso de uso manual
+        </button>
+      )}
 
-      <button
-        className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
-        onClick={onGenerateUseCaseAuto}
-        disabled={isBusy}
-      >
-        Generar caso de uso automático
-      </button>
+      {onGenerateUseCaseAuto && (
+        <button
+          className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
+          onClick={onGenerateUseCaseAuto}
+          disabled={isBusy}
+        >
+          Generar caso de uso automático
+        </button>
+      )}
 
       <button
         className="rounded-md bg-rose-600 px-3 py-2 text-sm font-medium transition-colors hover:bg-rose-500 disabled:opacity-50"

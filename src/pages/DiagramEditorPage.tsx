@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -11,13 +11,15 @@ import {
 } from 'reactflow'
 import { diagramFacade } from '../facades/diagram.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
-import { useAuth } from '../auth/useAuth'
 import { isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { DiagramCanvas } from '../components/diagram/DiagramCanvas'
 import { DiagramSidebar, type EditorTarget } from '../components/diagram/DiagramSidebar'
 import { DiagramToolbar } from '../components/diagram/DiagramToolbar'
 import { useDiagramEditorStore } from '../state/diagramEditor.store'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Badge } from '../components/ui/Badge'
 import type {
   DiagramClassNodeDTO,
   DiagramRelationDTO,
@@ -38,47 +40,33 @@ import {
 } from '../utils/diagramMapper'
 
 export function DiagramEditorPage() {
-  const { user, logout } = useAuth()
   const { projectId: routeProjectId } = useParams()
+  const navigate = useNavigate()
   const { state: editorState, actions: editorActions } = useDiagramEditorStore()
   const { run } = useApiOperation()
 
-  // projectId comes from route params, NOT from manual input or userId
   const [projectId, setProjectId] = useState(routeProjectId ?? '')
-
-  // ── Diagram metadata ──
   const [diagramId, setDiagramId] = useState('')
   const [diagramName, setDiagramName] = useState('Diagrama de clases')
   const [diagramType, setDiagramType] = useState<DiagramType>('CLASS')
   const [plantUmlPreview, setPlantUmlPreview] = useState('')
   const [diagramList, setDiagramList] = useState<DiagramSummaryResponse[]>([])
 
-  // ── Selection state ──
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [editorTarget, setEditorTarget] = useState<EditorTarget>(null)
 
-  // ── Diagram source (single source of truth) ──
   const [source, setSource] = useState<DiagramSourceDTO>(() => createEmptyDiagramSource())
 
-  // ── Derived state ──
   const flowState = useMemo(() => diagramSourceToReactFlow(source), [source])
   const selectedNode = source.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedEdge = source.edges.find((edge) => edge.id === selectedEdgeId) ?? null
   const validation = useMemo(() => validateDiagramSource(source), [source])
 
-  // ── Guard: Show empty state if no valid projectId ──
   if (!isValidProjectId(routeProjectId)) {
-    return (
-      <main className="min-h-screen app-bg p-6 app-text-primary">
-        <section className="mx-auto max-w-6xl py-12">
-          <NoProjectSelected message="Para usar el editor de diagramas, primero selecciona un proyecto desde el dashboard." />
-        </section>
-      </main>
-    )
+    return <NoProjectSelected message="Selecciona un proyecto para usar el editor de diagramas." />
   }
 
-  // ── Canvas handlers ──
   const handleNodesChange: OnNodesChange = useCallback((changes) => {
     setSource((current) => {
       const flow = diagramSourceToReactFlow(current)
@@ -124,7 +112,6 @@ export function DiagramEditorPage() {
     setEditorTarget(nodes[0] ? 'node' : edges[0] ? 'edge' : null)
   }, [])
 
-  // ── Toolbar actions ──
   function handleAddNode(): void {
     setSource((current) => ({
       ...current,
@@ -143,7 +130,6 @@ export function DiagramEditorPage() {
       setEditorTarget(null)
       return
     }
-
     if (selectedEdgeId) {
       setSource((current) => ({
         ...current,
@@ -154,7 +140,6 @@ export function DiagramEditorPage() {
     }
   }
 
-  // ── Sidebar handlers ──
   function updateNode(nextNode: DiagramClassNodeDTO): void {
     setSource((current) => ({
       ...current,
@@ -169,8 +154,7 @@ export function DiagramEditorPage() {
     }))
   }
 
-  // ── Sync helper ──
-  function syncDiagramResponse(response: DiagramResponse, message = 'Diagrama cargado correctamente.'): void {
+  function syncDiagramResponse(response: DiagramResponse, message = 'Diagrama cargado.'): void {
     setDiagramId(response.id)
     setProjectId(response.projectId)
     setDiagramName(response.name)
@@ -183,272 +167,117 @@ export function DiagramEditorPage() {
     editorActions.editing(message)
   }
 
-  // ── CRUD operations (via diagramFacade + useApiOperation) ──
   async function handleCreateManualDiagram(): Promise<void> {
-    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido antes de crear el diagrama.'); return }
-    if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
-    if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
-
-    editorActions.saving('Creando diagrama manual...')
-    const data = await run(
-      () => diagramFacade.createManual({
-        projectId: projectId.trim(),
-        name: diagramName.trim(),
-        sourceJson: serializeDiagramSource(source),
-        plantUmlCode: null,
-      }),
-      { operationName: 'createManualDiagram', errorMessage: 'No fue posible crear el diagrama manual.' },
-    )
-    if (data) syncDiagramResponse(data, 'Diagrama manual creado exitosamente.')
-    else editorActions.error('No fue posible crear el diagrama manual.')
-  }
-
-  async function handleCreateUseCaseManualDiagram(): Promise<void> {
-    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido antes de crear el diagrama.'); return }
-    if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
-    if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
-
-    editorActions.saving('Creando caso de uso manual...')
-    const data = await run(
-      () => diagramFacade.createUseCaseManual({
-        projectId: projectId.trim(),
-        name: diagramName.trim(),
-        sourceJson: serializeDiagramSource(source),
-        plantUmlCode: null,
-        diagramType: 'USE_CASE',
-      }),
-      { operationName: 'createUseCaseManualDiagram', errorMessage: 'No fue posible crear el diagrama de caso de uso.' },
-    )
-    if (data) syncDiagramResponse(data, 'Diagrama de caso de uso creado exitosamente.')
-    else editorActions.error('No fue posible crear el diagrama de caso de uso.')
+    if (!isValidProjectId(projectId) || !diagramName.trim() || !validation.isValid) return
+    const data = await run(() => diagramFacade.createManual({
+      projectId: projectId.trim(),
+      name: diagramName.trim(),
+      sourceJson: serializeDiagramSource(source),
+      plantUmlCode: null,
+    }), { errorMessage: 'Error al crear.' })
+    if (data) syncDiagramResponse(data, 'Diagrama creado.')
   }
 
   async function handleGenerateAutoDiagram(): Promise<void> {
-    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
-
-    editorActions.loading('Generando diagrama automático...')
-    const data = await run(
-      () => diagramFacade.generateClassDiagram(projectId.trim()),
-      { operationName: 'generateAutoDiagram', errorMessage: 'No fue posible generar el diagrama automático.' },
-    )
-    if (data) syncDiagramResponse(data, 'Diagrama automático generado exitosamente.')
-    else editorActions.error('No fue posible generar el diagrama automático.')
-  }
-
-  async function handleGenerateUseCaseAutoDiagram(): Promise<void> {
-    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
-
-    editorActions.loading('Generando caso de uso automático...')
-    const data = await run(
-      () => diagramFacade.generateUseCaseDiagram(projectId.trim()),
-      { operationName: 'generateUseCaseAutoDiagram', errorMessage: 'No fue posible generar el caso de uso automático.' },
-    )
-    if (data) syncDiagramResponse(data, 'Caso de uso automático generado exitosamente.')
-    else editorActions.error('No fue posible generar el caso de uso automático.')
-  }
-
-  async function handleLoadDiagram(): Promise<void> {
-    if (!diagramId.trim()) { editorActions.error('Debes indicar un diagramId.'); return }
-
-    editorActions.loading('Cargando diagrama...')
-    const data = await run(
-      () => diagramFacade.getById(diagramId.trim()),
-      { operationName: 'loadDiagram', errorMessage: 'No fue posible cargar el diagrama.' },
-    )
-    if (data) syncDiagramResponse(data, 'Diagrama cargado correctamente.')
-    else editorActions.error('No fue posible cargar el diagrama.')
+    if (!isValidProjectId(projectId)) return
+    const data = await run(() => diagramFacade.generateClassDiagram(projectId.trim()), { errorMessage: 'Error al generar.' })
+    if (data) syncDiagramResponse(data, 'Generación exitosa.')
   }
 
   async function handleLoadProjectDiagrams(): Promise<void> {
-    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
-
-    editorActions.loading('Listando diagramas del proyecto...')
-    const data = await run(
-      () => diagramFacade.listByProject(projectId.trim()),
-      { operationName: 'listProjectDiagrams', errorMessage: 'No fue posible listar los diagramas del proyecto.' },
-    )
-    if (data) {
-      setDiagramList(data)
-      editorActions.editing(`Diagramas del proyecto: ${data.length}`)
-    } else {
-      editorActions.error('No fue posible listar los diagramas del proyecto.')
-    }
+    if (!isValidProjectId(projectId)) return
+    const data = await run(() => diagramFacade.listByProject(projectId.trim()), { errorMessage: 'Error al listar.' })
+    if (data) setDiagramList(data)
   }
 
   async function handleSaveDiagram(): Promise<void> {
-    if (!isValidProjectId(projectId)) { editorActions.error('Debes seleccionar un proyecto válido.'); return }
-    if (!diagramName.trim()) { editorActions.error('Debes indicar un nombre para el diagrama.'); return }
-    if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
-
-    editorActions.saving('Guardando diagrama...')
+    if (!isValidProjectId(projectId) || !diagramName.trim() || !validation.isValid) return
     const payload = {
       projectId: projectId.trim(),
       name: diagramName.trim(),
       sourceJson: serializeDiagramSource(source),
       plantUmlCode: plantUmlPreview || null,
     }
-    const data = await run(
-      () => diagramFacade.saveOrUpdate(diagramId.trim() || null, payload),
-      { operationName: 'saveDiagram', errorMessage: 'No fue posible guardar el diagrama.' },
-    )
-    if (data) syncDiagramResponse(data, 'Diagrama guardado correctamente.')
-    else editorActions.error('No fue posible guardar el diagrama.')
+    const data = await run(() => diagramFacade.saveOrUpdate(diagramId.trim() || null, payload), { errorMessage: 'Error al guardar.' })
+    if (data) syncDiagramResponse(data, 'Guardado exitoso.')
   }
 
   async function handleGeneratePlantUml(): Promise<void> {
-    if (!diagramId.trim()) { editorActions.error('Primero carga o guarda un diagrama para generar PlantUML.'); return }
-    if (!validation.isValid) { editorActions.error(validation.errors.join(' ')); return }
-
-    editorActions.exporting('Generando PlantUML...')
-    const data = await run(
-      () => diagramFacade.generatePlantUml(diagramId.trim()),
-      { operationName: 'generatePlantUml', errorMessage: 'No fue posible generar PlantUML.' },
-    )
-    if (data) syncDiagramResponse(data, 'PlantUML generado correctamente.')
-    else editorActions.error('No fue posible generar PlantUML.')
+    if (!diagramId.trim() || !validation.isValid) return
+    const data = await run(() => diagramFacade.generatePlantUml(diagramId.trim()), { errorMessage: 'Error en PlantUML.' })
+    if (data) syncDiagramResponse(data, 'PlantUML actualizado.')
   }
 
   async function handleExport(format: 'puml' | 'txt'): Promise<void> {
-    if (!diagramId.trim()) { editorActions.error('Primero carga o guarda un diagrama.'); return }
-
-    editorActions.exporting(`Exportando ${format.toUpperCase()}...`)
-    const blob = await run(
-      () => format === 'puml'
-        ? diagramFacade.exportPlantUml(diagramId.trim())
-        : diagramFacade.exportText(diagramId.trim()),
-      { operationName: `export_${format}`, errorMessage: `No fue posible exportar el archivo ${format.toUpperCase()}.` },
-    )
-    if (blob) {
-      downloadBlob(blob, diagramName || 'diagram', format)
-      editorActions.editing(`Exportación ${format.toUpperCase()} completada.`)
-    } else {
-      editorActions.error(`No fue posible exportar el archivo ${format.toUpperCase()}.`)
-    }
+    if (!diagramId.trim()) return
+    const blob = await run(() => format === 'puml' ? diagramFacade.exportPlantUml(diagramId.trim()) : diagramFacade.exportText(diagramId.trim()))
+    if (blob) downloadBlob(blob, diagramName || 'diagram', format)
   }
 
-  async function loadDiagramFromList(id: string): Promise<void> {
-    editorActions.loading('Cargando diagrama seleccionado...')
-    const data = await run(
-      () => diagramFacade.getById(id),
-      { operationName: 'loadDiagramFromList', errorMessage: 'No fue posible cargar el diagrama.' },
-    )
-    if (data) syncDiagramResponse(data, 'Diagrama cargado correctamente.')
-    else editorActions.error('No fue posible cargar el diagrama.')
-  }
-
-  function selectedModeLabel(): string {
-    if (diagramId.trim()) return 'Guardado / existente'
-    if (diagramList.length > 0) return 'Listando proyecto'
-    return 'Local / nuevo'
-  }
-
-  // ── Render ──
   return (
-    <main className="min-h-screen app-bg app-text-primary">
-      <div className="flex min-h-screen flex-col gap-4 p-4 lg:p-6">
+    <div className="h-screen flex flex-col bg-app-bg">
+      <header className="h-16 px-6 flex items-center justify-between border-b border-app-border bg-white dark:bg-[#1e1e1e] shrink-0">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/app/projects/${projectId}`)}>← Hub</Button>
+          <div className="h-4 w-[1px] bg-app-border" />
+          <h1 className="font-bold tracking-tight">{diagramName}</h1>
+          <Badge variant="neutral">{diagramType}</Badge>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-app-text-muted font-mono">{editorState.status}</span>
+          <Button size="sm" onClick={handleSaveDiagram}>Guardar Cambios</Button>
+        </div>
+      </header>
 
-        {/* ── Header ── */}
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border app-border-strong app-card px-4 py-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-app-accent">Fase 3</p>
-            <h1 className="text-2xl font-semibold">Editor visual de diagramas</h1>
-            <p className="text-sm app-text-secondary">Fuente de verdad: sourceJson</p>
-            <p className="mt-1 text-xs app-text-muted">Proyecto: <code className="rounded app-surface px-1.5 py-0.5 font-mono">{projectId}</code></p>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Toolbar */}
+        <aside className="w-80 border-r border-app-border flex flex-col bg-[#fcfcfc] dark:bg-[#181818] overflow-y-auto">
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-[12px] font-bold uppercase tracking-wider text-app-text-muted">Propiedades</h3>
+              <Input label="Nombre del Diagrama" value={diagramName} onChange={e => setDiagramName(e.target.value)} />
+            </div>
+
+            <DiagramToolbar
+              isSaved={Boolean(diagramId.trim())}
+              isValid={validation.isValid}
+              hasSelection={Boolean(selectedNodeId || selectedEdgeId)}
+              status={editorState.status}
+              onAddNode={handleAddNode}
+              onSave={handleSaveDiagram}
+              onCreateManual={handleCreateManualDiagram}
+              onGenerateAuto={handleGenerateAutoDiagram}
+              onDeleteSelected={handleDeleteSelected}
+            />
+
+            <div className="space-y-4 pt-4 border-t border-app-border">
+              <h3 className="text-[12px] font-bold uppercase tracking-wider text-app-text-muted">Proyecto</h3>
+              <Button variant="secondary" className="w-full" onClick={handleLoadProjectDiagrams}>Listar Diagramas</Button>
+              <div className="space-y-2">
+                {diagramList.map(d => (
+                  <button 
+                    key={d.id} 
+                    onClick={() => syncDiagramResponse(d as any)}
+                    className="w-full text-left p-3 text-sm rounded-lg border border-app-border hover:border-app-accent transition-all bg-white dark:bg-[#1e1e1e]"
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-app-border">
+              <h3 className="text-[12px] font-bold uppercase tracking-wider text-app-text-muted">Exportar</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="ghost" size="sm" onClick={handleGeneratePlantUml}>PlantUML</Button>
+                <Button variant="ghost" size="sm" onClick={() => handleExport('puml')}>.puml</Button>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link className="rounded-md border app-border-strong px-3 py-2 text-sm" to="/app">
-              Volver al dashboard
-            </Link>
-            <button className="rounded-md bg-app-danger text-white hover:opacity-90 px-3 py-2 text-sm font-medium" onClick={logout}>
-              Logout
-            </button>
-          </div>
-        </header>
+        </aside>
 
-        {/* ── Three-column layout ── */}
-        <section className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)_340px]">
-
-          {/* ── Left panel ── */}
-          <aside className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
-            <div className="space-y-3">
-              <div>
-                <h2 className="font-semibold">Datos del diagrama</h2>
-                <p className="text-xs app-text-muted">Proyecto seleccionado: {projectId}</p>
-              </div>
-              <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="diagramId" value={diagramId} onChange={(e) => setDiagramId(e.target.value)} />
-              <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" placeholder="Nombre del diagrama" value={diagramName} onChange={(e) => setDiagramName(e.target.value)} />
-
-              {/* Toolbar component */}
-              <DiagramToolbar
-                isSaved={Boolean(diagramId.trim())}
-                isValid={validation.isValid}
-                hasSelection={Boolean(selectedNodeId || selectedEdgeId)}
-                status={editorState.status}
-                onAddNode={handleAddNode}
-                onSave={handleSaveDiagram}
-                onCreateManual={handleCreateManualDiagram}
-                onGenerateAuto={handleGenerateAutoDiagram}
-                onCreateUseCaseManual={handleCreateUseCaseManualDiagram}
-                onGenerateUseCaseAuto={handleGenerateUseCaseAutoDiagram}
-                onDeleteSelected={handleDeleteSelected}
-              />
-
-              <div className="flex flex-wrap gap-2">
-                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={handleLoadDiagram}>Cargar por id</button>
-                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={handleLoadProjectDiagrams}>Listar proyecto</button>
-              </div>
-            </div>
-
-            {/* Info panel */}
-            <div className="space-y-2 rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
-              <p><span className="app-text-muted">Tipo:</span> {diagramType}</p>
-              <p><span className="app-text-muted">Modo:</span> {selectedModeLabel()}</p>
-              <p><span className="app-text-muted">Usuario:</span> {user?.userId ?? 'sin sesión'}</p>
-              <p className={validation.isValid ? 'text-emerald-300' : 'text-rose-300'}>
-                {validation.isValid ? 'Diagrama válido' : validation.errors.join(' ')}
-              </p>
-            </div>
-
-            {/* Diagram list */}
-            <div className="space-y-2 rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
-              <h3 className="font-semibold">Proyecto</h3>
-              <p className="text-xs app-text-muted">Diagramas del proyecto actual</p>
-              <div className="max-h-56 space-y-2 overflow-auto pr-1">
-                {diagramList.length === 0 ? (
-                  <p className="app-text-muted opacity-80">Sin diagramas cargados</p>
-                ) : (
-                  diagramList.map((diagram) => (
-                    <button
-                      key={diagram.id}
-                      className="flex w-full items-center justify-between rounded-lg border app-border-strong px-3 py-2 text-left text-sm hover:border-app-accent"
-                      onClick={() => void loadDiagramFromList(diagram.id)}
-                    >
-                      <span>{diagram.name}</span>
-                      <span className="text-xs app-text-muted">{diagram.mode}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Export actions */}
-            <div className="space-y-2 rounded-xl border app-border-strong app-bg/50 p-3 text-sm">
-              <h3 className="font-semibold">Acciones de exportación</h3>
-              <div className="flex flex-wrap gap-2">
-                <button className="rounded-md bg-app-success text-white hover:opacity-90 px-3 py-2 text-sm font-medium" onClick={handleGeneratePlantUml}>Generar PlantUML</button>
-                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={() => handleExport('puml')}>Descargar .puml</button>
-                <button className="rounded-md bg-app-surface px-3 py-2 text-sm font-medium" onClick={() => handleExport('txt')}>Descargar .txt</button>
-              </div>
-              <textarea
-                readOnly
-                className="h-40 w-full rounded-md border app-border-strong app-bg p-2 text-xs app-text-secondary"
-                value={plantUmlPreview}
-                placeholder="PlantUML generado aparecerá aquí"
-              />
-            </div>
-          </aside>
-
-          {/* ── Center: Canvas ── */}
+        {/* Canvas Area */}
+        <main className="flex-1 relative bg-white">
           <DiagramCanvas
             nodes={flowState.nodes}
             edges={flowState.edges}
@@ -457,8 +286,10 @@ export function DiagramEditorPage() {
             onConnect={handleConnect}
             onSelectionChange={handleSelectionChange}
           />
+        </main>
 
-          {/* ── Right: Sidebar editor ── */}
+        {/* Right Properties */}
+        <aside className="w-80 border-l border-app-border bg-[#fcfcfc] dark:bg-[#181818] overflow-y-auto">
           <DiagramSidebar
             editorTarget={editorTarget}
             selectedNode={selectedNode}
@@ -466,22 +297,9 @@ export function DiagramEditorPage() {
             onUpdateNode={updateNode}
             onUpdateEdge={updateEdge}
           />
-        </section>
-
-        {/* ── Source JSON preview ── */}
-        <section className="rounded-2xl border app-border-strong app-card p-4">
-          <h2 className="mb-3 font-semibold">sourceJson actual</h2>
-          <pre className="max-h-72 overflow-auto rounded-lg app-bg p-4 text-xs app-text-secondary">
-            {serializeDiagramSource(source)}
-          </pre>
-        </section>
-
-        {/* ── Status bar ── */}
-        <p className="rounded-xl border app-border-strong app-card p-3 text-sm">
-          Estado: {editorState.status} | {editorState.message}
-        </p>
+        </aside>
       </div>
-    </main>
+    </div>
   )
 }
 

@@ -6,19 +6,19 @@ import { requirementFacade } from '../facades/requirement.facade'
 import { isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type {
-  DuplicateMatchResponse,
   RequirementDTO,
   RequirementNode,
   SearchResponse,
 } from '../types/requirements'
 import {
-  DuplicateList,
   RequirementDetailCard,
   RequirementNodeList,
   SearchResultList,
 } from '../components/requirements/RequirementDataViews'
-import { DataCard } from '../components/ui/DataDisplay'
 import { RequirementGraphView } from '../components/graph/RequirementGraphView'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Badge } from '../components/ui/Badge'
 
 const EMPTY_REQUIREMENT: RequirementDTO = {
   id: '',
@@ -33,138 +33,62 @@ const EMPTY_REQUIREMENT: RequirementDTO = {
 }
 
 export function RequirementsPage() {
-  // ── projectId comes from route params, NOT from userId ──
   const { projectId: routeProjectId } = useParams()
-  const { run } = useApiOperation()
-
+  const { run, isLoading } = useApiOperation()
   const projectId = routeProjectId ?? ''
 
   const [text, setText] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [requirement, setRequirement] = useState<RequirementDTO>({
-    ...EMPTY_REQUIREMENT,
-    projectId,
-  })
-  const [status, setStatus] = useState('Listo para administrar requisitos')
+  const [requirement, setRequirement] = useState<RequirementDTO>({ ...EMPTY_REQUIREMENT, projectId })
   const [projectRequirements, setProjectRequirements] = useState<RequirementDTO[]>([])
   const [searchResults, setSearchResults] = useState<SearchResponse[]>([])
-  const [duplicateResults, setDuplicateResults] = useState<DuplicateMatchResponse[]>([])
   const [impactResults, setImpactResults] = useState<RequirementNode[]>([])
-  const [conflictResults, setConflictResults] = useState<RequirementNode[]>([])
   const [impactGraph, setImpactGraph] = useState<Record<string, unknown> | null>(null)
   const [inferenceGraph, setInferenceGraph] = useState<Record<string, unknown> | null>(null)
 
-  // ── Guard: Show empty state if no valid projectId ──
-  if (!isValidProjectId(projectId)) {
-    return (
-      <main className="min-h-screen app-bg p-6 app-text-primary">
-        <section className="mx-auto max-w-6xl py-12">
-          <NoProjectSelected message="Para gestionar requisitos, primero selecciona un proyecto desde el dashboard." />
-        </section>
-      </main>
-    )
-  }
-
-  // Keep requirement.projectId in sync with route param
   useEffect(() => {
     if (isValidProjectId(projectId)) {
       setRequirement((current) => ({ ...current, projectId }))
     }
   }, [projectId])
 
+  useEffect(() => {
+    if (!requirement.id.trim()) {
+      setImpactGraph(null)
+      return
+    }
+    void handleImpact()
+  }, [requirement.id])
+
   async function handleConvert(): Promise<void> {
     if (!isValidProjectId(projectId) || !text.trim()) return
-
-    const data = await run(
-      () => requirementFacade.convertTextToRequirement(projectId, text.trim()),
-      {
-        operationName: 'convertRequirement',
-        errorMessage: 'No fue posible convertir el texto a requisito.',
-      },
-    )
-
+    const data = await run(() => requirementFacade.convertTextToRequirement(projectId, text.trim()), { errorMessage: 'Error al convertir.' })
     if (data) setRequirement(data)
   }
 
   async function handleSave(): Promise<void> {
     if (!requirement.title.trim() || !isValidProjectId(requirement.projectId)) return
-
-    const data = await run(
-      () => requirementFacade.saveRequirement(requirement),
-      {
-        operationName: 'saveRequirement',
-        errorMessage: 'No fue posible guardar el requisito.',
-      },
-    )
-
-    if (data) setRequirement(data)
+    const data = await run(() => requirementFacade.saveRequirement(requirement), { errorMessage: 'Error al guardar.' })
+    if (data) {
+      setRequirement(data)
+    }
   }
 
   async function handleSearch(): Promise<void> {
-    const normalizedQuery = searchQuery.trim()
-    if (!normalizedQuery) {
-      setStatus('Escribe un texto para buscar requisitos.')
-      setSearchResults([])
-      return
-    }
-
-    const data = await run(
-      () => requirementFacade.searchRequirements(normalizedQuery),
-      {
-        operationName: 'searchRequirements',
-        errorMessage: 'No fue posible buscar requisitos.',
-      },
-    )
-
+    if (!searchQuery.trim()) return
+    const data = await run(() => requirementFacade.searchRequirements(searchQuery.trim()), { errorMessage: 'Error en búsqueda.' })
     if (data) setSearchResults(data)
   }
 
   async function handleLoadProjectRequirements(): Promise<void> {
     if (!isValidProjectId(projectId)) return
-
-    const data = await run(
-      () => requirementFacade.getRequirementsByProject(projectId),
-      {
-        operationName: 'loadProjectRequirements',
-        errorMessage: 'No fue posible cargar los requisitos del proyecto.',
-      },
-    )
-
-    if (data) {
-      setProjectRequirements(data)
-      setStatus(`Requisitos del proyecto cargados: ${data.length}`)
-    }
-  }
-
-  async function handleDuplicates(): Promise<void> {
-    if (!isValidProjectId(projectId) || !requirement.title.trim()) return
-
-    const data = await run(
-      () => requirementFacade.checkDuplicates({
-        projectId,
-        title: requirement.title.trim(),
-        description: requirement.description.trim(),
-      }),
-      {
-        operationName: 'checkDuplicates',
-        errorMessage: 'No fue posible validar duplicados.',
-      },
-    )
-
-    if (data) setDuplicateResults(data)
+    const data = await run(() => requirementFacade.getRequirementsByProject(projectId), { errorMessage: 'Error al cargar.' })
+    if (data) setProjectRequirements(data)
   }
 
   async function handleImpact(): Promise<void> {
     if (!requirement.id.trim()) return
-
-    const data = await run(
-      () => graphFacade.getImpact(requirement.id),
-      {
-        operationName: 'getImpact',
-        errorMessage: 'No fue posible consultar impacto.',
-      },
-    )
-
+    const data = await run(() => graphFacade.getImpact(requirement.id), { errorMessage: 'Error al consultar impacto.' })
     if (data) {
       setImpactResults(Array.isArray(data) ? (data as RequirementNode[]) : [])
       setImpactGraph(data)
@@ -172,209 +96,114 @@ export function RequirementsPage() {
   }
 
   async function handleInferRelations(): Promise<void> {
-    if (!isValidProjectId(projectId)) return
-
-    if (projectRequirements.length === 0) {
-      setStatus('Primero carga los requisitos del proyecto para inferir relaciones.')
-      return
-    }
-
-    const data = await run(
-      () => graphFacade.inferRelations(projectId, projectRequirements),
-      {
-        operationName: 'inferRelations',
-        errorMessage: 'No fue posible inferir relaciones.',
-      },
-    )
-
-    if (data) {
-      setInferenceGraph(data)
-      setStatus('Relaciones inferidas correctamente.')
-    }
+    if (!isValidProjectId(projectId) || projectRequirements.length === 0) return
+    const data = await run(() => graphFacade.inferRelations(projectId, projectRequirements), { errorMessage: 'Error al inferir.' })
+    if (data) setInferenceGraph(data)
   }
 
-  useEffect(() => {
-    if (!requirement.id.trim()) {
-      setImpactGraph(null)
-      return
-    }
-
-    void handleImpact()
-  }, [requirement.id])
-
-  async function handleConflicts(): Promise<void> {
-    if (!requirement.id.trim()) return
-
-    const data = await run(
-      () => requirementFacade.getConflicts(requirement.id),
-      {
-        operationName: 'getConflicts',
-        errorMessage: 'No fue posible consultar conflictos.',
-      },
-    )
-
-    if (data) setConflictResults(data)
-  }
-
-  async function handleDependency(): Promise<void> {
-    if (requirement.relatedCodes.length < 2) return
-
-    await run(
-      () => requirementFacade.createDependency(requirement.relatedCodes[0], requirement.relatedCodes[1]),
-      {
-        operationName: 'createDependency',
-        errorMessage: 'No fue posible crear la dependencia.',
-      },
-    )
+  if (!isValidProjectId(projectId)) {
+    return <NoProjectSelected message="Selecciona un proyecto para gestionar requisitos." />
   }
 
   return (
-    <main className="min-h-screen app-bg p-6 app-text-primary">
-      <section className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border app-border-strong app-card p-4">
-          <h1 className="text-3xl font-semibold tracking-tight">Requisitos</h1>
-          <p className="text-sm app-text-secondary">Conversión, guardado, búsqueda, duplicados, impacto y conflictos.</p>
-          <p className="mt-1 text-xs app-text-muted">Proyecto: <code className="rounded app-surface px-1.5 py-0.5 font-mono">{projectId}</code></p>
-          <p className="mt-2 text-sm text-app-accent">{status}</p>
-        </header>
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <header className="flex flex-col gap-2 border-b border-app-border pb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">Gestión de Requisitos</h1>
+          <Badge variant="neutral">Proyecto: {projectId.slice(0, 8)}</Badge>
+        </div>
+        <p className="app-text-secondary">Convierte lenguaje natural, analiza impacto y gestiona dependencias.</p>
+      </header>
 
-        <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
-            <h2 className="font-semibold">Asistente de requisitos</h2>
-            <textarea
-              className="min-h-28 w-full rounded-md border app-border-strong app-surface px-3 py-2"
-              placeholder="Texto libre para convertir"
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-            />
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleConvert}>
-                Convertir
-              </button>
-              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSave}>
-                Guardar
-              </button>
-              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleDuplicates}>
-                Buscar duplicados
-              </button>
-              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleDependency}>
-                Crear dependencia
-              </button>
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Editor Section */}
+        <section className="space-y-6">
+          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm space-y-6">
+            <div className="space-y-2">
+              <label className="text-[13px] font-semibold app-text-secondary">Asistente AI</label>
+              <textarea
+                className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-3 text-[15px] min-h-[120px] focus:ring-2 focus:ring-app-accent/20 outline-none transition-all"
+                placeholder="Escribe el requerimiento en lenguaje natural..."
+                value={text}
+                onChange={e => setText(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleConvert} isLoading={isLoading}>Convertir</Button>
+                <Button onClick={handleSave} isLoading={isLoading}>Guardar Requisito</Button>
+              </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1 text-sm">
-                <span>Código</span>
-                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.code} onChange={(event) => setRequirement((current) => ({ ...current, code: event.target.value }))} />
-              </label>
-              <label className="space-y-1 text-sm">
-                <span>ProjectId</span>
-                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2 app-text-muted cursor-not-allowed" value={requirement.projectId} readOnly title="El projectId se obtiene del proyecto seleccionado" />
-              </label>
-              <label className="space-y-1 text-sm sm:col-span-2">
-                <span>Título</span>
-                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.title} onChange={(event) => setRequirement((current) => ({ ...current, title: event.target.value }))} />
-              </label>
-              <label className="space-y-1 text-sm sm:col-span-2">
-                <span>Descripción</span>
-                <textarea className="min-h-24 w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.description} onChange={(event) => setRequirement((current) => ({ ...current, description: event.target.value }))} />
-              </label>
-              <label className="space-y-1 text-sm sm:col-span-2">
-                <span>Códigos relacionados (separados por coma)</span>
-                <input className="w-full rounded-md border app-border-strong app-surface px-3 py-2" value={requirement.relatedCodes.join(', ')} onChange={(event) => setRequirement((current) => ({ ...current, relatedCodes: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) }))} />
-              </label>
-            </div>
-            <div className="mt-6 pt-4 border-t app-border-strong">
-              <RequirementDetailCard requirement={requirement} />
-            </div>
-          </article>
 
-          <article className="space-y-4 rounded-2xl border app-border-strong app-card p-4">
-            <h2 className="font-semibold">Búsqueda y análisis</h2>
-            <input
-              className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
-              placeholder="Search query"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-            <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleSearch}>
-              Buscar
-            </button>
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleImpact}>
-                Impacto
-              </button>
-              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleConflicts}>
-                Conflictos
-              </button>
-              <button className="rounded-md bg-app-surface px-3 py-2 font-medium" onClick={handleLoadProjectRequirements}>
-                Cargar requisitos del proyecto
-              </button>
-              <button className="rounded-md bg-app-accent text-app-accent-foreground hover:bg-app-accent-hover px-3 py-2 font-medium" onClick={handleInferRelations}>
-                Inferir relaciones
-              </button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="Código" value={requirement.code} onChange={e => setRequirement({ ...requirement, code: e.target.value })} />
+              <Input label="Título" value={requirement.title} onChange={e => setRequirement({ ...requirement, title: e.target.value })} />
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className="text-[13px] font-medium app-text-secondary">Descripción</label>
+                <textarea
+                  className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-3 text-[15px] min-h-[100px] focus:ring-2 focus:ring-app-accent/20 outline-none transition-all"
+                  value={requirement.description}
+                  onChange={e => setRequirement({ ...requirement, description: e.target.value })}
+                />
+              </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
-                <h3 className="mb-2 font-semibold">Resultados</h3>
-                <div className="max-h-64 overflow-auto">
+
+            <RequirementDetailCard requirement={requirement} />
+          </div>
+        </section>
+
+        {/* Analysis Section */}
+        <section className="space-y-6">
+          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold tracking-tight">Análisis y Trazabilidad</h2>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Buscar requisitos..." 
+                  value={searchQuery} 
+                  onChange={e => setSearchQuery(e.target.value)} 
+                />
+                <Button variant="secondary" onClick={handleSearch}>Buscar</Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="ghost" size="sm" onClick={handleLoadProjectRequirements}>Cargar Proyecto</Button>
+                <Button variant="ghost" size="sm" onClick={handleInferRelations}>Inferir Relaciones</Button>
+              </div>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-app-text-muted">Resultados</h3>
+                <div className="max-h-48 overflow-auto border rounded-lg p-2 bg-app-bg">
                   <SearchResultList results={searchResults} />
                 </div>
-              </article>
-              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
-                <h3 className="mb-2 font-semibold">Duplicados</h3>
-                <div className="max-h-64 overflow-auto">
-                  <DuplicateList results={duplicateResults} />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-app-text-muted">Impacto</h3>
+                <div className="max-h-48 overflow-auto border rounded-lg p-2 bg-app-bg">
+                  <RequirementNodeList nodes={impactResults} emptyMessage="Sin datos." />
                 </div>
-              </article>
-              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
-                <h3 className="mb-2 font-semibold">Impacto</h3>
-                <div className="max-h-64 overflow-auto">
-                  <RequirementNodeList nodes={impactResults} emptyMessage="Sin análisis de impacto." />
-                </div>
-              </article>
-              <article className="rounded-xl border app-border-strong app-bg/50 p-3">
-                <h3 className="mb-2 font-semibold">Conflictos</h3>
-                <div className="max-h-64 overflow-auto">
-                  <RequirementNodeList nodes={conflictResults} emptyMessage="Sin conflictos detectados." />
-                </div>
-              </article>
+              </div>
             </div>
+          </div>
 
-            <section className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
-              <h3 className="font-semibold">Requisitos cargados del proyecto</h3>
-              {projectRequirements.length === 0 ? (
-                <p className="text-sm app-text-muted">Todavia no se han cargado requisitos de proyecto.</p>
-              ) : (
-                <div className="max-h-72 overflow-auto space-y-2">
-                  {projectRequirements.map((item) => (
-                    <DataCard key={item.id} title={item.title} subtitle={item.code}>
-                      <p className="text-xs app-text-secondary line-clamp-3">{item.description}</p>
-                    </DataCard>
-                  ))}
-                </div>
-              )}
-            </section>
+          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold mb-4">Grafo de Dependencias</h3>
+            <RequirementGraphView
+              title="Impacto del Requisito"
+              response={impactGraph}
+              emptyMessage="Selecciona un requisito para visualizar dependencias."
+            />
+          </div>
 
-            <section className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
-              <h3 className="font-semibold">Impacto del requisito</h3>
-              <RequirementGraphView
-                title="Impacto del requisito seleccionado"
-                response={impactGraph}
-                emptyMessage="Selecciona o carga un requisito para ver su impacto."
-              />
-            </section>
-
-            <section className="space-y-3 rounded-xl border app-border-strong app-bg/50 p-3">
-              <h3 className="font-semibold">Relaciones inferidas</h3>
-              <RequirementGraphView
-                title="Relaciones inferidas del proyecto"
-                response={inferenceGraph}
-                emptyMessage="Ejecuta inferencia para ver el grafo de relaciones."
-              />
-            </section>
-          </article>
+          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold mb-4">Relaciones Inferidas</h3>
+            <RequirementGraphView
+              title="Mapa de Trazabilidad"
+              response={inferenceGraph}
+              emptyMessage="Ejecuta la inferencia para ver el mapa completo."
+            />
+          </div>
         </section>
-      </section>
-    </main>
+      </div>
+    </div>
   )
 }
