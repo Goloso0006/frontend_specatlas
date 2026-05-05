@@ -137,6 +137,7 @@ export function ProjectsPage() {
           <form onSubmit={handleSave} className="space-y-5">
             <Input
               required
+              maxLength={60}
               label="Nombre del proyecto"
               placeholder="Ej. Sistema de E-commerce"
               value={form.name}
@@ -148,11 +149,15 @@ export function ProjectsPage() {
                 Descripción
               </label>
               <textarea
-                className="w-full app-card border border-app-border-strong rounded-md px-3 py-2 text-[15px] app-text-primary placeholder-app-text-muted focus-ring interactive min-h-[120px]"
+                className="w-full app-card border border-app-border-strong rounded-md px-3 py-2 text-[15px] app-text-primary placeholder-app-text-muted focus-ring interactive min-h-[120px] overflow-auto"
+                maxLength={240}
                 placeholder="Describe brevemente el alcance del proyecto..."
                 value={form.description}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('description', e.target.value)}
               />
+              <div className="flex justify-end text-[11px] app-text-muted">
+                {form.description.length}/240
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -210,7 +215,7 @@ export function ProjectsPage() {
                 {project.name}
               </h3>
               
-              <p className="text-[13px] app-text-secondary line-clamp-2 mb-6 flex-1">
+              <p className="text-[13px] app-text-secondary mb-6 flex-1 whitespace-pre-wrap break-words leading-relaxed line-clamp-4">
                 {project.description || 'Sin descripción'}
               </p>
               
