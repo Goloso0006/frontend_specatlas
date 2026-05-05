@@ -110,7 +110,7 @@ export function RequirementsPage() {
       <header className="flex flex-col gap-2 border-b border-app-border pb-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Gestión de Requisitos</h1>
-          <Badge variant="neutral">Proyecto: {projectId.slice(0, 8)}</Badge>
+          <Badge variant="neutral">Proyecto: {projectId}</Badge>
         </div>
         <p className="app-text-secondary">Convierte lenguaje natural, analiza impacto y gestiona dependencias.</p>
       </header>

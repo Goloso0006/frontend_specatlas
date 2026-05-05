@@ -32,8 +32,8 @@ export const ProjectCard = ({ project, onClick }: {
               {project.status}
             </span>
           </div>
-          <span className="text-[11px] text-app-text-muted font-mono">
-            {project.id.slice(0, 8)}
+            <span className="text-[11px] text-[var(--color-text-muted)] font-mono">
+              {project.id}
           </span>
         </div>
       </div>
