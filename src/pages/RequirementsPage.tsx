@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { graphFacade } from '../facades/graph.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { requirementFacade } from '../facades/requirement.facade'
-import { isValidProjectId } from '../context/ProjectContext'
+import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { RequirementsSearchBar } from '../components/requirements/RequirementsSearchBar'
 import { RequirementListPanel } from '../components/requirements/RequirementListPanel'
@@ -32,8 +32,9 @@ const EMPTY_REQUIREMENT: RequirementDTO = {
 
 export function RequirementsPage() {
   const { projectId: routeProjectId } = useParams()
+  const { projectId: contextProjectId } = useProject()
   const { run, isLoading } = useApiOperation()
-  const projectId = routeProjectId ?? ''
+  const projectId = routeProjectId ?? contextProjectId ?? ''
 
   // ── Data state ──
   const [projectRequirements, setProjectRequirements] = useState<RequirementDTO[]>([])
@@ -45,8 +46,6 @@ export function RequirementsPage() {
 
   // ── Search state ──
   const [searchQuery, setSearchQuery] = useState('')
-  const [displayedRequirements, setDisplayedRequirements] = useState<RequirementDTO[]>([])
-  const [isSearchMode, setIsSearchMode] = useState(false)
 
   // ── Modal state ──
   const [modalOpen, setModalOpen] = useState(false)
@@ -54,11 +53,20 @@ export function RequirementsPage() {
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
-  // Load project requirements on mount
+  // Reset the view when the active project changes and reload its requirements.
   useEffect(() => {
-    if (isValidProjectId(projectId)) {
-      void handleLoadProjectRequirements()
-    }
+    setProjectRequirements([])
+    setSelectedRequirement(null)
+    setImpactNodes([])
+    setImpactGraph(null)
+    setInferenceGraph(null)
+    setSearchQuery('')
+    setModalOpen(false)
+    setModalInitial({ ...EMPTY_REQUIREMENT, projectId })
+
+    if (!isValidProjectId(projectId)) return
+
+    void handleLoadProjectRequirements(projectId)
   }, [projectId])
 
   // Load impact graph when requirement is selected
@@ -71,55 +79,38 @@ export function RequirementsPage() {
     void handleImpact(selectedRequirement.id)
   }, [selectedRequirement?.id])
 
-  // Sync displayed list with search mode
-  useEffect(() => {
-    if (!isSearchMode) {
-      setDisplayedRequirements(projectRequirements)
+  const displayedRequirements = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return projectRequirements
     }
-  }, [projectRequirements, isSearchMode])
+
+    return projectRequirements.filter((requirement) =>
+      requirement.title.toLowerCase().includes(normalizedQuery),
+    )
+  }, [projectRequirements, searchQuery])
+
+  const isSearchMode = searchQuery.trim().length > 0
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleLoadProjectRequirements() {
-    if (!isValidProjectId(projectId)) return
+  async function handleLoadProjectRequirements(activeProjectId: string) {
+    if (!isValidProjectId(activeProjectId)) return
     const data = await run(
-      () => requirementFacade.getRequirementsByProject(projectId),
+      () => requirementFacade.getRequirementsByProject(activeProjectId),
       { errorMessage: 'Error al cargar los requisitos.' }
     )
     if (data) {
       setProjectRequirements(data)
-      setDisplayedRequirements(data)
     }
   }
 
   async function handleSearch() {
-    if (!searchQuery.trim()) {
-      handleClearSearch()
-      return
-    }
-    const data = await run(
-      () => requirementFacade.searchRequirements(searchQuery.trim()),
-      { errorMessage: 'Error en la búsqueda.' }
-    )
-    if (data) {
-      // searchRequirements returns SearchResponse[] — map to RequirementDTO shape
-      const mapped: RequirementDTO[] = data.map(r => ({
-        ...EMPTY_REQUIREMENT,
-        id: r.id,
-        code: r.code,
-        title: r.title,
-        description: r.description,
-        projectId,
-      }))
-      setDisplayedRequirements(mapped)
-      setIsSearchMode(true)
-    }
+    setSearchQuery((current) => current.trim())
   }
 
   function handleClearSearch() {
     setSearchQuery('')
-    setIsSearchMode(false)
-    setDisplayedRequirements(projectRequirements)
   }
 
   async function handleImpact(requirementId: string) {
@@ -199,7 +190,7 @@ export function RequirementsPage() {
   // ── Guard ─────────────────────────────────────────────────────────────────
 
   if (!isValidProjectId(projectId)) {
-    return <NoProjectSelected message="Selecciona un proyecto para gestionar requisitos." />
+    return <NoProjectSelected message="Selecciona un proyecto para ver sus requisitos." />
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -268,7 +259,7 @@ export function RequirementsPage() {
             {/* Reload button */}
             <button
               type="button"
-              onClick={handleLoadProjectRequirements}
+              onClick={() => handleLoadProjectRequirements(projectId)}
               disabled={isLoading}
               aria-label="Recargar lista"
               title="Recargar"
