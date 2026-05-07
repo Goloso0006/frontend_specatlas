@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useTheme } from '../hooks/useTheme'
 import { useNavigate } from 'react-router-dom'
 import { projectFacade } from '../facades/project.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
@@ -183,8 +182,7 @@ function CreateProjectCard({ onClick }: { onClick: () => void }) {
 }
 
 export function DashboardPage() {
-  const { user, logout } = useAuth()
-  const { toggleTheme } = useTheme()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [query, setQuery] = useState('')
@@ -235,11 +233,6 @@ export function DashboardPage() {
 
   function openProject(id: string) {
     navigate(`/app/projects/${id}`)
-  }
-
-  function handleLogout() {
-    logout()
-    navigate('/login')
   }
 
   return (
@@ -426,53 +419,6 @@ export function DashboardPage() {
           width: 34px;
         }
       `}</style>
-
-      {/* ─── Header con logo ─── */}
-      <header className="sticky top-0 z-40 bg-[var(--color-bg)]/95 backdrop-blur-sm border-b border-[var(--color-border)] header-divider-thin">
-        <div className="w-full px-4 py-2 flex items-center justify-between">
-          <div className="sa-logo">
-            <div className="sa-logo-mark">
-              <svg width="14" height="14" fill="none" stroke="var(--color-accent)" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
-              </svg>
-            </div>
-            <span className="sa-logo-name">SpecAtlas</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Theme toggle con SVGs monocromáticos */}
-            <button
-              onClick={toggleTheme}
-              className="background"
-              title="Cambiar tema"
-              aria-label="Cambiar tema"
-            >
-              <div className="change-theme__icon">
-                {/* Sol */}
-                <svg className="icon-sun" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-                </svg>
-                {/* Luna */}
-                <svg className="icon-moon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              </div>
-            </button>
-
-            <button className="logout-btn" onClick={handleLogout} aria-label="Cerrar sesión">
-              <span className="logout-icon">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </span>
-              <span className="logout-text">Salir</span>
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* ─── Main ─── */}
       <main className="max-w-5xl mx-auto px-6 py-12">

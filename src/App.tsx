@@ -28,7 +28,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         {/* Home / Projects List - No Sidebar */}
         <Route path="/app" element={<AppShell hideSidebar><DashboardPage /></AppShell>} />
-        
+
         {/* Project Hub - No Sidebar */}
         <Route path="/app/projects/:projectId" element={<AppShell hideSidebar><ProjectWorkspacePage /></AppShell>} />
 
@@ -39,9 +39,13 @@ function App() {
         */}
         <Route path="/app/projects/:projectId/info" element={<AppShell hideSidebar><ProjectInfoPage /></AppShell>} />
         <Route path="/app/projects/:projectId/edit" element={<AppShell hideSidebar><EditProjectPage /></AppShell>} />
-        
+
         {/* Internal Project Tools - With Sidebar */}
-        <Route path="/app/projects/:projectId/requirements" element={<AppShell><RequirementsPage /></AppShell>} />
+        <Route path="/app/projects/:projectId/requirements" element={
+          <AppShell hideSidebar><RequirementsPage /></AppShell>
+        } />
+
+
         <Route path="/app/projects/:projectId/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
         <Route path="/app/projects/:projectId/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
 

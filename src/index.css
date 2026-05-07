@@ -29,14 +29,16 @@
   --font-mono: 'Geist Mono', 'JetBrains Mono', 'Fira Code', monospace;
 }
 
+/* ── Light mode tokens ──────────────────────────────────────────────────── */
 :root {
   --color-bg: #F4F4F2;
   --color-bg-secondary: #E0E0E0;
   --color-bg-card: #FAFAFA;
   --color-surface: #E8E8E6;
 
-  --color-border: rgba(43, 43, 43, 0.10);
-  --color-border-strong: rgba(43, 43, 43, 0.22);
+  /* Light: slightly stronger default border so elements are more visible */
+  --color-border: rgba(43, 43, 43, 0.13);
+  --color-border-strong: rgba(43, 43, 43, 0.26);
 
   --color-text-primary: #2B2B2B;
   --color-text-secondary: #565656;
@@ -56,13 +58,19 @@
 
   --color-danger: #B91C1C;
   --color-danger-subtle: #F4E3E3;
+
+  /* Scrollbar tokens — light */
+  --scrollbar-thumb: rgba(43, 43, 43, 0.22);
+  --scrollbar-thumb-hover: rgba(43, 43, 43, 0.36);
+  --scrollbar-track: transparent;
 }
 
+/* ── Dark mode tokens ───────────────────────────────────────────────────── */
 .dark {
   --color-bg: #181818;
   --color-bg-secondary: #202020;
-  --color-bg-card: #2B2B2B;
-  --color-surface: #343434;
+  --color-bg-card: #242424;
+  --color-surface: #2E2E2E;
 
   --color-border: rgba(224, 224, 224, 0.10);
   --color-border-strong: rgba(224, 224, 224, 0.20);
@@ -85,8 +93,14 @@
 
   --color-danger: #F87171;
   --color-danger-subtle: rgba(248, 113, 113, 0.12);
+
+  /* Scrollbar tokens — dark */
+  --scrollbar-thumb: rgba(224, 224, 224, 0.18);
+  --scrollbar-thumb-hover: rgba(224, 224, 224, 0.30);
+  --scrollbar-track: transparent;
 }
 
+/* ── Base ───────────────────────────────────────────────────────────────── */
 html,
 body,
 #root {
@@ -101,11 +115,48 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Reusable global classes based on tokens */
-.app-bg { background-color: var(--color-bg); }
-.app-card { background-color: var(--color-bg-card); }
-.app-border { border-color: var(--color-border); }
-.app-text-primary { color: var(--color-text-primary); }
+/* ── Elegant global scrollbar (WebKit) ─────────────────────────────────── */
+
+/* All scrollable elements use thin, rounded, floating-style scrollbar */
+* {
+  scrollbar-width: thin;                          /* Firefox */
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); /* Firefox */
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  /* Small transparent border trick: makes thumb look thinner / floating */
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Reusable global utility classes ────────────────────────────────────── */
+
+.app-bg            { background-color: var(--color-bg); }
+.app-card          { background-color: var(--color-bg-card); }
+.app-border        { border-color: var(--color-border); }
+.app-text-primary  { color: var(--color-text-primary); }
 .app-text-secondary { color: var(--color-text-secondary); }
 
 .focus-ring {

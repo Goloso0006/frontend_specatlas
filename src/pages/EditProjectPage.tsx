@@ -52,19 +52,6 @@ export function EditProjectPage() {
 
   return (
     <div className="min-h-screen bg-app-bg">
-      <nav className="h-16 px-8 flex items-center justify-between border-b border-app-border bg-white dark:bg-[#1e1e1e]">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(`/app/projects/${projectId}`)}
-            className="text-app-text-muted hover:text-app-text-primary transition-colors text-sm font-medium"
-          >
-            ← Hub
-          </button>
-          <div className="h-4 w-[1px] bg-app-border" />
-          <span className="font-semibold app-text-primary tracking-tight">Editar Proyecto</span>
-        </div>
-      </nav>
-
       <main className="max-w-2xl mx-auto py-16 px-8">
         <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-8 shadow-sm">
           <h1 className="text-2xl font-bold mb-8 tracking-tight">Configuración General</h1>

@@ -5,20 +5,16 @@ import { useApiOperation } from '../hooks/useLoadingError'
 import { requirementFacade } from '../facades/requirement.facade'
 import { isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
+import { RequirementsSearchBar } from '../components/requirements/RequirementsSearchBar'
+import { RequirementListPanel } from '../components/requirements/RequirementListPanel'
+import { RequirementDetailPanel } from '../components/requirements/RequirementDetailPanel'
+import { RequirementFormModal } from '../components/requirements/RequirementFormModal'
 import type {
   RequirementDTO,
   RequirementNode,
-  SearchResponse,
 } from '../types/requirements'
-import {
-  RequirementDetailCard,
-  RequirementNodeList,
-  SearchResultList,
-} from '../components/requirements/RequirementDataViews'
-import { RequirementGraphView } from '../components/graph/RequirementGraphView'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { Badge } from '../components/ui/Badge'
+
+// ── Constants ──────────────────────────────────────────────────────────────
 
 const EMPTY_REQUIREMENT: RequirementDTO = {
   id: '',
@@ -32,178 +28,308 @@ const EMPTY_REQUIREMENT: RequirementDTO = {
   relatedCodes: [],
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────
+
 export function RequirementsPage() {
   const { projectId: routeProjectId } = useParams()
   const { run, isLoading } = useApiOperation()
   const projectId = routeProjectId ?? ''
 
-  const [text, setText] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [requirement, setRequirement] = useState<RequirementDTO>({ ...EMPTY_REQUIREMENT, projectId })
+  // ── Data state ──
   const [projectRequirements, setProjectRequirements] = useState<RequirementDTO[]>([])
-  const [searchResults, setSearchResults] = useState<SearchResponse[]>([])
-  const [impactResults, setImpactResults] = useState<RequirementNode[]>([])
+  const [selectedRequirement, setSelectedRequirement] = useState<RequirementDTO | null>(null)
+  const [impactNodes, setImpactNodes] = useState<RequirementNode[]>([])
   const [impactGraph, setImpactGraph] = useState<Record<string, unknown> | null>(null)
   const [inferenceGraph, setInferenceGraph] = useState<Record<string, unknown> | null>(null)
+  const [isLoadingGraph, setIsLoadingGraph] = useState(false)
 
+  // ── Search state ──
+  const [searchQuery, setSearchQuery] = useState('')
+  const [displayedRequirements, setDisplayedRequirements] = useState<RequirementDTO[]>([])
+  const [isSearchMode, setIsSearchMode] = useState(false)
+
+  // ── Modal state ──
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalInitial, setModalInitial] = useState<RequirementDTO>({ ...EMPTY_REQUIREMENT, projectId })
+
+  // ── Effects ──────────────────────────────────────────────────────────────
+
+  // Load project requirements on mount
   useEffect(() => {
     if (isValidProjectId(projectId)) {
-      setRequirement((current) => ({ ...current, projectId }))
+      void handleLoadProjectRequirements()
     }
   }, [projectId])
 
+  // Load impact graph when requirement is selected
   useEffect(() => {
-    if (!requirement.id.trim()) {
+    if (!selectedRequirement?.id) {
       setImpactGraph(null)
+      setImpactNodes([])
       return
     }
-    void handleImpact()
-  }, [requirement.id])
+    void handleImpact(selectedRequirement.id)
+  }, [selectedRequirement?.id])
 
-  async function handleConvert(): Promise<void> {
-    if (!isValidProjectId(projectId) || !text.trim()) return
-    const data = await run(() => requirementFacade.convertTextToRequirement(projectId, text.trim()), { errorMessage: 'Error al convertir.' })
-    if (data) setRequirement(data)
-  }
-
-  async function handleSave(): Promise<void> {
-    if (!requirement.title.trim() || !isValidProjectId(requirement.projectId)) return
-    const data = await run(() => requirementFacade.saveRequirement(requirement), { errorMessage: 'Error al guardar.' })
-    if (data) {
-      setRequirement(data)
+  // Sync displayed list with search mode
+  useEffect(() => {
+    if (!isSearchMode) {
+      setDisplayedRequirements(projectRequirements)
     }
-  }
+  }, [projectRequirements, isSearchMode])
 
-  async function handleSearch(): Promise<void> {
-    if (!searchQuery.trim()) return
-    const data = await run(() => requirementFacade.searchRequirements(searchQuery.trim()), { errorMessage: 'Error en búsqueda.' })
-    if (data) setSearchResults(data)
-  }
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleLoadProjectRequirements(): Promise<void> {
+  async function handleLoadProjectRequirements() {
     if (!isValidProjectId(projectId)) return
-    const data = await run(() => requirementFacade.getRequirementsByProject(projectId), { errorMessage: 'Error al cargar.' })
-    if (data) setProjectRequirements(data)
-  }
-
-  async function handleImpact(): Promise<void> {
-    if (!requirement.id.trim()) return
-    const data = await run(() => graphFacade.getImpact(requirement.id), { errorMessage: 'Error al consultar impacto.' })
+    const data = await run(
+      () => requirementFacade.getRequirementsByProject(projectId),
+      { errorMessage: 'Error al cargar los requisitos.' }
+    )
     if (data) {
-      setImpactResults(Array.isArray(data) ? (data as RequirementNode[]) : [])
-      setImpactGraph(data)
+      setProjectRequirements(data)
+      setDisplayedRequirements(data)
     }
   }
 
-  async function handleInferRelations(): Promise<void> {
+  async function handleSearch() {
+    if (!searchQuery.trim()) {
+      handleClearSearch()
+      return
+    }
+    const data = await run(
+      () => requirementFacade.searchRequirements(searchQuery.trim()),
+      { errorMessage: 'Error en la búsqueda.' }
+    )
+    if (data) {
+      // searchRequirements returns SearchResponse[] — map to RequirementDTO shape
+      const mapped: RequirementDTO[] = data.map(r => ({
+        ...EMPTY_REQUIREMENT,
+        id: r.id,
+        code: r.code,
+        title: r.title,
+        description: r.description,
+        projectId,
+      }))
+      setDisplayedRequirements(mapped)
+      setIsSearchMode(true)
+    }
+  }
+
+  function handleClearSearch() {
+    setSearchQuery('')
+    setIsSearchMode(false)
+    setDisplayedRequirements(projectRequirements)
+  }
+
+  async function handleImpact(requirementId: string) {
+    setIsLoadingGraph(true)
+    const data = await run(
+      () => graphFacade.getImpact(requirementId),
+      { errorMessage: 'Error al consultar impacto.' }
+    )
+    setIsLoadingGraph(false)
+    if (data) {
+      setImpactNodes(Array.isArray(data) ? (data as RequirementNode[]) : [])
+      setImpactGraph(data as Record<string, unknown>)
+    }
+  }
+
+  async function handleInferRelations() {
     if (!isValidProjectId(projectId) || projectRequirements.length === 0) return
-    const data = await run(() => graphFacade.inferRelations(projectId, projectRequirements), { errorMessage: 'Error al inferir.' })
+    const data = await run(
+      () => graphFacade.inferRelations(projectId, projectRequirements),
+      { errorMessage: 'Error al inferir relaciones.' }
+    )
     if (data) setInferenceGraph(data)
   }
+
+  function handleSelectRequirement(req: RequirementDTO) {
+    setSelectedRequirement(req)
+  }
+
+  function handleEditRequirement(req: RequirementDTO) {
+    setModalInitial(req)
+    setModalOpen(true)
+  }
+
+  async function handleDeleteRequirement(req: RequirementDTO) {
+    if (!req.id) return
+    // Optimistic UI: remove immediately
+    setProjectRequirements(prev => prev.filter(r => r.id !== req.id))
+    if (selectedRequirement?.id === req.id) setSelectedRequirement(null)
+    // Real API call
+    await run(
+      () => requirementFacade.deleteRequirement(req.id),
+      { errorMessage: 'Error al eliminar el requisito.' }
+    )
+  }
+
+  function handleAddNew() {
+    setModalInitial({ ...EMPTY_REQUIREMENT, projectId })
+    setModalOpen(true)
+  }
+
+  async function handleModalSave(dto: RequirementDTO) {
+    const saved = await run(
+      () => requirementFacade.saveRequirement(dto),
+      { errorMessage: 'Error al guardar el requisito.' }
+    )
+    if (saved) {
+      // Update or add in list
+      setProjectRequirements(prev => {
+        const idx = prev.findIndex(r => r.id === saved.id)
+        return idx >= 0
+          ? prev.map((r, i) => (i === idx ? saved : r))
+          : [...prev, saved]
+      })
+      setSelectedRequirement(saved)
+      setModalOpen(false)
+    }
+  }
+
+  async function handleModalConvert(text: string, onResult: (dto: RequirementDTO) => void) {
+    const data = await run(
+      () => requirementFacade.convertTextToRequirement(projectId, text),
+      { errorMessage: 'Error al convertir.' }
+    )
+    if (data) onResult(data)
+  }
+
+  // ── Guard ─────────────────────────────────────────────────────────────────
 
   if (!isValidProjectId(projectId)) {
     return <NoProjectSelected message="Selecciona un proyecto para gestionar requisitos." />
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <header className="flex flex-col gap-2 border-b border-app-border pb-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Requisitos</h1>
-          <Badge variant="neutral">Proyecto: {projectId}</Badge>
+    <div className="flex flex-col h-full bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+
+      {/* ══════════════════════════════════════════════════════════════
+          ENCABEZADO PRINCIPAL
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="flex-shrink-0 flex items-start justify-between px-6 pt-5 pb-4 border-b border-[var(--color-border)]">
+        <div>
+          <h1 className="text-[20px] font-bold tracking-tight text-[var(--color-text-primary)] leading-tight">
+            Gestión de Requisitos
+          </h1>
+          <p className="mt-0.5 text-[12.5px] text-[var(--color-text-muted)] leading-relaxed">
+            Convierte lenguaje natural, analiza impacto y gestiona dependencias.
+          </p>
         </div>
-        <p className="app-text-secondary">Convierte lenguaje natural, analiza impacto y gestiona dependencias.</p>
-      </header>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Editor Section */}
-        <section className="space-y-6">
-          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm space-y-6">
-            <div className="space-y-2">
-              <label className="text-[13px] font-semibold app-text-secondary">Asistente AI</label>
-              <textarea
-                className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-3 text-[15px] min-h-[120px] focus:ring-2 focus:ring-app-accent/20 outline-none transition-all"
-                placeholder="Escribe el requerimiento en lenguaje natural..."
-                value={text}
-                onChange={e => setText(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={handleConvert} isLoading={isLoading}>Convertir</Button>
-                <Button onClick={handleSave} isLoading={isLoading}>Guardar Requisito</Button>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Código" value={requirement.code} onChange={e => setRequirement({ ...requirement, code: e.target.value })} />
-              <Input label="Título" value={requirement.title} onChange={e => setRequirement({ ...requirement, title: e.target.value })} />
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-[13px] font-medium app-text-secondary">Descripción</label>
-                <textarea
-                  className="w-full bg-[#fcfcfc] dark:bg-[#151515] border border-app-border rounded-lg px-4 py-3 text-[15px] min-h-[100px] focus:ring-2 focus:ring-app-accent/20 outline-none transition-all"
-                  value={requirement.description}
-                  onChange={e => setRequirement({ ...requirement, description: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <RequirementDetailCard requirement={requirement} />
+        {/* Project ID badge */}
+        <div className="flex-shrink-0 ml-4 pt-0.5">
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Proyecto</span>
+            <span
+              className="inline-flex items-center h-6 px-2.5 rounded-md text-[11px] font-mono font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border-strong)] max-w-[160px] truncate"
+              title={projectId}
+            >
+              {projectId}
+            </span>
           </div>
-        </section>
-
-        {/* Analysis Section */}
-        <section className="space-y-6">
-          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold tracking-tight">Análisis y Trazabilidad</h2>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Buscar requisitos..." 
-                  value={searchQuery} 
-                  onChange={e => setSearchQuery(e.target.value)} 
-                />
-                <Button variant="secondary" onClick={handleSearch}>Buscar</Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="ghost" size="sm" onClick={handleLoadProjectRequirements}>Cargar Proyecto</Button>
-                <Button variant="ghost" size="sm" onClick={handleInferRelations}>Inferir Relaciones</Button>
-              </div>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-app-text-muted">Resultados</h3>
-                <div className="max-h-48 overflow-auto border rounded-lg p-2 bg-app-bg">
-                  <SearchResultList results={searchResults} />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-app-text-muted">Impacto</h3>
-                <div className="max-h-48 overflow-auto border rounded-lg p-2 bg-app-bg">
-                  <RequirementNodeList nodes={impactResults} emptyMessage="Sin datos." />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-4">Grafo de Dependencias</h3>
-            <RequirementGraphView
-              title="Impacto del Requisito"
-              response={impactGraph}
-              emptyMessage="Selecciona un requisito para visualizar dependencias."
-            />
-          </div>
-
-          <div className="bg-white dark:bg-[#1e1e1e] border border-app-border rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-4">Relaciones Inferidas</h3>
-            <RequirementGraphView
-              title="Mapa de Trazabilidad"
-              response={inferenceGraph}
-              emptyMessage="Ejecuta la inferencia para ver el mapa completo."
-            />
-          </div>
-        </section>
+        </div>
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          CUERPO: DOS COLUMNAS
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+
+        {/* ── Left column: requirement list ──
+             WIDTH: modify the clamp() below to adjust this column's width.
+             Format: clamp(min, preferred%, max)
+             e.g. clamp(320px, 40%, 520px) makes it wider.
+        ── */}
+        <div
+          className="flex-shrink-0 flex flex-col border-r border-[var(--color-border)]"
+          style={{ width: 'clamp(300px, 38%, 480px)' }}
+        >
+          {/* Column header: title + reload */}
+          <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                Requisitos
+                {displayedRequirements.length > 0 && (
+                  <span className="ml-1.5 text-[var(--color-text-muted)] normal-case font-normal">
+                    ({displayedRequirements.length})
+                  </span>
+                )}
+              </span>
+              {isSearchMode && (
+                <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-medium bg-[var(--color-accent-subtle)] text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                  búsqueda
+                </span>
+              )}
+            </div>
+            {/* Reload button */}
+            <button
+              type="button"
+              onClick={handleLoadProjectRequirements}
+              disabled={isLoading}
+              aria-label="Recargar lista"
+              title="Recargar"
+              className="w-6 h-6 flex items-center justify-center rounded-md text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-40"
+            >
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
+                className={isLoading ? 'animate-spin' : ''}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Search bar — embedded in the left column, in the same position as the top nav bar */}
+          <div className="flex-shrink-0 px-3 py-2 border-b border-[var(--color-border)]">
+            <RequirementsSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSearch={handleSearch}
+              onClear={handleClearSearch}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* List */}
+          <div className="flex-1 min-h-0">
+            <RequirementListPanel
+              requirements={displayedRequirements}
+              selectedId={selectedRequirement?.id ?? null}
+              isLoading={isLoading && displayedRequirements.length === 0}
+              onSelect={handleSelectRequirement}
+              onEdit={handleEditRequirement}
+              onDelete={handleDeleteRequirement}
+              onAddNew={handleAddNew}
+            />
+          </div>
+        </div>
+
+        {/* ── Right column: detail panel ── */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <RequirementDetailPanel
+            requirement={selectedRequirement}
+            impactGraph={impactGraph}
+            inferenceGraph={inferenceGraph}
+            impactNodes={impactNodes}
+            isLoadingGraph={isLoadingGraph}
+            onInferRelations={handleInferRelations}
+          />
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: create / edit
+      ══════════════════════════════════════════════════════════════ */}
+      <RequirementFormModal
+        isOpen={modalOpen}
+        initial={modalInitial}
+        isLoading={isLoading}
+        onSave={handleModalSave}
+        onClose={() => setModalOpen(false)}
+        onConvert={handleModalConvert}
+      />
     </div>
   )
 }

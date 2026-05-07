@@ -33,22 +33,6 @@ export function ProjectInfoPage() {
 
   return (
     <div className="min-h-screen bg-app-bg">
-      <nav className="h-16 px-8 flex items-center justify-between border-b border-app-border bg-white dark:bg-[#1e1e1e]">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(`/app/projects/${projectId}`)}
-            className="text-app-text-muted hover:text-app-text-primary transition-colors text-sm font-medium"
-          >
-            ← Hub
-          </button>
-          <div className="h-4 w-[1px] bg-app-border" />
-          <span className="font-semibold app-text-primary tracking-tight">Información del Proyecto</span>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => navigate(`/app/projects/${projectId}/edit`)}>
-          Editar Proyecto
-        </Button>
-      </nav>
-
       <main className="max-w-4xl mx-auto py-12 px-8 space-y-12">
         {/* Project Details */}
         <section className="space-y-6">

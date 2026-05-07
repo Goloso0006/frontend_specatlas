@@ -96,6 +96,13 @@ export class RequirementFacade {
     return this.api.createDependency(fromId.trim(), toId.trim())
   }
 
+  /**
+   * Permanently deletes a requirement by its ID.
+   */
+  async deleteRequirement(requirementId: string): Promise<void> {
+    return this.api.deleteById(requirementId.trim())
+  }
+
   // ── Orchestrated workflows ──
 
   /**

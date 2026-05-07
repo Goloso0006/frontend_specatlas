@@ -84,4 +84,8 @@ export const requirementsApi = {
     )
     return adaptRequirementNodeList(unwrapData(data))
   },
+
+  async deleteById(requirementId: string): Promise<void> {
+    await httpProxy.delete(endpoints.requirements.byId(requirementId))
+  },
 }

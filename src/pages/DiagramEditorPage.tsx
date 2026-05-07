@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -19,7 +19,6 @@ import { DiagramToolbar } from '../components/diagram/DiagramToolbar'
 import { useDiagramEditorStore } from '../state/diagramEditor.store'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { Badge } from '../components/ui/Badge'
 import type {
   DiagramClassNodeDTO,
   DiagramRelationDTO,
@@ -41,7 +40,6 @@ import {
 
 export function DiagramEditorPage() {
   const { projectId: routeProjectId } = useParams()
-  const navigate = useNavigate()
   const { state: editorState, actions: editorActions } = useDiagramEditorStore()
   const { run } = useApiOperation()
 
@@ -215,26 +213,17 @@ export function DiagramEditorPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-app-bg">
-      <header className="h-16 px-6 flex items-center justify-between border-b border-app-border bg-white dark:bg-[#1e1e1e] shrink-0">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/app/projects/${projectId}`)}>← Hub</Button>
-          <div className="h-4 w-[1px] bg-app-border" />
-          <h1 className="font-bold tracking-tight">{diagramName}</h1>
-          <Badge variant="neutral">{diagramType}</Badge>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-app-text-muted font-mono">{editorState.status}</span>
-          <Button size="sm" onClick={handleSaveDiagram}>Guardar Cambios</Button>
-        </div>
-      </header>
-
+    <div className="flex-1 flex flex-col bg-app-bg overflow-hidden">
       <div className="flex-1 flex overflow-hidden">
         {/* Left Toolbar */}
         <aside className="w-80 border-r border-app-border flex flex-col bg-[#fcfcfc] dark:bg-[#181818] overflow-y-auto">
           <div className="p-6 space-y-6">
             <div className="space-y-4">
               <h3 className="text-[12px] font-bold uppercase tracking-wider text-app-text-muted">Propiedades</h3>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-app-text-muted font-mono uppercase tracking-wider">Tipo</span>
+                <span className="text-[11px] font-medium text-app-text-secondary px-2 py-0.5 rounded border border-app-border bg-app-surface">{diagramType}</span>
+              </div>
               <Input label="Nombre del Diagrama" value={diagramName} onChange={e => setDiagramName(e.target.value)} />
             </div>
 

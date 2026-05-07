@@ -12,6 +12,7 @@ export const endpoints = {
     base: '/api/requirements',
     convert: '/api/requirements/convert',
     save: '/api/requirements/save',
+    byId: (id: string) => `/api/requirements/${id}`,
     byProject: (projectId: string) => `/api/requirements/project/${projectId}`,
     search: '/api/requirements/search',
     duplicates: '/api/requirements/check-duplicates',

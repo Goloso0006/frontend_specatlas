@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { validationRuleFacade } from '../facades/validationRule.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { isValidProjectId } from '../context/ProjectContext'
@@ -11,7 +11,6 @@ import { Badge } from '../components/ui/Badge'
 
 export function ValidationRulesPage() {
   const { projectId: routeProjectId } = useParams()
-  const navigate = useNavigate()
   const projectId = routeProjectId ?? ''
 
   const EMPTY_RULE: ValidationRuleRequest = {
@@ -95,19 +94,6 @@ export function ValidationRulesPage() {
 
   return (
     <div className="min-h-screen bg-app-bg flex flex-col">
-      <nav className="h-16 px-8 flex items-center justify-between border-b border-app-border bg-white dark:bg-[#1e1e1e]">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(`/app/projects/${projectId}`)}
-            className="text-app-text-muted hover:text-app-text-primary transition-colors text-sm font-medium"
-          >
-            ← Hub
-          </button>
-          <div className="h-4 w-[1px] bg-app-border" />
-          <span className="font-semibold app-text-primary tracking-tight">Reglas de Validación</span>
-        </div>
-      </nav>
-
       <main className="max-w-6xl mx-auto w-full py-12 px-8 grid gap-12 lg:grid-cols-[1fr_400px]">
         {/* Left: List */}
         <section className="space-y-6">
