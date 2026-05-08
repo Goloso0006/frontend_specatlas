@@ -13,6 +13,7 @@ import type {
   RequirementDTO,
   RequirementNode,
 } from '../types/requirements'
+import { validateRequirementBeforeSave } from '../utils/requirementValidation'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -162,6 +163,12 @@ export function RequirementsPage() {
   }
 
   async function handleModalSave(dto: RequirementDTO) {
+    const typeToValidate = dto.requirementType || 'FUNCTIONAL'
+    const { valid, errors } = validateRequirementBeforeSave(dto, typeToValidate)
+    if (!valid) {
+      alert(`Error:\n${errors.join('\n')}`)
+      return
+    }
     const saved = await run(
       () => requirementFacade.saveRequirement(dto),
       { errorMessage: 'Error al guardar el requisito.' }

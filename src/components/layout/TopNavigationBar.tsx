@@ -36,19 +36,61 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
   if (path === '/app' || path === '/app/') return segments
 
   if (urlProjectId) {
-    const projectPath = `/app/projects/${urlProjectId}`
-    segments.push({ label: projectLabel, path: projectPath, isCurrent: path === projectPath })
+    const base = `/app/projects/${urlProjectId}`
+    segments.push({ label: projectLabel, path: base, isCurrent: path === base })
 
-    if (path === `${projectPath}/requirements`) {
-      segments.push({ label: 'Requisitos', path: `${projectPath}/requirements`, isCurrent: true })
-    } else if (path === `${projectPath}/diagrams`) {
-      segments.push({ label: 'Diagramas', path: `${projectPath}/diagrams`, isCurrent: true })
-    } else if (path === `${projectPath}/validation-rules`) {
-      segments.push({ label: 'Reglas', path: `${projectPath}/validation-rules`, isCurrent: true })
-    } else if (path === `${projectPath}/info`) {
-      segments.push({ label: 'Información', path: `${projectPath}/info`, isCurrent: true })
-    } else if (path === `${projectPath}/edit`) {
-      segments.push({ label: 'Editar proyecto', path: `${projectPath}/edit`, isCurrent: true })
+    // ── Requirements flow breadcrumbs ──────────────────────────────────
+    const reqBase = `${base}/requirements`
+
+    if (path.startsWith(reqBase)) {
+      // Always show "Requisitos" as intermediate crumb (clickable except on that exact page)
+      const isReqRoot = path === reqBase
+      segments.push({ label: 'Requisitos', path: reqBase, isCurrent: isReqRoot })
+
+      if (!isReqRoot) {
+        // Functional branch
+        if (path.startsWith(`${reqBase}/functional`)) {
+          const funcBase = `${reqBase}/functional`
+          const isFuncRoot = path === funcBase
+          segments.push({ label: 'Funcionales', path: funcBase, isCurrent: isFuncRoot })
+
+          if (!isFuncRoot) {
+            if (path === `${funcBase}/ai`) {
+              segments.push({ label: 'IA', path: `${funcBase}/ai`, isCurrent: true })
+            } else if (path === `${funcBase}/manual`) {
+              segments.push({ label: 'Manual', path: `${funcBase}/manual`, isCurrent: true })
+            }
+          }
+        }
+        // Non-functional branch
+        else if (path.startsWith(`${reqBase}/non-functional`)) {
+          const nfBase = `${reqBase}/non-functional`
+          const isNfRoot = path === nfBase
+          segments.push({ label: 'No funcionales', path: nfBase, isCurrent: isNfRoot })
+
+          if (!isNfRoot) {
+            if (path === `${nfBase}/ai`) {
+              segments.push({ label: 'IA', path: `${nfBase}/ai`, isCurrent: true })
+            } else if (path === `${nfBase}/manual`) {
+              segments.push({ label: 'Manual', path: `${nfBase}/manual`, isCurrent: true })
+            }
+          }
+        }
+        // Legacy branch
+        else if (path === `${reqBase}/legacy`) {
+          segments.push({ label: 'Legado', path: `${reqBase}/legacy`, isCurrent: true })
+        }
+      }
+    }
+    // ── Other project routes ───────────────────────────────────────────
+    else if (path === `${base}/diagrams`) {
+      segments.push({ label: 'Diagramas', path: `${base}/diagrams`, isCurrent: true })
+    } else if (path === `${base}/validation-rules`) {
+      segments.push({ label: 'Reglas', path: `${base}/validation-rules`, isCurrent: true })
+    } else if (path === `${base}/info`) {
+      segments.push({ label: 'Información', path: `${base}/info`, isCurrent: true })
+    } else if (path === `${base}/edit`) {
+      segments.push({ label: 'Editar proyecto', path: `${base}/edit`, isCurrent: true })
     }
   }
 

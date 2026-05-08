@@ -3,6 +3,29 @@ export interface ConvertRequest {
   projectId: string
 }
 
+export interface ConvertBatchRequest {
+  text: string
+  projectId: string
+  requirementType: 'FUNCTIONAL' | 'NON_FUNCTIONAL'
+}
+
+export interface RequirementBatchResponse {
+  requirements: RequirementDTO[]
+  warnings: string[]
+  sourceSummary: string
+}
+
+export interface NonFunctionalDetailDTO {
+  category: string
+  metricName: string
+  operator: string
+  targetValue: string
+  unit: string
+  verificationMethod: string
+  context?: string
+  rationale?: string
+}
+
 export interface RequirementDTO {
   id: string
   code: string
@@ -13,6 +36,8 @@ export interface RequirementDTO {
   isoClassification: string
   projectId: string
   relatedCodes: string[]
+  requirementType?: 'FUNCTIONAL' | 'NON_FUNCTIONAL'
+  nonFunctionalDetail?: NonFunctionalDetailDTO | null
 }
 
 export interface SearchResponse {
@@ -41,4 +66,5 @@ export interface DuplicateMatchResponse {
   requirementCode: string
   title: string
   similarity: number
+  requirementType?: 'FUNCTIONAL' | 'NON_FUNCTIONAL'
 }

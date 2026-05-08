@@ -52,15 +52,19 @@ export function TagList({ items, emptyMessage = 'Sin elementos' }: { items: stri
  * Renders a percentage bar with label.
  */
 export function SimilarityBadge({ value }: { value: number }) {
-  const percent = Math.round(value * 100)
-  const color = percent >= 80 ? 'bg-emerald-500' : percent >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+  let percent = value;
+  if (value > 100) percent = value / 100;
+  else if (value <= 1) percent = value * 100;
+  
+  const displayPct = percent.toFixed(2);
+  const color = percent >= 85 ? 'bg-rose-500' : percent >= 65 ? 'bg-amber-500' : 'bg-emerald-500'
 
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-app-surface">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(percent, 100)}%` }} />
       </div>
-      <span className="text-xs app-text-secondary">{percent}%</span>
+      <span className="text-xs app-text-secondary">{displayPct}%</span>
     </div>
   )
 }

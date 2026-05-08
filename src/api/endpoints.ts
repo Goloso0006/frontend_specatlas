@@ -11,6 +11,7 @@ export const endpoints = {
   requirements: {
     base: '/api/requirements',
     convert: '/api/requirements/convert',
+    convertBatch: '/api/requirements/convert-batch',
     save: '/api/requirements/save',
     byId: (id: string) => `/api/requirements/${id}`,
     byProject: (projectId: string) => `/api/requirements/project/${projectId}`,

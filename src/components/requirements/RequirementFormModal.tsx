@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { RequirementDTO } from '../../types/requirements'
+import { NonFunctionalDetailEditor } from './RequirementDraftEditor'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -182,6 +183,17 @@ export const RequirementFormModal: React.FC<RequirementFormModalProps> = ({
               className={`${inputCls} resize-none`}
             />
           </div>
+
+          {/* RNF Detail */}
+          {form.requirementType === 'NON_FUNCTIONAL' && (
+            <div className="pt-2 border-t border-[var(--color-border)]">
+              <NonFunctionalDetailEditor
+                detail={form.nonFunctionalDetail}
+                isEditing={true}
+                onChange={(updated) => setForm({ ...form, nonFunctionalDetail: updated })}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}

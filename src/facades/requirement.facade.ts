@@ -2,10 +2,13 @@ import { requirementsApi } from '../api/services/requirementsApi'
 import type {
   DuplicateCheckRequest,
   DuplicateMatchResponse,
+  RequirementBatchResponse,
   RequirementDTO,
   RequirementNode,
   SearchResponse,
 } from '../types/requirements'
+
+import type { ImpactGraphResponse } from '../types/graph'
 
 /**
  * Facade that encapsulates all requirement-related API operations.
@@ -32,6 +35,21 @@ export class RequirementFacade {
    */
   async convertTextToRequirement(projectId: string, text: string): Promise<RequirementDTO> {
     return this.api.convert({ projectId, text })
+  }
+
+  /**
+   * Alias for convertTextToRequirement but specifically for improving a manual requirement row.
+   */
+  async convertManualRequirement(text: string, projectId: string): Promise<RequirementDTO> {
+    return this.api.convert({ projectId, text })
+  }
+
+  /**
+   * Converts free-form text into a batch of structured requirement DTOs.
+   * Does NOT persist anything — use `saveRequirement()` afterwards.
+   */
+  async generateRequirementDraftsFromText(projectId: string, text: string, requirementType: 'FUNCTIONAL' | 'NON_FUNCTIONAL'): Promise<RequirementBatchResponse> {
+    return this.api.convertBatch({ projectId, text, requirementType })
   }
 
   /**
@@ -101,6 +119,13 @@ export class RequirementFacade {
    */
   async deleteRequirement(requirementId: string): Promise<void> {
     return this.api.deleteById(requirementId.trim())
+  }
+  
+  /**
+   * Retrieves the full impact graph (nodes and edges) for a requirement.
+   */
+  async getGraphImpact(requirementId: string): Promise<ImpactGraphResponse> {
+    return this.api.getGraphImpact(requirementId)
   }
 
   // ── Orchestrated workflows ──

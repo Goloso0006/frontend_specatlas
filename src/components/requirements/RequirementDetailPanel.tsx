@@ -161,7 +161,8 @@ const DependenciesTab: React.FC<{
       requirements={requirements}
       graphData={impactGraph}
       selectedRequirementId={selectedRequirementId}
-      mode="impact"
+      selectedRequirementCode={requirements.find(r => r.id === selectedRequirementId)?.code}
+      mode="focused"
     />
   )
 }
@@ -206,7 +207,8 @@ const RelationsTab: React.FC<{
       requirements={requirements}
       graphData={inferenceGraph}
       selectedRequirementId={selectedRequirementId}
-      mode="inferred"
+      selectedRequirementCode={requirements.find(r => r.id === selectedRequirementId)?.code}
+      mode="focused"
     />
   )
 }

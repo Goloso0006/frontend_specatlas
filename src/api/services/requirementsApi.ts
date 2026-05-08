@@ -10,12 +10,15 @@ import {
 import type { ApiResponse } from '../../types/api'
 import type {
   ConvertRequest,
+  ConvertBatchRequest,
   DuplicateCheckRequest,
   DuplicateMatchResponse,
+  RequirementBatchResponse,
   RequirementDTO,
   RequirementNode,
   SearchResponse,
 } from '../../types/requirements'
+import type { ImpactGraphResponse } from '../../types/graph'
 
 export const requirementsApi = {
   async convert(payload: ConvertRequest): Promise<RequirementDTO> {
@@ -24,6 +27,23 @@ export const requirementsApi = {
       payload,
     )
     return adaptRequirementDTO(unwrapData(data))
+  },
+
+  async convertBatch(payload: ConvertBatchRequest): Promise<RequirementBatchResponse> {
+    const data = await httpProxy.post<RequirementBatchResponse | ApiResponse<RequirementBatchResponse>>(
+      endpoints.requirements.convertBatch,
+      payload,
+    )
+    
+    // We unwrap the data. Since we might need to adapt the DTOs inside, let's do it safely
+    const unwrapped = unwrapData(data)
+    return {
+      requirements: Array.isArray(unwrapped.requirements) 
+        ? unwrapped.requirements.map(adaptRequirementDTO) 
+        : [],
+      warnings: unwrapped.warnings || [],
+      sourceSummary: unwrapped.sourceSummary || ''
+    }
   },
 
   async save(payload: RequirementDTO): Promise<RequirementDTO> {
@@ -87,5 +107,12 @@ export const requirementsApi = {
 
   async deleteById(requirementId: string): Promise<void> {
     await httpProxy.delete(endpoints.requirements.byId(requirementId))
+  },
+
+  async getGraphImpact(requirementId: string): Promise<ImpactGraphResponse> {
+    const data = await httpProxy.get<ImpactGraphResponse | ApiResponse<ImpactGraphResponse>>(
+      endpoints.graph.impact(requirementId.trim()),
+    )
+    return unwrapData(data)
   },
 }

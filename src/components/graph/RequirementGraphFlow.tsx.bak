@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react'
 import type { RequirementDTO } from '../../types/requirements'
 
-type GraphMode = 'impact' | 'inferred' | 'focused' | 'project-map'
+type GraphMode = 'impact' | 'inferred'
 
 type GraphData = unknown
 
@@ -40,7 +40,6 @@ interface RequirementGraphFlowProps {
   graphData?: GraphData
   mode?: GraphMode
   selectedRequirementId?: string
-  selectedRequirementCode?: string
   className?: string
 }
 
@@ -106,25 +105,12 @@ function layoutNodes(nodeIds: string[]): Record<string, { x: number; y: number }
     const column = index % columns
     const row = Math.floor(index / columns)
     positions[id] = {
-      x: 80 + column * 350,
-      y: 80 + row * 220,
+      x: 80 + column * 280,
+      y: 80 + row * 160,
     }
   })
 
   return positions
-}
-
-function translateRelationType(type: string): string {
-  const upper = type.toUpperCase()
-  switch (upper) {
-    case 'DEPENDS_ON': return 'Depende de'
-    case 'CONFLICTS_WITH': return 'Conflicta con'
-    case 'IMPACTS': return 'Impacta'
-    case 'CONSTRAINS': return 'Condiciona'
-    case 'RELATES_TO': return 'Relacionado'
-    case 'DUPLICATES': return 'Posible duplicado'
-    default: return type
-  }
 }
 
 function normalizeRequirementGraph(graphData: GraphData, requirements?: RequirementDTO[]): NormalizedGraph {
@@ -243,42 +229,18 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
     const relationType = toStringValue(entry.relationType ?? entry.type ?? entry.relationship ?? entry.label) || 'RELATES_TO'
     const reason = toStringValue(entry.reason ?? entry.description)
 
-    let stroke = 'var(--color-text-muted)'
-    let animated = false
-    let strokeDasharray: string | undefined = undefined
-
-    switch (relationType.toUpperCase()) {
-      case 'DEPENDS_ON':
-        stroke = 'var(--color-text-primary)'
-        break
-      case 'CONFLICTS_WITH':
-        stroke = '#f59e0b'
-        strokeDasharray = '5 5'
-        break
-      case 'IMPACTS':
-        stroke = 'var(--color-accent)'
-        animated = true
-        break
-      case 'CONSTRAINS':
-        strokeDasharray = '5 5'
-        break
-    }
-
     return [{
       id: toStringValue(entry.id) || `${fromCode}-${toCode}-${relationType}-${index}`,
       source: fromCode,
       target: toCode,
-      label: translateRelationType(relationType),
-      labelStyle: { fill: 'var(--color-text-primary)', fontSize: 10, fontWeight: 600 },
-      labelBgStyle: { fill: 'var(--color-bg)', fillOpacity: 0.8 },
-      animated,
+      label: relationType,
+      animated: true,
       type: 'smoothstep',
-      data: { reason, originalType: relationType.toUpperCase() },
-      markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
+      data: { reason },
+      markerEnd: { type: MarkerType.ArrowClosed },
       style: {
-        stroke,
+        stroke: 'var(--color-text-muted)',
         strokeWidth: 1.5,
-        strokeDasharray,
       },
     } satisfies Edge]
   })
@@ -298,15 +260,11 @@ function RequirementGraphNodeView({ data, selected }: NodeProps<RequirementGraph
   return (
     <div
       className={[
-        'min-w-[220px] max-w-[260px] rounded-2xl border px-4 py-3 transition-all duration-150',
-        selected 
-          ? 'border-[var(--color-accent)] ring-2 ring-[var(--color-accent)] shadow-md bg-[var(--color-surface)]'
-          : 'bg-[var(--color-bg-card)] border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:shadow-sm',
+        'min-w-[220px] max-w-[260px] rounded-2xl border bg-[var(--color-bg-card)] px-4 py-3 shadow-sm transition-all duration-150',
+        'border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:shadow-md',
+        selected ? 'ring-1 ring-[var(--color-border-strong)]' : '',
       ].join(' ')}
     >
-      {selected && (
-        <div className="absolute -top-3 right-3 rounded bg-[var(--color-accent)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-accent-foreground)]">ACTUAL</div>
-      )}
       <Handle type="target" position={Position.Top} className="!w-3 !h-3 !border-2 !border-[var(--color-border-strong)] !bg-[var(--color-surface)]" />
       <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !border-2 !border-[var(--color-border-strong)] !bg-[var(--color-surface)]" />
 
@@ -340,61 +298,16 @@ export function RequirementGraphFlow({
   graphData,
   mode = 'impact',
   selectedRequirementId,
-  selectedRequirementCode,
   className = '',
 }: RequirementGraphFlowProps) {
-  const [filter, setFilter] = useState('ALL')
-
   const graph = useMemo(
     () => normalizeRequirementGraph(graphData, requirements),
     [graphData, requirements],
   )
 
-  const filteredGraph = useMemo(() => {
-    let filteredNodes = graph.nodes;
-    let filteredEdges = graph.edges;
-
-    // Filtro principal por modo: "focused" vs "project-map"
-    if (mode === 'focused' || mode === 'impact') {
-      const codeToFocus = selectedRequirementCode || selectedRequirementId
-      if (codeToFocus) {
-        filteredEdges = filteredEdges.filter(e => e.source === codeToFocus || e.target === codeToFocus)
-        const connectedNodeIds = new Set(filteredEdges.flatMap(e => [e.source, e.target]))
-        connectedNodeIds.add(codeToFocus)
-        filteredNodes = filteredNodes.filter(n => connectedNodeIds.has(n.id))
-      }
-    }
-
-    // Filtros de usuario de la UI
-    if (filter === 'RNF') {
-      filteredNodes = filteredNodes.filter(n => (n.data.requirementType || inferRequirementType(n.data.code)) === 'RNF')
-    } else if (filter === 'RF') {
-      filteredNodes = filteredNodes.filter(n => (n.data.requirementType || inferRequirementType(n.data.code)) === 'RF')
-    } else if (filter !== 'ALL') {
-      filteredEdges = filteredEdges.filter(e => e.data?.originalType === filter)
-    }
-
-    if (filter === 'RNF' || filter === 'RF') {
-      const validNodeIds = new Set(filteredNodes.map(n => n.id))
-      filteredEdges = filteredEdges.filter(e => validNodeIds.has(e.source) && validNodeIds.has(e.target))
-    } else if (filter !== 'ALL') {
-      const validNodeIds = new Set(filteredEdges.flatMap(e => [e.source, e.target]))
-      // Solo en modo project map escondemos nodos si filtramos por relación y no están conectados.
-      // En modo focused, es mejor dejar el nodo central siempre visible.
-      if (mode === 'project-map') {
-        filteredNodes = filteredNodes.filter(n => validNodeIds.has(n.id))
-      }
-    }
-
-    return { nodes: filteredNodes, edges: filteredEdges }
-  }, [graph, filter, mode, selectedRequirementId, selectedRequirementCode])
-
   const nodes = useMemo(
-    () => filteredGraph.nodes.map((node) => ({ 
-      ...node, 
-      selected: node.id === selectedRequirementId || node.data.code === selectedRequirementCode || node.id === selectedRequirementCode 
-    })),
-    [filteredGraph.nodes, selectedRequirementId, selectedRequirementCode],
+    () => graph.nodes.map((node) => ({ ...node, selected: node.id === selectedRequirementId })),
+    [graph.nodes, selectedRequirementId],
   )
 
   if (!graphData) {
@@ -407,13 +320,11 @@ export function RequirementGraphFlow({
     )
   }
 
-  if (graph.nodes.length === 0 && graph.edges.length === 0) {
+  if (graph.edges.length === 0) {
     return (
       <div className={['space-y-3', className].join(' ')}>
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-muted)]">
-          {mode === 'focused' || mode === 'impact' 
-            ? 'Este requisito todavía no tiene relaciones directas.'
-            : 'No hay relaciones visibles todavía.'}
+          No hay relaciones visibles todavía.
         </div>
         {graph.rawJson ? (
           <details className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
@@ -435,55 +346,31 @@ export function RequirementGraphFlow({
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <h4 className="text-[13px] font-semibold text-[var(--color-text-primary)]">
-              {mode === 'focused' || mode === 'impact' ? 'Impacto del requisito' : mode === 'project-map' ? 'Mapa general del proyecto' : 'Relaciones inferidas'}
+              {mode === 'inferred' ? 'Relaciones inferidas' : 'Grafo de impacto'}
             </h4>
-            <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+            <p className="text-[11px] text-[var(--color-text-muted)]">
               Visualización automática de nodos y relaciones del proyecto actual.
             </p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {[
-                { id: 'ALL', label: 'Todos' },
-                { id: 'DEPENDS_ON', label: 'Dependencias' },
-                { id: 'CONFLICTS_WITH', label: 'Conflictos' },
-                { id: 'IMPACTS', label: 'Impacto' },
-                { id: 'RNF', label: 'RNF' },
-                { id: 'RF', label: 'RF' },
-              ].map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-colors ${
-                    filter === f.id
-                      ? 'bg-[var(--color-accent)] text-[var(--color-accent-foreground)]'
-                      : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
           </div>
-          <div className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-text-muted)] hidden sm:block">
+          <div className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
             React Flow
           </div>
         </div>
 
-        <div className="h-[500px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[linear-gradient(180deg,var(--color-bg),var(--color-bg-card))]">
+        <div className="h-[460px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[linear-gradient(180deg,var(--color-bg),var(--color-bg-card))]">
           <ReactFlow
             nodes={nodes}
-            edges={filteredGraph.edges}
+            edges={graph.edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.25 }}
-            minZoom={0.35}
-            maxZoom={1.5}
-            translateExtent={[[-1500, -1500], [2500, 2500]]}
-            nodeExtent={[[-1000, -1000], [2000, 2000]]}
-            nodesDraggable={true}
+            fitViewOptions={{ padding: 0.2 }}
+            minZoom={0.5}
+            maxZoom={1.4}
+            nodesDraggable
             nodesConnectable={false}
-            elementsSelectable={true}
-            panOnScroll={true}
-            zoomOnScroll={true}
+            elementsSelectable
+            panOnScroll={false}
+            zoomOnScroll={false}
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: true,
@@ -499,7 +386,7 @@ export function RequirementGraphFlow({
         </div>
       </div>
 
-      {graph.reasons.length > 0 ? (
+      {mode === 'inferred' && graph.reasons.length > 0 ? (
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <h5 className="mb-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
             Razones detectadas
