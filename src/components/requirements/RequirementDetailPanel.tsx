@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { RequirementDTO, RequirementNode } from '../../types/requirements'
-import { RequirementGraphView } from '../graph/RequirementGraphView'
+import { RequirementGraphFlow } from '../graph/RequirementGraphFlow'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -13,6 +13,7 @@ interface Tab {
 }
 
 interface RequirementDetailPanelProps {
+  requirements: RequirementDTO[]
   requirement: RequirementDTO | null
   impactGraph: Record<string, unknown> | null
   inferenceGraph: Record<string, unknown> | null
@@ -140,10 +141,12 @@ const CriteriaTab: React.FC<{ req: RequirementDTO }> = ({ req }) => {
 }
 
 const DependenciesTab: React.FC<{
+  requirements: RequirementDTO[]
   impactGraph: Record<string, unknown> | null
-  impactNodes: RequirementNode[]
-}> = ({ impactGraph, impactNodes }) => {
-  if (!impactGraph && impactNodes.length === 0) {
+  impactNodes?: RequirementNode[]
+  selectedRequirementId?: string
+}> = ({ requirements, impactGraph, selectedRequirementId }) => {
+  if (!impactGraph) {
     return (
       <TabEmptyState
         icon="⬡"
@@ -154,42 +157,21 @@ const DependenciesTab: React.FC<{
   }
 
   return (
-    <div className="space-y-4">
-      {/* Impact node list (compact) */}
-      {impactNodes.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Requisitos impactados</p>
-          {impactNodes.map(node => (
-            <div key={node.id}
-              className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)]">
-              <span className="flex-shrink-0 text-[10px] font-bold font-mono text-[var(--color-text-muted)] pt-0.5">{node.code}</span>
-              <div className="min-w-0">
-                <p className="text-[12.5px] font-semibold text-[var(--color-text-primary)] truncate">{node.title}</p>
-                {node.description && (
-                  <p className="text-[11.5px] text-[var(--color-text-muted)] line-clamp-1">{node.description}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Graph visualization */}
-      {impactGraph && (
-        <RequirementGraphView
-          title="Grafo de impacto"
-          response={impactGraph}
-          emptyMessage="Sin nodos de grafo disponibles."
-        />
-      )}
-    </div>
+    <RequirementGraphFlow
+      requirements={requirements}
+      graphData={impactGraph}
+      selectedRequirementId={selectedRequirementId}
+      mode="impact"
+    />
   )
 }
 
 const RelationsTab: React.FC<{
+  requirements: RequirementDTO[]
   inferenceGraph: Record<string, unknown> | null
+  selectedRequirementId?: string
   onInfer: () => void
-}> = ({ inferenceGraph, onInfer }) => {
+}> = ({ requirements, inferenceGraph, selectedRequirementId, onInfer }) => {
   if (!inferenceGraph) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-14 text-center">
@@ -220,10 +202,11 @@ const RelationsTab: React.FC<{
   }
 
   return (
-    <RequirementGraphView
-      title="Mapa de trazabilidad"
-      response={inferenceGraph}
-      emptyMessage="La inferencia no produjo relaciones visibles."
+    <RequirementGraphFlow
+      requirements={requirements}
+      graphData={inferenceGraph}
+      selectedRequirementId={selectedRequirementId}
+      mode="inferred"
     />
   )
 }
@@ -231,10 +214,10 @@ const RelationsTab: React.FC<{
 // ── Main component ──────────────────────────────────────────────────────────
 
 export const RequirementDetailPanel: React.FC<RequirementDetailPanelProps> = ({
+  requirements,
   requirement,
   impactGraph,
   inferenceGraph,
-  impactNodes,
   isLoadingGraph,
   onInferRelations,
 }) => {
@@ -306,11 +289,20 @@ export const RequirementDetailPanel: React.FC<RequirementDetailPanelProps> = ({
               </div>
             )
             : (
-              <DependenciesTab impactGraph={impactGraph} impactNodes={impactNodes} />
+              <DependenciesTab
+                requirements={requirements}
+                impactGraph={impactGraph}
+                selectedRequirementId={requirement.id}
+              />
             )
         )}
         {activeTab === 'relations' && (
-          <RelationsTab inferenceGraph={inferenceGraph} onInfer={onInferRelations} />
+          <RelationsTab
+            requirements={requirements}
+            inferenceGraph={inferenceGraph}
+            selectedRequirementId={requirement.id}
+            onInfer={onInferRelations}
+          />
         )}
       </div>
     </div>

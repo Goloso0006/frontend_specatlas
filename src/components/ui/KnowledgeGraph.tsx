@@ -9,7 +9,6 @@ import {
   useEdgesState,
 } from '@xyflow/react';
 import type { Edge, Node, NodeProps, CoordinateExtent } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 
 type HeroNodeData = {
   label: string;

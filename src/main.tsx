@@ -6,6 +6,7 @@ import { ProjectProvider } from './context/ProjectContext'
 import { LoadingErrorProvider } from './context/LoadingErrorProvider'
 import { LoadingOverlay } from './components/ui/LoadingOverlay'
 import { ErrorToast } from './components/ui/ErrorToast'
+import '@xyflow/react/dist/style.css'
 import './index.css'
 import App from './App.tsx'
 
