@@ -278,12 +278,23 @@ export function ProjectIsoRulesPage() {
         description="Selecciona los estándares ISO y mejores prácticas que guiarán el desarrollo de tu proyecto."
       />
 
-      <div className="max-w-6xl mx-auto space-y-8">
-        <section className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider app-text-muted">
-            Plantillas recomendadas
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <main className="max-w-6xl mx-auto w-full px-8 pb-10 space-y-8">
+        <section className="rounded-2xl border border-app-border bg-app-card p-6 shadow-sm space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 className="text-lg font-bold tracking-tight app-text-primary">
+                Plantillas recomendadas
+              </h3>
+              <p className="text-sm app-text-secondary mt-1 max-w-2xl">
+                Activa una plantilla para aplicar varias reglas a la vez. Si la vuelves a pulsar, se desactiva sin afectar otras selecciones.
+              </p>
+            </div>
+            <Badge variant="neutral" className="w-fit border border-app-border">
+              {selectedRules.length} reglas activas
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {ISO_PRESETS.map((preset) => {
               const result = getPresetWithRules(preset.id)
               const presetRuleIds = result?.rules.map((rule) => rule.id) || []
@@ -296,34 +307,50 @@ export function ProjectIsoRulesPage() {
               return (
                 <button
                   key={preset.id}
+                  type="button"
                   onClick={() => applyPreset(preset.id)}
-                  className={`p-5 rounded-lg border-2 transition-all text-left ${
+                  className={`group relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
                     isApplied
-                      ? 'border-app-accent bg-app-accent/5'
+                      ? 'border-app-accent bg-app-accent/5 shadow-sm ring-1 ring-app-accent/20'
                       : isPartiallyApplied
-                        ? 'border-amber-400 bg-amber-50/40 dark:bg-amber-900/10'
-                        : 'border-app-border bg-app-card hover:border-app-accent/50'
+                        ? 'border-amber-400 bg-amber-50/30 dark:bg-amber-900/10'
+                        : 'border-app-border bg-app-surface hover:border-app-accent/50 hover:bg-app-card'
                   }`}
                 >
-                  <div className="text-2xl mb-2">{preset.emoji}</div>
-                  <h4 className="font-semibold text-base mb-1">{preset.name}</h4>
-                  <p className="text-sm app-text-secondary leading-relaxed mb-3">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-transparent via-app-accent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="text-2xl">{preset.emoji}</div>
+                    <div className="flex items-center gap-2">
+                      {isApplied && (
+                        <Badge variant="success" className="text-[10px]">
+                          Activa
+                        </Badge>
+                      )}
+                      {isPartiallyApplied && !isApplied && (
+                        <Badge variant="warning" className="text-[10px]">
+                          Parcial
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <h4 className="mb-2 text-base font-semibold app-text-primary">
+                    {preset.name}
+                  </h4>
+
+                  <p className="mb-4 min-h-11 text-sm leading-relaxed app-text-secondary">
                     {preset.description}
                   </p>
-                  <div className="flex flex-wrap gap-1 items-center">
+
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {result?.rules.slice(0, 2).map((rule) => (
-                      <Badge key={rule.id} variant="neutral" className="text-[10px]">
+                      <Badge key={rule.id} variant="neutral" className="text-[10px] border border-app-border">
                         {rule.code}
                       </Badge>
                     ))}
                     {result && (
-                      <Badge variant="neutral" className="text-[10px]">
+                      <Badge variant="neutral" className="text-[10px] border border-app-border">
                         {result.rules.length} reglas
-                      </Badge>
-                    )}
-                    {isPartiallyApplied && !isApplied && (
-                      <Badge variant="warning" className="text-[10px]">
-                        Selección parcial
                       </Badge>
                     )}
                   </div>
@@ -333,11 +360,17 @@ export function ProjectIsoRulesPage() {
           </div>
         </section>
 
-        <section className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider app-text-muted">
-            Buscar manualmente
-          </h3>
-          <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
+        <section className="rounded-2xl border border-app-border bg-app-card p-6 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight app-text-primary">
+              Buscar manualmente
+            </h3>
+            <p className="mt-1 text-sm app-text-secondary">
+              Usa el buscador para encontrar una regla específica y el filtro para acotar por categoría.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-[1fr_220px]">
             <Input
               placeholder="Busca por código ISO, nombre o descripción..."
               value={searchQuery}
@@ -345,7 +378,7 @@ export function ProjectIsoRulesPage() {
               type="search"
             />
             <select
-              className="w-full app-card border border-app-border-strong rounded-md px-3 py-2 text-[15px] app-text-primary focus-ring interactive appearance-none"
+              className="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-[15px] app-text-primary outline-none transition-colors focus:border-app-accent"
               value={filterCategory || ''}
               onChange={(e) => setFilterCategory(e.target.value || null)}
             >
@@ -359,106 +392,134 @@ export function ProjectIsoRulesPage() {
           </div>
         </section>
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wider app-text-muted">
-              Reglas disponibles ({filteredRules.length})
-            </h3>
-            {selectedRules.length > 0 && (
-              <Badge variant="success">
-                {selectedRules.length} seleccionada{selectedRules.length !== 1 ? 's' : ''}
+        <section className="rounded-2xl border border-app-border bg-app-card p-6 shadow-sm space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold tracking-tight app-text-primary">
+                Reglas disponibles
+              </h3>
+              <p className="mt-1 text-sm app-text-secondary">
+                Selecciona una o varias reglas. La tarjeta se resalta cuando está activa.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="neutral" className="border border-app-border">
+                {filteredRules.length} visibles
               </Badge>
-            )}
+              {selectedRules.length > 0 && (
+                <Badge variant="success">
+                  {selectedRules.length} seleccionada{selectedRules.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {filteredRules.length === 0 ? (
-            <div className="p-8 text-center bg-app-surface rounded-lg border border-dashed border-app-border">
-              <p className="app-text-secondary">No se encontraron reglas para tu búsqueda.</p>
+            <div className="rounded-xl border border-dashed border-app-border bg-app-surface p-8 text-center">
+              <p className="text-sm app-text-secondary">No se encontraron reglas para tu búsqueda.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid gap-3">
               {filteredRules.map((rule) => {
                 const isSelected = selectedRuleIds.has(rule.id)
                 const isExpanded = expandedRules.has(rule.id)
 
                 return (
-                  <div
+                  <button
                     key={rule.id}
-                    className="bg-app-card border border-app-border rounded-lg overflow-hidden hover:border-app-border-strong transition-colors"
+                    type="button"
+                    onClick={() => toggleExpandRule(rule.id)}
+                    className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 ${
+                      isSelected
+                        ? 'border-app-accent bg-app-accent/5 shadow-sm ring-1 ring-app-accent/20'
+                        : 'border-app-border bg-app-surface hover:border-app-accent/40 hover:bg-app-card'
+                    }`}
                   >
-                    <button
-                      onClick={() => toggleExpandRule(rule.id)}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-app-surface transition-colors"
-                    >
+                    <div className={`absolute left-0 top-0 h-full w-1 transition-colors ${isSelected ? 'bg-app-accent' : 'bg-transparent group-hover:bg-app-accent/30'}`} />
+
+                    <div className="flex items-start gap-3 pl-1">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleRule(rule.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 rounded border-app-border cursor-pointer"
+                        className="mt-1 h-4 w-4 shrink-0 rounded border-app-border text-app-accent focus:ring-app-accent"
                       />
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-[14px]">{rule.code}</span>
-                          <span className="text-[13px] app-text-secondary">{rule.name}</span>
-                        </div>
-                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-[15px] app-text-primary">
+                                {rule.code}
+                              </span>
+                              <span className="text-[13px] app-text-secondary">
+                                {rule.name}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Badge
+                                variant={
+                                  rule.level === 'essential'
+                                    ? 'danger'
+                                    : rule.level === 'recommended'
+                                      ? 'warning'
+                                      : 'neutral'
+                                }
+                                className="text-[10px]"
+                              >
+                                {rule.level === 'essential'
+                                  ? 'Esencial'
+                                  : rule.level === 'recommended'
+                                    ? 'Recomendado'
+                                    : 'Opcional'}
+                              </Badge>
+                              {isSelected && (
+                                <Badge variant="success" className="text-[10px]">
+                                  Seleccionada
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge
-                          variant={
-                            rule.level === 'essential'
-                              ? 'danger'
-                              : rule.level === 'recommended'
-                                ? 'warning'
-                                : 'neutral'
-                          }
-                          className="text-[10px]"
-                        >
-                          {rule.level === 'essential'
-                            ? 'Esencial'
-                            : rule.level === 'recommended'
-                              ? 'Recomendado'
-                              : 'Opcional'}
-                        </Badge>
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                          />
-                        </svg>
-                      </div>
-                    </button>
+                          <svg
+                            className={`shrink-0 w-4 h-4 app-text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                            />
+                          </svg>
+                        </div>
 
-                    {isExpanded && (
-                      <div className="px-4 py-3 bg-app-surface border-t border-app-border space-y-2">
-                        <div>
-                          <p className="text-[12px] font-semibold uppercase tracking-wider app-text-muted mb-1">
-                            Descripción
-                          </p>
-                          <p className="text-[13px] app-text-secondary leading-relaxed">
-                            {rule.description}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[12px] font-semibold uppercase tracking-wider app-text-muted mb-1">
-                            Condición / Guía de Implementación
-                          </p>
-                          <p className="text-[13px] app-text-secondary leading-relaxed font-mono bg-app-card px-2 py-1.5 rounded border border-app-border">
-                            {rule.condition}
-                          </p>
-                        </div>
+                        {isExpanded && (
+                          <div className="mt-4 grid gap-3 rounded-xl border border-app-border bg-app-card p-4">
+                            <div>
+                              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider app-text-muted">
+                                Descripción
+                              </p>
+                              <p className="text-[13px] leading-relaxed app-text-secondary">
+                                {rule.description}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider app-text-muted">
+                                Condición / Guía de Implementación
+                              </p>
+                              <p className="rounded-lg border border-app-border bg-app-surface px-3 py-2 font-mono text-[12px] leading-relaxed app-text-secondary">
+                                {rule.condition}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  </button>
                 )
               })}
             </div>
@@ -466,32 +527,37 @@ export function ProjectIsoRulesPage() {
         </section>
 
         {selectedRules.length > 0 && (
-          <section className="space-y-3 bg-app-surface border border-app-border rounded-lg p-6">
-            <h3 className="text-sm font-semibold uppercase tracking-wider app-text-muted">
-              Reglas seleccionadas ({selectedRules.length})
-            </h3>
+          <section className="rounded-2xl border border-app-border bg-app-card p-6 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold tracking-tight app-text-primary">
+                  Reglas seleccionadas
+                </h3>
+                <p className="mt-1 text-sm app-text-secondary">
+                  Puedes quitar reglas individuales desde la tabla inferior.
+                </p>
+              </div>
+              <Badge variant="success">{selectedRules.length} activas</Badge>
+            </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden rounded-xl border border-app-border">
               <table className="w-full text-sm">
-                <thead>
+                <thead className="bg-app-surface">
                   <tr className="border-b border-app-border text-left">
-                    <th className="pb-2 font-semibold app-text-muted px-3 py-2">Código ISO</th>
-                    <th className="pb-2 font-semibold app-text-muted px-3 py-2">Descripción</th>
-                    <th className="pb-2 font-semibold app-text-muted px-3 py-2 w-20">Acción</th>
+                    <th className="px-4 py-3 font-semibold app-text-muted">Código ISO</th>
+                    <th className="px-4 py-3 font-semibold app-text-muted">Descripción</th>
+                    <th className="w-20 px-4 py-3 font-semibold app-text-muted">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedRules.map((rule) => (
-                    <tr
-                      key={rule.id}
-                      className="border-b border-app-border hover:bg-app-card transition-colors"
-                    >
-                      <td className="px-3 py-3 font-semibold">{rule.code}</td>
-                      <td className="px-3 py-3 app-text-secondary">{rule.description}</td>
-                      <td className="px-3 py-3 text-center">
+                    <tr key={rule.id} className="border-b border-app-border last:border-b-0 bg-app-card">
+                      <td className="px-4 py-3 font-semibold app-text-primary">{rule.code}</td>
+                      <td className="px-4 py-3 app-text-secondary">{rule.description}</td>
+                      <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => removeRule(rule.id)}
-                          className="inline-flex items-center justify-center w-6 h-6 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          className="inline-flex items-center justify-center rounded-lg px-2 py-1 text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
                           title="Eliminar"
                         >
                           ✕
@@ -505,7 +571,7 @@ export function ProjectIsoRulesPage() {
           </section>
         )}
 
-        <div className="flex gap-3 justify-end pt-4 border-t border-app-border">
+        <div className="flex items-center justify-end gap-3 rounded-2xl border border-app-border bg-app-card p-4 shadow-sm">
           <Button
             variant="ghost"
             onClick={() => {
@@ -524,7 +590,7 @@ export function ProjectIsoRulesPage() {
             Guardar reglas y continuar
           </Button>
         </div>
-      </div>
+      </main>
     </PageShell>
   )
 }
