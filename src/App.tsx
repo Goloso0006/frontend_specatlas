@@ -4,6 +4,7 @@ import { DiagramEditorPage } from './pages/DiagramEditorPage'
 import { LoginPage } from './pages/LoginPage'
 import { RequirementsPage } from './pages/RequirementsPage'
 import { ValidationRulesPage } from './pages/ValidationRulesPage'
+import { ProjectIsoRulesPage } from './pages/ProjectIsoRulesPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { HomePage } from './pages/HomePage'
 import { ProjectWorkspacePage } from './pages/ProjectWorkspacePage'
@@ -56,6 +57,11 @@ function App() {
         {/* Project Settings */}
         <Route path="/app/projects/:projectId/info" element={<AppShell hideSidebar><ProjectInfoPage /></AppShell>} />
         <Route path="/app/projects/:projectId/edit" element={<AppShell hideSidebar><EditProjectPage /></AppShell>} />
+
+        {/* Project ISO Rules Setup - Step after project creation */}
+        <Route path="/app/projects/:projectId/iso-rules" element={
+          <AppShell hideSidebar><ProjectIsoRulesPage /></AppShell>
+        } />
 
         {/* ── Requirements navigation flow ────────────────────────────────── */}
         {/* Step 1: type selector (functional / non-functional) */}

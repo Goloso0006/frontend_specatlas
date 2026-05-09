@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../auth/useAuth'
+import { useNavigate } from 'react-router-dom'
 import { projectFacade } from '../facades/project.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import type { ProjectRequest, ProjectResponse, ProjectStatus } from '../types/projects'
@@ -19,6 +20,7 @@ const EMPTY_PROJECT: ProjectRequest = {
 
 export function ProjectsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [ownerId] = useState(user?.userId ?? '')
   const [form, setForm] = useState<ProjectRequest>({ ...EMPTY_PROJECT, ownerId: user?.userId ?? '' })
   const [projects, setProjects] = useState<ProjectResponse[]>([])
@@ -51,16 +53,25 @@ export function ProjectsPage() {
 
     await run(
       async () => {
-        if (selectedProject) {
-          await projectFacade.updateProject(selectedProject.id, form)
-        } else {
-          await projectFacade.createProject(form)
-        }
+        let createdProjectId: string
         
-        await handleList()
-        setIsFormOpen(false)
-        setSelectedProject(null)
-        setForm({ ...EMPTY_PROJECT, ownerId })
+        if (selectedProject) {
+          // Editing existing project: keep original behavior
+          await projectFacade.updateProject(selectedProject.id, form)
+          await handleList()
+          setIsFormOpen(false)
+          setSelectedProject(null)
+          setForm({ ...EMPTY_PROJECT, ownerId })
+        } else {
+          // Creating new project: redirect to ISO rules selection
+          const newProject = await projectFacade.createProject(form)
+          createdProjectId = newProject.id
+          setIsFormOpen(false)
+          setSelectedProject(null)
+          setForm({ ...EMPTY_PROJECT, ownerId })
+          // Navigate to ISO rules setup page
+          navigate(`/app/projects/${createdProjectId}/iso-rules`)
+        }
       },
       { errorMessage: 'No fue posible guardar el proyecto.' }
     )
@@ -180,7 +191,7 @@ export function ProjectsPage() {
                 Cancelar
               </Button>
               <Button type="submit">
-                {selectedProject ? 'Guardar cambios' : 'Crear proyecto'}
+                {selectedProject ? 'Guardar cambios' : 'Siguiente'}
               </Button>
             </div>
           </form>
@@ -195,7 +206,7 @@ export function ProjectsPage() {
             Crea tu primer proyecto para comenzar a analizar requisitos y modelar arquitecturas de software.
           </p>
           <Button onClick={handleNewProject}>
-            Crear proyecto
+            Siguiente
           </Button>
         </Card>
       ) : (
