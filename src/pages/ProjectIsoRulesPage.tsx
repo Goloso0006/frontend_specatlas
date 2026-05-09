@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageShell } from '../components/layout/PageShell'
 import { PageHeader } from '../components/layout/PageHeader'
@@ -77,7 +77,16 @@ export function ProjectIsoRulesPage() {
     const result = getPresetWithRules(presetId)
     if (result) {
       const newSelected = new Set(selectedRuleIds)
-      result.rules.forEach((rule) => newSelected.add(rule.id))
+      const allApplied = result.rules.every((r) => newSelected.has(r.id))
+
+      if (allApplied) {
+        // If preset already applied, remove its rules (toggle off)
+        result.rules.forEach((rule) => newSelected.delete(rule.id))
+      } else {
+        // Otherwise add all preset rules
+        result.rules.forEach((rule) => newSelected.add(rule.id))
+      }
+
       setSelectedRuleIds(newSelected)
     }
   }
@@ -87,6 +96,62 @@ export function ProjectIsoRulesPage() {
     newSelected.delete(ruleId)
     setSelectedRuleIds(newSelected)
   }
+
+  // Persist draft selections locally so user can navigate away and return
+  useEffect(() => {
+    if (!projectId) return
+    const draftKey = `iso_rules_draft_${projectId}`
+    const arr = Array.from(selectedRuleIds)
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(arr))
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [selectedRuleIds, projectId])
+
+  // On mount: load existing saved rules (backend) or draft from localStorage.
+  useEffect(() => {
+    if (!projectId) return
+
+    const init = async () => {
+      const skipKey = `iso_rules_skipped_${projectId}`
+      const skipped = localStorage.getItem(skipKey)
+      if (skipped === '1') {
+        // If user explicitly omitted onboarding, go back to project
+        navigate(`/app/projects/${projectId}`)
+        return
+      }
+
+      try {
+        const existing = await validationRuleFacade.getRulesByProject(projectId)
+        if (existing && existing.length > 0) {
+          // Match by name (we store rule.code as the name when creating)
+          const ids = existing
+            .map((r) => ISO_RULE_CATALOG.find((c) => c.code === r.name)?.id)
+            .filter((id): id is string => !!id)
+          setSelectedRuleIds(new Set(ids))
+          return
+        }
+      } catch (e) {
+        // ignore and try draft
+      }
+
+      // Fallback to draft in localStorage
+      const draftKey = `iso_rules_draft_${projectId}`
+      try {
+        const raw = localStorage.getItem(draftKey)
+        if (raw) {
+          const arr: string[] = JSON.parse(raw)
+          setSelectedRuleIds(new Set(arr))
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
 
   function getCategoryLabel(cat: string): string {
     const labels: Record<string, string> = {
@@ -129,6 +194,12 @@ export function ProjectIsoRulesPage() {
         await Promise.all(
           rulesToCreate.map((rule) => validationRuleFacade.createRule(rule))
         )
+
+        // Clear any draft and skipped flag
+        try {
+          localStorage.removeItem(`iso_rules_draft_${projectId}`)
+          localStorage.removeItem(`iso_rules_skipped_${projectId}`)
+        } catch (e) {}
 
         // Navigate to project workspace
         navigate(`/app/projects/${projectId}`)
@@ -397,7 +468,15 @@ export function ProjectIsoRulesPage() {
         <div className="flex gap-3 justify-end pt-4 border-t border-app-border">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/app/projects/${projectId}`)}
+            onClick={() => {
+              // Mark as skipped so we don't force onboarding again
+              try {
+                localStorage.setItem(`iso_rules_skipped_${projectId}`, '1')
+                // also clear draft
+                localStorage.removeItem(`iso_rules_draft_${projectId}`)
+              } catch (e) {}
+              navigate(`/app/projects/${projectId}`)
+            }}
           >
             Omitir
           </Button>
