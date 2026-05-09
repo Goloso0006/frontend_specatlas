@@ -140,22 +140,39 @@ const RequirementListItem: React.FC<RequirementListItemProps> = ({
 
       {/* Full description */}
       {requirement.description && (
-        <p className="text-[12px] text-[var(--color-text-muted)] leading-relaxed whitespace-pre-wrap break-words">
+        <p className="text-[12px] text-[var(--color-text-muted)] leading-relaxed whitespace-pre-wrap break-words line-clamp-3">
           {requirement.description}
         </p>
       )}
 
-      {/* Actors/tags row */}
-      {(requirement.actors ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2.5">
-          {requirement.actors.map(actor => (
-            <span key={actor}
-              className="inline-flex h-4 items-center px-1.5 rounded text-[10px] font-medium bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
-              {actor}
-            </span>
-          ))}
+      {/* Footer row: Actors + Criteria count */}
+      <div className="flex items-center justify-between gap-2 mt-2.5">
+        {/* Actors */}
+        <div className="flex flex-wrap gap-1">
+          {(requirement.actors ?? []).length > 0 ? (
+            requirement.actors.map(actor => (
+              <span key={actor}
+                className="inline-flex h-4 items-center px-1.5 rounded text-[10px] font-medium bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
+                {actor}
+              </span>
+            ))
+          ) : (
+            <span className="text-[10px] text-[var(--color-text-muted)] opacity-40 italic">Sin actores</span>
+          )}
         </div>
-      )}
+
+        {/* Criteria count badge */}
+        {(requirement.acceptanceCriteria ?? []).length > 0 && (
+          <div className="flex-shrink-0 flex items-center gap-1.5" title="Criterios de aceptación">
+            <span className="text-[10px] font-bold text-[var(--color-text-muted)]">
+              {(requirement.acceptanceCriteria ?? []).length}
+            </span>
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} className="text-[var(--color-accent)]">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -133,7 +133,7 @@ const CriteriaTab: React.FC<{ req: RequirementDTO }> = ({ req }) => {
           <span className="flex-shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center rounded-full border border-[var(--color-border-strong)] text-[10px] font-bold text-[var(--color-text-muted)]">
             {i + 1}
           </span>
-          <p className="text-[13px] text-[var(--color-text-primary)] leading-relaxed">{crit}</p>
+          <p className="text-[13px] text-[var(--color-text-primary)] leading-relaxed whitespace-pre-wrap break-words">{crit}</p>
         </div>
       ))}
     </div>

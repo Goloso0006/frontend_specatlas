@@ -64,21 +64,102 @@ const TagList: React.FC<{ items: string[]; label: string }> = ({ items, label })
   )
 }
 
-// ── Criteria list (read-only) ──────────────────────────────────────────────
+// ── Criteria list ──────────────────────────────────────────────────────────────
+interface CriteriaListProps {
+  items: string[]
+  isEditing: boolean
+  onChange: (items: string[]) => void
+}
 
-const CriteriaList: React.FC<{ items: string[] }> = ({ items }) => {
-  if (!items || items.length === 0) return null
+export const CriteriaList: React.FC<CriteriaListProps> = ({ items, isEditing, onChange }) => {
+  const handleItemChange = (index: number, value: string) => {
+    const newItems = [...items]
+    newItems[index] = value
+    onChange(newItems)
+  }
+
+  const addItem = () => {
+    onChange([...items, ''])
+  }
+
+  const removeItem = (index: number) => {
+    onChange(items.filter((_, i) => i !== index))
+  }
+
+  if (!isEditing && items.length === 0) return null
+
   return (
-    <div>
-      <p className={`${labelCls} mb-2`}>Criterios de aceptación (BDD)</p>
-      <ul className="space-y-1.5">
-        {items.map((criterion, i) => (
-          <li key={i} className="flex items-start gap-2 text-[12.5px] text-[var(--color-text-secondary)] leading-relaxed">
-            <span className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
-            <span>{criterion}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className={`${labelCls}`}>Criterios de aceptación (BDD)</p>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={addItem}
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 transition-colors"
+          >
+            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Añadir
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {items.length === 0 && !isEditing ? (
+          <p className="text-[12px] text-[var(--color-text-muted)] italic">Sin criterios definidos</p>
+        ) : (
+          items.map((criterion, i) => (
+            <div key={i} className="group relative flex items-start gap-2.5">
+              {isEditing ? (
+                <div className="flex-1 flex gap-2">
+                  <span className="mt-2.5 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
+                  <textarea
+                    value={criterion}
+                    onChange={(e) => handleItemChange(i, e.target.value)}
+                    placeholder="Dado que... cuando... entonces..."
+                    rows={1}
+                    className={[
+                      'flex-1 text-[12.5px] px-2 py-1.5 rounded-lg leading-relaxed',
+                      'bg-[var(--color-bg)] border border-[var(--color-border-strong)]',
+                      'text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]',
+                      'focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]',
+                      'resize-none overflow-hidden h-auto',
+                    ].join(' ')}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement
+                      target.style.height = 'auto'
+                      target.style.height = target.scrollHeight + 'px'
+                    }}
+                    ref={(el) => {
+                      if (el) {
+                        el.style.height = 'auto'
+                        el.style.height = el.scrollHeight + 'px'
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeItem(i)}
+                    className="mt-1 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                    aria-label="Eliminar criterio"
+                  >
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 text-[12.5px] text-[var(--color-text-secondary)] leading-relaxed">
+                  <span className="mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
+                  <span className="whitespace-pre-wrap break-words">{criterion}</span>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }
@@ -410,8 +491,12 @@ export const RequirementDraftEditor: React.FC<RequirementDraftEditorProps> = ({
           </div>
         </div>
 
-        {/* Acceptance criteria — always read-only preview (complex editing not in scope) */}
-        <CriteriaList items={draft.acceptanceCriteria} />
+        {/* Acceptance criteria */}
+        <CriteriaList 
+          items={draft.acceptanceCriteria} 
+          isEditing={isEditing} 
+          onChange={(updated) => onChange({ ...draft, acceptanceCriteria: updated })}
+        />
 
         {/* Related codes */}
         <TagList items={draft.relatedCodes} label="Requisitos relacionados" />

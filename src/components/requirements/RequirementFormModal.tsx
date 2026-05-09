@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { RequirementDTO } from '../../types/requirements'
-import { NonFunctionalDetailEditor } from './RequirementDraftEditor'
+import { NonFunctionalDetailEditor, CriteriaList } from './RequirementDraftEditor'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -181,6 +181,15 @@ export const RequirementFormModal: React.FC<RequirementFormModalProps> = ({
               placeholder="Descripción detallada del requerimiento…"
               rows={4}
               className={`${inputCls} resize-none`}
+            />
+          </div>
+
+          {/* Acceptance Criteria */}
+          <div className="pt-2">
+            <CriteriaList 
+              items={form.acceptanceCriteria || []} 
+              isEditing={true} 
+              onChange={(updated) => setForm({ ...form, acceptanceCriteria: updated })}
             />
           </div>
 
