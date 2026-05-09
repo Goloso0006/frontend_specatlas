@@ -215,10 +215,18 @@ export function DashboardPage() {
     if (!form.name.trim() || !user?.userId) return
 
     await run(async () => {
-      await projectFacade.createProject({ ...form, ownerId: user.userId })
+      // Create project and navigate to ISO rules setup (next step)
+      const created = await projectFacade.createProject({ ...form, ownerId: user.userId })
+      // Refresh list
       await handleFetch()
+      // Reset form/modal
       setIsModalOpen(false)
       setForm({ ...EMPTY_PROJECT, ownerId: user.userId })
+
+      // Navigate to the ISO rules selection for the newly created project
+      if (created && created.id) {
+        navigate(`/app/projects/${created.id}/iso-rules`)
+      }
     }, { errorMessage: 'Error al crear el proyecto.' })
   }
 
@@ -547,7 +555,7 @@ export function DashboardPage() {
                     type="submit"
                     className="flex-1 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] rounded-xl"
                   >
-                    Crear Proyecto
+                    Siguiente
                   </Button>
                 </div>
               </form>
