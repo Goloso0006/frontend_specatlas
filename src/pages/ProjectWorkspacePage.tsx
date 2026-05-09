@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { projectFacade } from '../facades/project.facade'
 import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { useApiOperation } from '../hooks/useLoadingError'
+import { validationRuleFacade } from '../facades/validationRule.facade'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type { ProjectResponse } from '../types/projects'
 
@@ -19,8 +20,19 @@ export function ProjectWorkspacePage() {
       const data = await projectFacade.getProject(projectId)
       setProject(data)
       await selectProject(projectId)
+
+      const skipKey = `iso_rules_skipped_${projectId}`
+      const skipped = localStorage.getItem(skipKey)
+      if (skipped !== '1') {
+        const validationRules = await validationRuleFacade.getRulesByProject(projectId)
+
+        // If the project does not yet have ISO rules saved, return to the onboarding step.
+        if (validationRules.length === 0) {
+          navigate(`/app/projects/${projectId}/iso-rules`)
+        }
+      }
     })
-  }, [projectId])
+  }, [projectId, navigate, run, selectProject])
 
   if (!isValidProjectId(projectId)) {
     return <NoProjectSelected message="El ID de proyecto en la URL no es válido." />
@@ -28,10 +40,10 @@ export function ProjectWorkspacePage() {
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] bg-[var(--color-bg)]">
+      <div className="flex items-center justify-center min-h-[60vh] bg-(--color-bg)">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-48 bg-[var(--color-bg-card)] rounded-lg" />
-          <div className="h-4 w-64 bg-[var(--color-bg-card)] rounded-lg" />
+          <div className="h-12 w-48 bg-(--color-bg-card) rounded-lg" />
+          <div className="h-4 w-64 bg-(--color-bg-card) rounded-lg" />
         </div>
       </div>
     )
@@ -63,7 +75,7 @@ export function ProjectWorkspacePage() {
   ]
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <div className="min-h-[calc(100vh-64px)] bg-(--color-bg) text-(--color-text-primary)">
       <style>{`
         /* Grid background for workspace */
         .workspace-bg {
@@ -100,7 +112,7 @@ export function ProjectWorkspacePage() {
           <h1 className="sa-hero-title mt-1 mb-3">
             {project.name}
           </h1>
-          <p className="text-base md:text-lg text-[var(--color-text-secondary)] font-light max-w-3xl leading-relaxed whitespace-normal break-words">
+          <p className="text-base md:text-lg text-(--color-text-secondary) font-light max-w-3xl leading-relaxed whitespace-normal wrap-break-word">
             {project.description || 'Sin descripción disponible para este proyecto.'}
           </p>
         </div>
@@ -112,28 +124,28 @@ export function ProjectWorkspacePage() {
               <div
                 key={card.title}
                 onClick={() => navigate(card.path)}
-                className="group bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 md:p-8 cursor-pointer hover:border-[var(--color-border-strong)] hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
+                className="group bg-(--color-bg-card) border border-(--color-border) rounded-2xl p-6 md:p-8 cursor-pointer hover:border-(--color-border-strong) hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && navigate(card.path)}
               >
                 {/* Icono del módulo */}
-                <div className="text-[var(--color-accent)] mb-5 group-hover:scale-110 transition-transform duration-200">
+                <div className="text-(--color-accent) mb-5 group-hover:scale-110 transition-transform duration-200">
                   {card.icon}
                 </div>
 
                 {/* Título */}
-                <h2 className="text-xl md:text-2xl font-semibold mb-3 text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
+                <h2 className="text-xl md:text-2xl font-semibold mb-3 text-(--color-text-primary) group-hover:text-(--color-accent) transition-colors">
                   {card.title}
                 </h2>
 
                 {/* Descripción */}
-                <p className="text-[var(--color-text-secondary)] leading-relaxed whitespace-normal break-words">
+                <p className="text-(--color-text-secondary) leading-relaxed whitespace-normal wrap-break-word">
                   {card.description}
                 </p>
 
                 {/* Indicador "Abrir módulo" (aparece al hover) */}
-                <div className="mt-6 flex items-center text-sm font-medium text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="mt-6 flex items-center text-sm font-medium text-(--color-accent) opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   Abrir módulo
                   <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

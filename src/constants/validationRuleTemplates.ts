@@ -105,7 +105,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     id: 'iso-21502',
     code: 'ISO 21502',
     name: 'Gestión de Proyectos, Programas y Portafolios',
-    description: 'Definir gobernanza de proyectos: alcance, cronograma, presupuesto, interesados y entregas.',
+    description: 'Definir gestión y control de proyectos: alcance, cronograma, presupuesto, interesados y entregas.',
     category: 'governance',
     level: 'recommended',
     ruleType: 'ProjectGovernance',
@@ -174,7 +174,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
   {
     id: 'iso-38500',
     code: 'ISO/IEC 38500',
-    name: 'Gobernanza de TI',
+    name: 'Gestión y control de TI',
     description: 'Alinear la estrategia TI con objetivos del negocio: evaluación, dirección y seguimiento.',
     category: 'governance',
     level: 'recommended',
@@ -215,7 +215,7 @@ export const ISO_PRESETS: IsoPreset[] = [
     id: 'preset-enterprise',
     name: 'Empresa / Desarrollo Gobernado',
     shortName: 'Empresa',
-    description: 'Gobernanza, seguridad y cumplimiento integral para sistemas a gran escala.',
+    description: 'Gestión y control, seguridad y cumplimiento integral para sistemas a gran escala.',
     emoji: '🏢',
     rules: [
       'iso-12207',

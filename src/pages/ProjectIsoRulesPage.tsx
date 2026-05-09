@@ -149,7 +149,7 @@ export function ProjectIsoRulesPage() {
     const labels: Record<string, string> = {
       quality: 'Calidad',
       security: 'Seguridad',
-      governance: 'Gobernanza',
+      governance: 'Gestión y control',
       agile: 'Ágil',
       architecture: 'Arquitectura',
     }
