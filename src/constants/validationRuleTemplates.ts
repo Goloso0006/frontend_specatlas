@@ -39,7 +39,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'quality',
     level: 'essential',
     ruleType: 'ProcessManagement',
-    condition: 'Define and document: process objectives, responsibility, input/output, success criteria',
+    condition: 'Definir y documentar: objetivos del proceso, responsabilidades, entradas/salidas y criterios de éxito',
   },
   {
     id: 'iso-27001',
@@ -49,7 +49,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'security',
     level: 'essential',
     ruleType: 'SecurityManagement',
-    condition: 'Conduct security risk assessment, define control objectives, audit compliance quarterly',
+    condition: 'Realizar evaluación de riesgos de seguridad, definir objetivos de control y auditar el cumplimiento cada trimestre',
   },
   {
     id: 'iso-27002',
@@ -59,7 +59,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'security',
     level: 'recommended',
     ruleType: 'SecurityPractice',
-    condition: 'Implement access control, encryption, audit trails, incident response procedures',
+    condition: 'Implementar control de accesos, cifrado, trazabilidad de auditoría y procedimientos de respuesta a incidentes',
   },
   {
     id: 'iso-25010',
@@ -69,7 +69,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'quality',
     level: 'recommended',
     ruleType: 'QualityAttribute',
-    condition: 'Define and measure: reliability, usability, performance, security, maintainability',
+    condition: 'Definir y medir: fiabilidad, usabilidad, rendimiento, seguridad y mantenibilidad',
   },
   {
     id: 'iso-12207',
@@ -79,7 +79,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'essential',
     ruleType: 'LifecycleProcess',
-    condition: 'Define phases with acceptance criteria, traceability matrix, change management',
+    condition: 'Definir fases con criterios de aceptación, matriz de trazabilidad y gestión de cambios',
   },
   {
     id: 'iso-29110',
@@ -89,7 +89,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'agile',
     level: 'recommended',
     ruleType: 'AgileSprint',
-    condition: 'Conduct iterative sprints with backlog, reviews, retrospectives, and incremental delivery',
+    condition: 'Realizar sprints iterativos con backlog, revisiones, retrospectivas y entregas incrementales',
   },
   {
     id: 'iso-31000',
@@ -99,7 +99,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'recommended',
     ruleType: 'RiskManagement',
-    condition: 'Identify risks, assess probability/impact, define mitigation strategies, track residual risk',
+    condition: 'Identificar riesgos, evaluar probabilidad e impacto, definir estrategias de mitigación y hacer seguimiento del riesgo residual',
   },
   {
     id: 'iso-21502',
@@ -109,7 +109,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'recommended',
     ruleType: 'ProjectGovernance',
-    condition: 'Establish steering committee, baseline scope/schedule/budget, track KPIs and deviations',
+    condition: 'Establecer comité directivo, definir línea base de alcance/cronograma/presupuesto y hacer seguimiento de KPI y desviaciones',
   },
   {
     id: 'iso-20000-1',
@@ -119,7 +119,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'optional',
     ruleType: 'ServiceManagement',
-    condition: 'Define SLAs, incident response times, change approval board, disaster recovery plan',
+    condition: 'Definir ANS, tiempos de respuesta a incidentes, comité de aprobación de cambios y plan de recuperación ante desastres',
   },
   {
     id: 'iso-56002',
@@ -129,7 +129,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'quality',
     level: 'optional',
     ruleType: 'InnovationManagement',
-    condition: 'Establish innovation strategy, allocate resources, run ideation sessions, track new initiatives',
+    condition: 'Establecer estrategia de innovación, asignar recursos, realizar sesiones de ideación y hacer seguimiento a nuevas iniciativas',
   },
   {
     id: 'iso-14001',
@@ -139,7 +139,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'quality',
     level: 'optional',
     ruleType: 'EnvironmentalManagement',
-    condition: 'Assess environmental impact, optimize resource consumption, report carbon footprint',
+    condition: 'Evaluar impacto ambiental, optimizar el consumo de recursos e informar la huella de carbono',
   },
   {
     id: 'iso-45001',
@@ -149,7 +149,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'recommended',
     ruleType: 'SafetyManagement',
-    condition: 'Conduct safety assessments, provide training, monitor workplace ergonomics, incident tracking',
+    condition: 'Realizar evaluaciones de seguridad, brindar capacitación, monitorear ergonomía laboral y registrar incidentes',
   },
   {
     id: 'iso-9241-210',
@@ -159,7 +159,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'quality',
     level: 'recommended',
     ruleType: 'UserCenteredDesign',
-    condition: 'Conduct user research, prototyping, usability testing, accessibility compliance (WCAG)',
+    condition: 'Realizar investigación con usuarios, prototipado, pruebas de usabilidad y cumplimiento de accesibilidad (WCAG)',
   },
   {
     id: 'iso-30401',
@@ -169,7 +169,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'optional',
     ruleType: 'KnowledgeManagement',
-    condition: 'Maintain documentation wiki, record decision logs, share best practices, conduct knowledge transfer sessions',
+    condition: 'Mantener una wiki de documentación, registrar decisiones, compartir buenas prácticas y realizar sesiones de transferencia de conocimiento',
   },
   {
     id: 'iso-38500',
@@ -179,7 +179,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'governance',
     level: 'recommended',
     ruleType: 'ItGovernance',
-    condition: 'Define IT strategy, board oversight, technology roadmap, compliance audit, stakeholder alignment',
+    condition: 'Definir estrategia de TI, supervisión directiva, hoja de ruta tecnológica, auditoría de cumplimiento y alineación de interesados',
   },
   {
     id: 'best-code-review',
@@ -189,7 +189,7 @@ export const ISO_RULE_CATALOG: IsoRuleTemplate[] = [
     category: 'quality',
     level: 'essential',
     ruleType: 'CodeReview',
-    condition: 'All pull requests require 2+ approvals, address feedback, auto-block merges without reviews',
+    condition: 'Todas las solicitudes de cambio requieren al menos 2 aprobaciones, atender observaciones y bloquear fusiones sin revisión',
   },
 ]
 
@@ -204,11 +204,11 @@ export const ISO_PRESETS: IsoPreset[] = [
     description: 'Desarrollo flexible y rápido con controles esenciales de calidad y seguridad.',
     emoji: '🚀',
     rules: [
-      'iso-29110',  // Agile-friendly framework
-      'iso-9001',   // Quality management
-      'iso-27001',  // Security basics
-      'best-code-review', // Code review
-      'iso-9241-210', // UX focus
+      'iso-29110',
+      'iso-9001',
+      'iso-27001',
+      'best-code-review',
+      'iso-9241-210',
     ],
   },
   {
@@ -218,13 +218,13 @@ export const ISO_PRESETS: IsoPreset[] = [
     description: 'Gobernanza, seguridad y cumplimiento integral para sistemas a gran escala.',
     emoji: '🏢',
     rules: [
-      'iso-12207',  // Software lifecycle
-      'iso-27001',  // Security management
-      'iso-25010',  // Quality model
-      'iso-31000',  // Risk management
-      'iso-21502',  // Project management
-      'iso-38500',  // IT governance
-      'iso-45001',  // Safety management
+      'iso-12207',
+      'iso-27001',
+      'iso-25010',
+      'iso-31000',
+      'iso-21502',
+      'iso-38500',
+      'iso-45001',
     ],
   },
   {
@@ -234,13 +234,13 @@ export const ISO_PRESETS: IsoPreset[] = [
     description: 'Cumplimiento estricto, auditabilidad y trazabilidad para industrias reguladas.',
     emoji: '⚖️',
     rules: [
-      'iso-27001',  // Security compliance
-      'iso-27002',  // Security controls
-      'iso-20000-1', // Service management
-      'iso-12207',  // Lifecycle documentation
-      'iso-31000',  // Risk management
-      'iso-30401',  // Knowledge/audit trails
-      'iso-38500',  // IT governance
+      'iso-27001',
+      'iso-27002',
+      'iso-20000-1',
+      'iso-12207',
+      'iso-31000',
+      'iso-30401',
+      'iso-38500',
     ],
   },
 ]
