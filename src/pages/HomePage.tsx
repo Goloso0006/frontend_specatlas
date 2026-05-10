@@ -372,12 +372,12 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { name: 'PostgreSQL 16', description: 'Base de datos relacional principal', details: 'Usuarios, proyectos, requisitos, eventos, reglas de validación', icon: (<img src="/iconHomeTechStack/noun-postgresql-3451760.svg" alt="PostgreSQL" className="w-14 h-14 object-contain" />) },
+              { name: 'PostgreSQL 16', description: 'Base de datos relacional principal', details: 'Usuarios, proyectos, requisitos, eventos, reglas de validación', icon: (<img src="/iconHomeTechStack/noun-postgresql-3451760.svg" alt="PostgreSQL" className="w-15 h-15 object-contain" />) },
               { name: 'pgvector', description: 'Búsqueda semántica vectorial', details: 'Embeddings de 768 dimensiones con Gemini text-embedding-004', icon: (<img src="/iconHomeTechStack/noun-vector-8224612.svg" alt="pgvector" className="w-14 h-14 object-contain" />) },
               { name: 'Neo4j', description: 'Base de datos de grafos', details: 'Dependencias entre requisitos y análisis de impacto', icon: (<img src="/iconHomeTechStack/noun-spiderweb-8078963.svg" alt="Neo4j" className="w-14 h-14 object-contain" />) },
-              { name: 'Google Gemini', description: 'Inteligencia Artificial', details: 'gemini-2.5-flash para análisis y generación de contenido', icon: (<img src="/iconHomeTechStack/noun-artificial-8234436.svg" alt="Google Gemini" className="w-14 h-14 object-contain" />) },
-              { name: 'Spring Boot 3', description: 'Backend Java 21', details: 'API REST con Spring Security + JWT para autenticación', icon: (<img src="/iconHomeTechStack/noun-power-button-8306535.svg" alt="Spring Boot 3" className="w-14 h-14 object-contain" />) },
-              { name: 'React + TypeScript', description: 'Frontend moderno', details: 'Vite + Tailwind CSS para una interfaz rápida y responsiva', icon: (<img src="/iconHomeTechStack/noun-atom-8190848.svg" alt="React + TypeScript" className="w-14 h-14 object-contain" />) }
+              { name: 'Google Gemini', description: 'Inteligencia Artificial', details: 'gemini-2.5-flash para análisis y generación de contenido', icon: (<img src="/iconHomeTechStack/noun-artificial-8234436.svg" alt="Google Gemini" className="w-13 h-13 object-contain" />) },
+              { name: 'Spring Boot 3', description: 'Backend Java 21', details: 'API REST con Spring Security + JWT para autenticación', icon: (<img src="/iconHomeTechStack/noun-power-button-8306535.svg" alt="Spring Boot 3" className="w-13 h-13 object-contain" />) },
+              { name: 'React + TypeScript', description: 'Frontend moderno', details: 'Vite + Tailwind CSS para una interfaz rápida y responsiva', icon: (<img src="/iconHomeTechStack/noun-atom-8190848.svg" alt="React + TypeScript" className="w-13 h-13 object-contain" />) }
             ].map((tech, idx) => (
               <div key={idx} className="group p-6 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                 <div className="text-4xl mb-4 opacity-80 group-hover:scale-110 transition-transform">{tech.icon}</div>
@@ -404,10 +404,10 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: 'Memoria Procedimental', tech: 'PostgreSQL', table: 'validation_rules', function: 'Reglas de validación IEEE 830 / ISO 25010', icon: '📜' },
-              { name: 'Memoria Semántica', tech: 'pgvector + Gemini', table: 'requirements.embedding', function: 'Búsqueda por similitud semántica', icon: '🧠' },
-              { name: 'Memoria Estructural', tech: 'PostgreSQL + Neo4j', table: 'requirements + grafo', function: 'Dependencias y relaciones', icon: '🏗️' },
-              { name: 'Memoria Episódica', tech: 'PostgreSQL', table: 'requirement_events', function: 'Historial completo de cambios', icon: '📅' }
+              { name: 'Memoria Procedimental', tech: 'PostgreSQL', table: 'validation_rules', function: 'Reglas de validación IEEE 830 / ISO 25010', icon: (<img src="/iconHomeArchitecture/noun-memory-8182813.svg" alt="Memoria Procedimental" className="w-8 h-8 object-contain" />) },
+              { name: 'Memoria Semántica', tech: 'pgvector + Gemini', table: 'requirements.embedding', function: 'Búsqueda por similitud semántica', icon: (<img src="/iconHomeArchitecture/noun-memories-7872495.svg" alt="Memoria Semántica" className="w-8 h-8 object-contain" />) },
+              { name: 'Memoria Estructural', tech: 'PostgreSQL + Neo4j', table: 'requirements + grafo', function: 'Dependencias y relaciones', icon: (<img src="/iconHomeArchitecture/noun-memory-8220321.svg" alt="Memoria Estructural" className="w-8 h-8 object-contain" />) },
+              { name: 'Memoria Episódica', tech: 'PostgreSQL', table: 'requirement_events', function: 'Historial completo de cambios', icon: (<img src="/iconHomeArchitecture/noun-memory-8158325.svg" alt="Memoria Episódica" className="w-8 h-8 object-contain" />) }
             ].map((memory, idx) => (
               <div key={idx} className="p-6 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all duration-300 hover:shadow-md">
                 <div className="text-3xl mb-4">{memory.icon}</div>
