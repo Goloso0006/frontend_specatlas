@@ -202,7 +202,7 @@ export const ISO_PRESETS: IsoPreset[] = [
     name: 'Startup / Desarrollo Ágil',
     shortName: 'Ágil',
     description: 'Desarrollo flexible y rápido con controles esenciales de calidad y seguridad.',
-    emoji: '/iconValidarionRule/noun-speed-7893125.svg',
+    emoji: '/iconValidationRule/noun-speed-7893125.svg',
     rules: [
       'iso-29110',
       'iso-9001',
@@ -216,7 +216,7 @@ export const ISO_PRESETS: IsoPreset[] = [
     name: 'Empresa / Desarrollo Gobernado',
     shortName: 'Empresa',
     description: 'Gestión y control, seguridad y cumplimiento integral para sistemas a gran escala.',
-    emoji: '/iconValidarionRule/noun-company-6573582.svg',
+    emoji: '/iconValidationRule/noun-company-6573582.svg',
     rules: [
       'iso-12207',
       'iso-27001',
@@ -232,7 +232,7 @@ export const ISO_PRESETS: IsoPreset[] = [
     name: 'Industria Regulada / Cumplimiento',
     shortName: 'Regulado',
     description: 'Cumplimiento estricto, auditabilidad y trazabilidad para industrias reguladas.',
-    emoji: '/iconValidarionRule/noun-compliance-8169886.svg',
+    emoji: '/iconValidationRule/noun-compliance-8169886.svg',
     rules: [
       'iso-27001',
       'iso-27002',
