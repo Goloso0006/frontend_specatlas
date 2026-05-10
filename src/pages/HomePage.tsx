@@ -372,12 +372,12 @@ export function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { name: 'PostgreSQL 16', description: 'Base de datos relacional principal', details: 'Usuarios, proyectos, requisitos, eventos, reglas de validación', icon: '🐘' },
-              { name: 'pgvector', description: 'Búsqueda semántica vectorial', details: 'Embeddings de 768 dimensiones con Gemini text-embedding-004', icon: '🔢' },
-              { name: 'Neo4j', description: 'Base de datos de grafos', details: 'Dependencias entre requisitos y análisis de impacto', icon: '🕸️' },
-              { name: 'Google Gemini', description: 'Inteligencia Artificial', details: 'gemini-2.5-flash para análisis y generación de contenido', icon: '✨' },
-              { name: 'Spring Boot 3', description: 'Backend Java 21', details: 'API REST con Spring Security + JWT para autenticación', icon: '🍃' },
-              { name: 'React + TypeScript', description: 'Frontend moderno', details: 'Vite + Tailwind CSS para una interfaz rápida y responsiva', icon: '⚛️' }
+              { name: 'PostgreSQL 16', description: 'Base de datos relacional principal', details: 'Usuarios, proyectos, requisitos, eventos, reglas de validación', icon: (<img src="/iconHomeTechStack/noun-postgresql-3451760.svg" alt="PostgreSQL" className="w-14 h-14 object-contain" />) },
+              { name: 'pgvector', description: 'Búsqueda semántica vectorial', details: 'Embeddings de 768 dimensiones con Gemini text-embedding-004', icon: (<img src="/iconHomeTechStack/noun-vector-8224612.svg" alt="pgvector" className="w-14 h-14 object-contain" />) },
+              { name: 'Neo4j', description: 'Base de datos de grafos', details: 'Dependencias entre requisitos y análisis de impacto', icon: (<img src="/iconHomeTechStack/noun-spiderweb-8078963.svg" alt="Neo4j" className="w-14 h-14 object-contain" />) },
+              { name: 'Google Gemini', description: 'Inteligencia Artificial', details: 'gemini-2.5-flash para análisis y generación de contenido', icon: (<img src="/iconHomeTechStack/noun-artificial-8234436.svg" alt="Google Gemini" className="w-14 h-14 object-contain" />) },
+              { name: 'Spring Boot 3', description: 'Backend Java 21', details: 'API REST con Spring Security + JWT para autenticación', icon: (<img src="/iconHomeTechStack/noun-power-button-8306535.svg" alt="Spring Boot 3" className="w-14 h-14 object-contain" />) },
+              { name: 'React + TypeScript', description: 'Frontend moderno', details: 'Vite + Tailwind CSS para una interfaz rápida y responsiva', icon: (<img src="/iconHomeTechStack/noun-atom-8190848.svg" alt="React + TypeScript" className="w-14 h-14 object-contain" />) }
             ].map((tech, idx) => (
               <div key={idx} className="group p-6 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                 <div className="text-4xl mb-4 opacity-80 group-hover:scale-110 transition-transform">{tech.icon}</div>
