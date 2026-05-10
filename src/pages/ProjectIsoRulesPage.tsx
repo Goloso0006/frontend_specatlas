@@ -319,7 +319,17 @@ export function ProjectIsoRulesPage() {
                 >
                   <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-transparent via-app-accent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="text-2xl">{preset.emoji}</div>
+                    <div className="text-2xl">
+                      {preset.emoji.startsWith('/') ? (
+                        <img
+                          src={preset.emoji}
+                          alt={preset.name}
+                          className="h-8 w-8 object-contain"
+                        />
+                      ) : (
+                        preset.emoji
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       {isApplied && (
                         <Badge variant="success" className="text-[10px]">
