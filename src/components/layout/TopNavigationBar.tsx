@@ -82,9 +82,20 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
         }
       }
     }
-    // ── Other project routes ───────────────────────────────────────────
-    else if (path === `${base}/diagrams`) {
-      segments.push({ label: 'Diagramas', path: `${base}/diagrams`, isCurrent: true })
+    // ── Diagrams navigation flow ──────────────────────────────────
+    else if (path.startsWith(`${base}/diagrams`)) {
+      const isDiagRoot = path === `${base}/diagrams`
+      segments.push({ label: 'Diagramas', path: `${base}/diagrams`, isCurrent: isDiagRoot })
+
+      if (!isDiagRoot) {
+        if (path === `${base}/diagrams/new`) {
+          segments.push({ label: 'Nuevo diagrama', path: `${base}/diagrams/new`, isCurrent: true })
+        } else {
+          // It's an existing diagram. We don't have the name here, but we can use "Editor"
+          // or try to get it from somewhere if needed. For now "Detalle" or "Editor"
+          segments.push({ label: 'Editor', path: path, isCurrent: true })
+        }
+      }
     } else if (path === `${base}/validation-rules`) {
       segments.push({ label: 'Reglas', path: `${base}/validation-rules`, isCurrent: true })
     } else if (path === `${base}/info`) {

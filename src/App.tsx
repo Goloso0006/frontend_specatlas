@@ -23,6 +23,7 @@ import { RequirementAIPage } from './pages/RequirementAIPage'
 import { FunctionalRequirementManualPage } from './pages/FunctionalRequirementManualPage'
 import { NonFunctionalRequirementModePage } from './pages/NonFunctionalRequirementModePage'
 import { NonFunctionalRequirementManualPage } from './pages/NonFunctionalRequirementManualPage'
+import { ProjectDiagramsPage } from './pages/ProjectDiagramsPage'
 import { ProjectMapPage } from './pages/ProjectMapPage'
 
 function App() {
@@ -109,7 +110,17 @@ function App() {
           <AppShell hideSidebar><ProjectMapPage /></AppShell>
         } />
 
-        <Route path="/app/projects/:projectId/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
+        {/* ── Diagrams navigation flow ────────────────────────────────── */}
+        <Route path="/app/projects/:projectId/diagrams" element={
+          <AppShell hideSidebar><ProjectDiagramsPage /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/:diagramId" element={
+          <AppShell hideSidebar><DiagramEditorPage /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/new" element={
+          <AppShell hideSidebar><DiagramEditorPage /></AppShell>
+        } />
+        
         <Route path="/app/projects/:projectId/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
 
         {/* Legacy / Direct access */}

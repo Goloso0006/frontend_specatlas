@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
-import ReactFlow, {
+import {
+  ReactFlow,
   Background,
   Controls,
   MarkerType,
   MiniMap,
   type Edge,
   type Node,
-} from 'reactflow'
-import 'reactflow/dist/style.css'
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import { EmptyState } from '../ui/DataDisplay'
 
 type GraphLikeResponse = Record<string, unknown> | null | undefined

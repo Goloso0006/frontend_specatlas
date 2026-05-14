@@ -1,0 +1,85 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+src/components/diagram/ClassNodeEditor.tsx(7,3): error TS6196: 'DiagramUmlType' is declared but never used.
+src/components/diagram/ClassNodeEditor.tsx(8,3): error TS6196: 'DiagramEnumValueDTO' is declared but never used.
+src/components/diagram/ClassNodeEditor.tsx(66,20): error TS7006: Parameter 'attr' implicitly has an 'any' type.
+src/components/diagram/ClassNodeEditor.tsx(83,22): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/components/diagram/ClassNodeEditor.tsx(90,38): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/components/diagram/ClassNodeEditor.tsx(111,20): error TS7006: Parameter 'method' implicitly has an 'any' type.
+src/components/diagram/ClassNodeEditor.tsx(125,22): error TS7006: Parameter 'vals' implicitly has an 'any' type.
+src/components/diagram/ClassNodeEditor.tsx(134,20): error TS7006: Parameter 'name' implicitly has an 'any' type.
+src/components/diagram/DiagramErrorBoundary.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/DiagramTypeCard.tsx(16,3): error TS6133: 'type' is declared but its value is never read.
+src/components/diagram/DiagramValidationModal.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/EdgeEditor.tsx(28,23): error TS2339: Property 'label' does not exist on type 'DiagramRelationDTO'.
+src/components/diagram/EdgeEditor.tsx(29,52): error TS2353: Object literal may only specify known properties, and 'label' does not exist in type 'DiagramRelationDTO'.
+src/components/diagram/EdgeEditor.tsx(30,13): error TS17001: JSX elements cannot have multiple attributes with the same name.
+src/components/diagram/EdgeEditor.tsx(58,20): error TS2339: Property 'from' does not exist on type 'DiagramRelationDTO'.
+src/components/diagram/EdgeEditor.tsx(62,20): error TS2339: Property 'to' does not exist on type 'DiagramRelationDTO'.
+src/components/diagram/GeneratedDiagramReviewModal.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/NodeEditor.tsx(103,15): error TS2322: Type 'DiagramClassAttributeDTO | { name: string; type: string; visibility: "private"; }' is not assignable to type 'DiagramClassAttributeDTO'.
+  Property 'id' is missing in type '{ name: string; type: string; visibility: "private"; }' but required in type 'DiagramClassAttributeDTO'.
+src/components/diagram/NodeEditor.tsx(104,15): error TS2741: Property 'id' is missing in type '{ name: string; type: string; visibility: "private"; }' but required in type 'DiagramClassAttributeDTO'.
+src/components/diagram/NodeEditor.tsx(142,23): error TS2322: Type 'DiagramClassMethodDTO | { name: string; returnType: string; visibility: "public"; }' is not assignable to type 'DiagramClassMethodDTO'.
+  Type '{ name: string; returnType: string; visibility: "public"; }' is missing the following properties from type 'DiagramClassMethodDTO': id, parameters
+src/components/diagram/NodeEditor.tsx(142,40): error TS2739: Type '{ name: string; returnType: string; visibility: "public"; }' is missing the following properties from type 'DiagramClassMethodDTO': id, parameters
+src/components/diagram/PackageNode.tsx(51,36): error TS2339: Property 'childCount' does not exist on type 'DiagramPackageNodeDTO'.
+src/components/diagram/PackageNode.tsx(53,21): error TS2339: Property 'childCount' does not exist on type 'DiagramPackageNodeDTO'.
+src/components/diagram/UmlEdge.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/UmlEdge.tsx(38,9): error TS6133: 'markerEndId' is declared but its value is never read.
+src/components/diagram/UmlEdge.tsx(39,9): error TS6133: 'markerStartId' is declared but its value is never read.
+src/components/diagram/UmlEdge.tsx(79,9): error TS6133: 'displayLabel' is declared but its value is never read.
+src/components/diagram/UmlEdgeEditor.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/UmlEdgeEditor.tsx(62,40): error TS7053: Element implicitly has an 'any' type because expression of type '"ASSOCIATION" | "AGGREGATION" | "COMPOSITION" | "INHERITANCE" | "IMPLEMENTATION" | "DEPENDENCY" | "INCLUDE" | "EXTEND" | "GENERALIZATION"' can't be used to index type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+  Property 'INCLUDE' does not exist on type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+src/components/diagram/UmlEdgeEditor.tsx(64,16): error TS7053: Element implicitly has an 'any' type because expression of type '"ASSOCIATION" | "AGGREGATION" | "COMPOSITION" | "INHERITANCE" | "IMPLEMENTATION" | "DEPENDENCY" | "INCLUDE" | "EXTEND" | "GENERALIZATION"' can't be used to index type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+  Property 'INCLUDE' does not exist on type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+src/components/diagram/UmlEdgeEditor.tsx(68,14): error TS7053: Element implicitly has an 'any' type because expression of type '"ASSOCIATION" | "AGGREGATION" | "COMPOSITION" | "INHERITANCE" | "IMPLEMENTATION" | "DEPENDENCY" | "INCLUDE" | "EXTEND" | "GENERALIZATION"' can't be used to index type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+  Property 'INCLUDE' does not exist on type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+src/components/diagram/UmlEdgeEditor.tsx(118,12): error TS7053: Element implicitly has an 'any' type because expression of type '"ASSOCIATION" | "AGGREGATION" | "COMPOSITION" | "INHERITANCE" | "IMPLEMENTATION" | "DEPENDENCY" | "INCLUDE" | "EXTEND" | "GENERALIZATION"' can't be used to index type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+  Property 'INCLUDE' does not exist on type 'Record<DiagramRelationshipType, { label: string; icon: string; description: string; }>'.
+src/components/diagram/UmlMarkers.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/UseCaseEdge.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/UseCaseEdge.tsx(12,3): error TS6133: 'id' is declared but its value is never read.
+src/components/diagram/UseCaseEdgeEditor.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/UseCaseNode.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/diagram/UseCaseNodeEditor.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/graph/RequirementGraphView.tsx(128,12): error TS2604: JSX element type 'ReactFlow' does not have any construct or call signatures.
+src/components/graph/RequirementGraphView.tsx(128,12): error TS2786: 'ReactFlow' cannot be used as a JSX component.
+  Its type 'typeof import("/home/kevin-st/specatlas/frontend/frontend_specatlas/node_modules/@xyflow/react/dist/esm/index")' is not a valid JSX element type.
+src/facades/diagram.facade.ts(88,79): error TS2304: Cannot find name 'DiagramType'.
+src/factories/diagramElement.factory.ts(41,35): error TS2339: Property 'from' does not exist on type 'Partial<DiagramRelationDTO>'.
+src/factories/diagramElement.factory.ts(41,60): error TS2339: Property 'from' does not exist on type 'Partial<DiagramRelationDTO>'.
+src/factories/diagramElement.factory.ts(42,33): error TS2339: Property 'to' does not exist on type 'Partial<DiagramRelationDTO>'.
+src/factories/diagramElement.factory.ts(42,56): error TS2339: Property 'to' does not exist on type 'Partial<DiagramRelationDTO>'.
+src/factories/diagramElement.factory.ts(47,11): error TS2353: Object literal may only specify known properties, and 'label' does not exist in type 'DiagramRelationDTO'.
+src/factories/diagramElement.factory.ts(47,31): error TS2339: Property 'label' does not exist on type 'Partial<DiagramRelationDTO>'.
+src/factories/diagramElement.factory.ts(47,57): error TS2339: Property 'label' does not exist on type 'Partial<DiagramRelationDTO>'.
+src/factories/diagramElement.factory.ts(47,70): error TS2339: Property 'label' does not exist on type 'DiagramRelationDTO'.
+src/pages/DiagramEditorPage.tsx(113,56): error TS2339: Property 'type' does not exist on type 'SaveFeedback'.
+src/pages/DiagramEditorPage.tsx(134,7): error TS2304: Cannot find name 'setPlantUmlPreview'.
+src/pages/DiagramEditorPage.tsx(429,50): error TS2339: Property 'packageId' does not exist on type 'DiagramNodeDTO'.
+  Property 'packageId' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(430,23): error TS2339: Property 'childCount' does not exist on type 'DiagramNodeDTO'.
+  Property 'childCount' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(538,21): error TS2304: Cannot find name 'plantUmlPreview'.
+src/pages/DiagramEditorPage.tsx(695,34): error TS6133: 'e' is declared but its value is never read.
+src/pages/DiagramEditorPage.tsx(706,39): error TS2339: Property 'packageId' does not exist on type 'DiagramNodeDTO'.
+  Property 'packageId' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(721,59): error TS2339: Property 'style' does not exist on type 'Record<string, unknown> | DiagramNodeDTO'.
+  Property 'style' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(722,60): error TS2339: Property 'style' does not exist on type 'Record<string, unknown> | DiagramNodeDTO'.
+  Property 'style' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(727,45): error TS2339: Property 'style' does not exist on type 'DiagramNodeDTO'.
+  Property 'style' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(728,45): error TS2339: Property 'style' does not exist on type 'DiagramNodeDTO'.
+  Property 'style' does not exist on type 'DiagramActorNodeDTO'.
+src/pages/DiagramEditorPage.tsx(846,10): error TS6133: 'downloadBlob' is declared but its value is never read.
+src/utils/diagramMapper.ts(255,5): error TS2353: Object literal may only specify known properties, and 'packageId' does not exist in type 'DiagramActorNodeDTO | DiagramUseCaseNodeDTO'.
+src/utils/generatedClassDiagramMapper.ts(7,3): error TS6133: 'createNodeId' is declared but its value is never read.
+src/utils/generatedClassDiagramMapper.ts(8,3): error TS6133: 'createEdgeId' is declared but its value is never read.
+src/utils/generatedUseCaseDiagramMapper.ts(4,3): error TS6196: 'DiagramRelationDTO' is declared but never used.
+src/utils/packageDiagramUtils.ts(2,15): error TS6196: 'DiagramNodeDTO' is declared but never used.
+src/utils/useCaseDiagramValidator.ts(6,3): error TS6196: 'DiagramActorNodeDTO' is declared but never used.

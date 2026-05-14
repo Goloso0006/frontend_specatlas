@@ -101,7 +101,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
             ...node,
             attributes: [
               ...node.attributes,
-              { name: 'nuevoAtributo', type: 'String', visibility: 'private' },
+              { id: crypto.randomUUID(), name: 'nuevoAtributo', type: 'String', visibility: 'private', required: false },
             ],
           })
         }
@@ -139,7 +139,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
         onAdd={() =>
           onChange({
             ...node,
-            methods: [...node.methods, { name: 'nuevoMetodo', returnType: 'void', visibility: 'public' }],
+            methods: [...node.methods, { id: crypto.randomUUID(), name: 'nuevoMetodo', parameters: '', returnType: 'void', visibility: 'public' }],
           })
         }
       >

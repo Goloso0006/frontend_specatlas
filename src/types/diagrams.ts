@@ -1,4 +1,4 @@
-export type DiagramType = 'CLASS' | 'USE_CASE'
+export type DiagramType = 'CLASS' | 'USE_CASE' | 'COMPONENT' | 'SEQUENCE'
 export type DiagramMode = 'MANUAL' | 'AUTO'
 export type DiagramRelationType = 'association' | 'inheritance' | 'aggregation' | 'composition' | 'dependency'
 export type VisibilityType = 'public' | 'private' | 'protected' | 'package'
@@ -9,39 +9,109 @@ export interface DiagramPositionDTO {
 }
 
 export interface DiagramClassAttributeDTO {
+  id: string
   name: string
   type: string
   visibility: VisibilityType
+  required?: boolean
 }
 
 export interface DiagramClassMethodDTO {
+  id: string
   name: string
+  parameters: string
   returnType: string
   visibility: VisibilityType
 }
 
-export interface DiagramClassNodeDTO {
+export type DiagramUmlType = 'CLASS' | 'ABSTRACT_CLASS' | 'INTERFACE' | 'ENUM'
+
+export interface DiagramEnumValueDTO {
   id: string
-  kind: 'class'
   name: string
-  attributes: DiagramClassAttributeDTO[]
-  methods: DiagramClassMethodDTO[]
+}
+
+export type DiagramActorNodeDTO = {
+  id: string
+  kind: 'actor'
+  name: string
+  description?: string
   position: DiagramPositionDTO
   derivedFromRequirements: string[]
 }
 
-export interface DiagramRelationDTO {
+export type DiagramUseCaseNodeDTO = {
   id: string
-  from: string
-  to: string
-  type: DiagramRelationType
-  label: string
+  kind: 'useCase'
+  name: string
+  description?: string
+  position: DiagramPositionDTO
   derivedFromRequirements: string[]
 }
 
+export type DiagramClassNodeDTO = {
+  id: string
+  kind: 'class'
+  umlType: DiagramUmlType
+  name: string
+  attributes: DiagramClassAttributeDTO[]
+  methods: DiagramClassMethodDTO[]
+  enumValues?: DiagramEnumValueDTO[]
+  position: DiagramPositionDTO
+  description?: string
+  derivedFromRequirements: string[]
+  packageId?: string
+}
+
+export type DiagramRelationshipType = 
+  | 'ASSOCIATION' 
+  | 'AGGREGATION' 
+  | 'COMPOSITION' 
+  | 'INHERITANCE' 
+  | 'IMPLEMENTATION' 
+  | 'DEPENDENCY'
+
+export type DiagramUseCaseRelationshipType =
+  | 'ASSOCIATION'
+  | 'INCLUDE'
+  | 'EXTEND'
+  | 'GENERALIZATION'
+
+export type DiagramRelationDTO = {
+  id: string
+  source: string
+  target: string
+  type?: string
+  data?: {
+    relationshipType: DiagramRelationshipType | DiagramUseCaseRelationshipType
+    label?: string
+    description?: string
+    sourceMultiplicity?: string
+    targetMultiplicity?: string
+  }
+  derivedFromRequirements: string[]
+}
+
+export type DiagramPackageNodeDTO = {
+  id: string
+  kind: 'package'
+  name: string
+  description?: string
+  position: DiagramPositionDTO
+  derivedFromRequirements: string[]
+  style?: {
+    width: number
+    height: number
+    color?: string
+  }
+  childCount?: number
+}
+
+export type DiagramNodeDTO = DiagramClassNodeDTO | DiagramActorNodeDTO | DiagramUseCaseNodeDTO | DiagramPackageNodeDTO
+
 export interface DiagramSourceDTO {
   diagramType: DiagramType
-  nodes: DiagramClassNodeDTO[]
+  nodes: DiagramNodeDTO[]
   edges: DiagramRelationDTO[]
 }
 
@@ -66,6 +136,23 @@ export interface DiagramResponse {
   plantUmlCode: string | null
   createdAt?: string
   updatedAt?: string
+}
+
+export type DiagramValidationSeverity = 'error' | 'warning'
+
+export interface DiagramValidationIssue {
+  id: string
+  severity: DiagramValidationSeverity
+  message: string
+  targetType: 'node' | 'edge' | 'diagram'
+  targetId?: string
+}
+
+export interface DiagramValidationResult {
+  valid: boolean
+  issues: DiagramValidationIssue[]
+  errors: DiagramValidationIssue[]
+  warnings: DiagramValidationIssue[]
 }
 
 export interface DiagramSummaryResponse {

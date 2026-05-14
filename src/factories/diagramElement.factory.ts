@@ -38,13 +38,19 @@ export class DiagramElementFactory {
       case 'aggregation':
       case 'composition':
       case 'dependency':
-        const from = typeof data?.from === 'string' ? data.from : ''
-        const to = typeof data?.to === 'string' ? data.to : ''
+        const from = typeof data?.source === 'string' ? data.source : ''
+        const to = typeof data?.target === 'string' ? data.target : ''
         const base = createDiagramRelation(from, to)
         return {
           ...base,
           type: (data?.type as any) ?? base.type,
-          label: typeof data?.label === 'string' ? data.label : base.label,
+          data: {
+            relationshipType: (data?.data?.relationshipType ?? base.data?.relationshipType) as 'ASSOCIATION' | 'AGGREGATION' | 'COMPOSITION' | 'INHERITANCE' | 'IMPLEMENTATION' | 'DEPENDENCY' | 'INCLUDE' | 'EXTEND' | 'GENERALIZATION',
+            label: data?.data?.label ?? base.data?.label ?? '',
+            description: data?.data?.description ?? base.data?.description ?? '',
+            sourceMultiplicity: data?.data?.sourceMultiplicity ?? base.data?.sourceMultiplicity ?? '1',
+            targetMultiplicity: data?.data?.targetMultiplicity ?? base.data?.targetMultiplicity ?? '1',
+          },
           derivedFromRequirements: Array.isArray(data?.derivedFromRequirements)
             ? data!.derivedFromRequirements!
             : base.derivedFromRequirements,

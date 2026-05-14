@@ -3,6 +3,7 @@ import type {
   DiagramRequest,
   DiagramResponse,
   DiagramSummaryResponse,
+  DiagramType,
   UseCaseDiagramRequest,
 } from '../types/diagrams'
 
@@ -85,9 +86,12 @@ export class DiagramFacade {
   /**
    * Save-or-update: if `diagramId` is present, updates; otherwise creates manual.
    */
-  async saveOrUpdate(diagramId: string | null, payload: DiagramRequest): Promise<DiagramResponse> {
+  async saveOrUpdate(diagramId: string | null, payload: DiagramRequest, type: DiagramType): Promise<DiagramResponse> {
     if (diagramId?.trim()) {
       return this.api.update(diagramId.trim(), payload)
+    }
+    if (type === 'USE_CASE') {
+      return this.api.createUseCaseManual(payload)
     }
     return this.api.createManual(payload)
   }

@@ -25,8 +25,8 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
         <span>Label</span>
         <input
           className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
-          value={edge.label}
-          onChange={(event) => onChange({ ...edge, label: event.target.value })}
+          value={edge.data?.label || ''}
+          onChange={(event) => onChange({ ...edge, data: { ...edge.data || {}, relationshipType: edge.data?.relationshipType || 'ASSOCIATION', label: event.target.value } })}
         />
       </label>
 
@@ -53,11 +53,11 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="rounded-md border app-border-strong p-3">
           <p className="app-text-muted">From</p>
-          <p>{edge.from}</p>
+          <p>{edge.source}</p>
         </div>
         <div className="rounded-md border app-border-strong p-3">
           <p className="app-text-muted">To</p>
-          <p>{edge.to}</p>
+          <p>{edge.target}</p>
         </div>
       </div>
 
