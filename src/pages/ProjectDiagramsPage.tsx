@@ -1,34 +1,27 @@
-import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { diagramFacade } from '../facades/diagram.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
+import { useAutoResourceLoader } from '../hooks/useResourceLoader'
 import { isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { DiagramTypeCard } from '../components/diagram/DiagramTypeCard'
 import { SavedDiagramCard } from '../components/diagram/SavedDiagramCard'
 import { DiagramEmptyState } from '../components/diagram/DiagramEmptyState'
 import { LoadingAnimation } from '../components/ui/LoadingAnimation'
-import type { DiagramSummaryResponse, DiagramType } from '../types/diagrams'
+import type { DiagramType } from '../types/diagrams'
 
 export function ProjectDiagramsPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { run, isLoading } = useApiOperation()
-  const [diagrams, setDiagrams] = useState<DiagramSummaryResponse[]>([])
+  const diagramsResource = useAutoResourceLoader(
+    (activeProjectId: string) => diagramFacade.listByProject(activeProjectId),
+    isValidProjectId(projectId) ? [projectId] as [string] : null,
+    { errorMessage: 'No se pudieron cargar los diagramas del proyecto.' },
+  )
 
-  useEffect(() => {
-    if (isValidProjectId(projectId)) {
-      handleFetch()
-    }
-  }, [projectId])
-
-  async function handleFetch() {
-    if (!projectId) return
-    const data = await run(() => diagramFacade.listByProject(projectId), {
-      errorMessage: 'No se pudieron cargar los diagramas del proyecto.'
-    })
-    if (data) setDiagrams(data)
-  }
+  const diagrams = diagramsResource.data ?? []
+  const setDiagrams = diagramsResource.setData
 
   if (!isValidProjectId(projectId)) {
     return <NoProjectSelected message="Selecciona un proyecto válido para ver diagramas." />
@@ -49,7 +42,7 @@ export function ProjectDiagramsPage() {
   const handleDelete = async (id: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este diagrama?')) {
       await run(() => diagramFacade.remove(id), { errorMessage: 'Error al eliminar el diagrama.' })
-      setDiagrams(prev => prev.filter(d => d.id !== id))
+      setDiagrams(prev => (prev ? prev.filter(d => d.id !== id) : prev))
     }
   }
 
@@ -66,28 +59,28 @@ export function ProjectDiagramsPage() {
           sourceJson: typeof full.sourceJson === 'string' ? full.sourceJson : JSON.stringify(full.sourceJson),
           plantUmlCode: full.plantUmlCode
         })
-        handleFetch()
+        await diagramsResource.load(projectId as string)
       }, { errorMessage: 'Error al renombrar el diagrama.' })
     }
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--color-bg)]">
+    <div className="flex-1 overflow-y-auto bg-(--color-bg)">
       {/* ── Header ── */}
-      <header className="px-8 py-10 border-b border-[var(--color-border)] bg-[var(--color-bg-card)]/30">
+      <header className="px-8 py-10 border-b border-(--color-border) bg-(--color-bg-card)/30">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-text-muted)] mb-4">
-            <Link to="/app" className="hover:text-[var(--color-accent)] transition-colors">Home</Link>
+          <div className="flex items-center gap-2 text-xs font-mono text-(--color-text-muted) mb-4">
+            <Link to="/app" className="hover:text-(--color-accent) transition-colors">Home</Link>
             <span>/</span>
-            <Link to={`/app/projects/${projectId}`} className="hover:text-[var(--color-accent)] transition-colors">Proyecto</Link>
+            <Link to={`/app/projects/${projectId}`} className="hover:text-(--color-accent) transition-colors">Proyecto</Link>
             <span>/</span>
-            <span className="text-[var(--color-text-primary)]">Diagramas</span>
+            <span className="text-(--color-text-primary)">Diagramas</span>
           </div>
           
-          <h1 className="text-4xl font-bold text-[var(--color-text-primary)] tracking-tight mb-2">
+          <h1 className="text-4xl font-bold text-(--color-text-primary) tracking-tight mb-2">
             Diagramas del proyecto
           </h1>
-          <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl">
+          <p className="text-(--color-text-secondary) text-lg max-w-2xl">
             Crea, genera y administra los diagramas asociados a este proyecto.
           </p>
         </div>
@@ -97,8 +90,8 @@ export function ProjectDiagramsPage() {
         {/* ── Tipos de Diagramas ── */}
         <section>
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[var(--color-accent)] rounded-full" />
+            <h2 className="text-2xl font-bold text-(--color-text-primary) flex items-center gap-3">
+              <span className="w-1.5 h-8 bg-(--color-accent) rounded-full" />
               Tipos de diagramas
             </h2>
           </div>
@@ -134,7 +127,7 @@ export function ProjectDiagramsPage() {
         {/* ── Diagramas Guardados ── */}
         <section>
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-(--color-text-primary) flex items-center gap-3">
               <span className="w-1.5 h-8 bg-emerald-500 rounded-full" />
               Diagramas guardados
             </h2>

@@ -107,3 +107,8 @@ La fase 2 quedó implementada: extraje toda la lógica de estado, carga, validac
 
 ✅ status: COMPLET
 
+---
+
+La fase 3 quedó cerrada. Extraje el loader compartido en useResourceLoader.ts:1 y lo apliqué en ProjectDiagramsPage.tsx:1 y ProjectMapPage.tsx:1, además de limpiar los imports que habían quedado sobrantes después del refactor.
+
+✅ status: COMPLET
