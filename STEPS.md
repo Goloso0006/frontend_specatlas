@@ -93,4 +93,10 @@ En esta fase implementamos el patrón State para el editor de diagramas creando 
 
 ✅ status: COMPLET
 
+---
 
+- refactory code 
+
+Fase 1 quedó cerrada sin instalar nada externo: extraje la lógica compartida de la gestión manual a RequirementManagementPage.tsx y dejé FunctionalRequirementManualPage.tsx y NonFunctionalRequirementManualPage.tsx como wrappers mínimos, conservando rutas y comportamiento. También unifiqué carga, búsqueda, guardado, borrado e inferencia de impacto para ambos tipos de requisito desde una sola implementación. La validación pasó con éxito: npm run build compila correctamente.
+
+✅ status: COMPLET
