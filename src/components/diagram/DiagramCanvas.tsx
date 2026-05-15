@@ -11,6 +11,7 @@ import {
   type OnSelectionChangeFunc,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { useEffect } from 'react'
 
 import { DiagramEditorEmptyState } from './DiagramEditorEmptyState'
 import { ClassNode } from './ClassNode'
@@ -57,15 +58,17 @@ export function DiagramCanvas({
   onNodeDragStop,
 }: DiagramCanvasProps) {
   const isEmpty = nodes.length === 0
+
+  useEffect(() => {
     if (import.meta.env.DEV) {
-      console.debug('[DiagramCanvas] render:', {
+      console.debug('[DiagramCanvas] state changed:', {
         nodesCount: nodes.length,
         edgesCount: edges.length,
         isEmpty,
         diagramType,
-        nodes: nodes.slice(0, 3) // mostrar primeros 3 para debugging
       })
     }
+  }, [nodes.length, edges.length, isEmpty, diagramType])
 
   return (
     <div className="w-full h-full min-h-[400px] relative flex-1 min-h-0">
