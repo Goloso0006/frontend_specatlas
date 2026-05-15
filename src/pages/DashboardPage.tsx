@@ -1,2 +1,2 @@
-export { DashboardPage } from './Dashboard/DashboardPage'
-export { default } from './Dashboard/DashboardPage'
+export { DashboardPage } from './Dashboard/DashboardView'
+export { default } from './Dashboard/DashboardView'

@@ -112,3 +112,8 @@ La fase 2 quedó implementada: extraje toda la lógica de estado, carga, validac
 La fase 3 quedó cerrada. Extraje el loader compartido en useResourceLoader.ts:1 y lo apliqué en ProjectDiagramsPage.tsx:1 y ProjectMapPage.tsx:1, además de limpiar los imports que habían quedado sobrantes después del refactor.
 
 ✅ status: COMPLET
+
+---
+
+He refactorizado la página principal sacando secciones grandes a componentes y estilos separados: añadí TopNav.tsx, SiteFooter.tsx, HeroSection.tsx, PreloaderOverlay.tsx y el hook usePreloader.ts, creé/ajusté FlipCard.tsx y moví los estilos 3D a flipcard.css, eliminando el CSS inline en HomePage.tsx y reescribiendo HomePage para componer esos componentes; además arreglé importaciones (p. ej. en App.tsx) y verifiqué que el proyecto compile correctamente con npm run build.
+
