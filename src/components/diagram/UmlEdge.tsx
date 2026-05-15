@@ -91,6 +91,7 @@ export function UmlEdge({
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: 'all',
+            zIndex: 30,
           }}
           className="nodrag nopan"
         >
@@ -127,7 +128,7 @@ export function UmlEdge({
           <>
             {sourceMult && (
               <EdgeLabelRenderer>
-                <div style={{ position: 'absolute', transform: `translate(-50%, -50%) translate(${sourcePos.x}px,${sourcePos.y}px)`, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', transform: `translate(-50%, -50%) translate(${sourcePos.x}px,${sourcePos.y}px)`, pointerEvents: 'none', zIndex: 30 }}>
                   <div className="text-[10px] font-mono px-1 py-0.5 rounded bg-white/80 dark:bg-black/60 text-app-text-primary border" style={{opacity: 0.85}}>
                     {sourceMult}
                   </div>
@@ -136,7 +137,7 @@ export function UmlEdge({
             )}
             {targetMult && (
               <EdgeLabelRenderer>
-                <div style={{ position: 'absolute', transform: `translate(-50%, -50%) translate(${targetPos.x}px,${targetPos.y}px)`, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', transform: `translate(-50%, -50%) translate(${targetPos.x}px,${targetPos.y}px)`, pointerEvents: 'none', zIndex: 30 }}>
                   <div className="text-[10px] font-mono px-1 py-0.5 rounded bg-white/80 dark:bg-black/60 text-app-text-primary border" style={{opacity: 0.85}}>
                     {targetMult}
                   </div>

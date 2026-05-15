@@ -65,6 +65,7 @@ export function UseCaseEdge({
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
+              zIndex: 30,
             }}
             className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-white dark:bg-[#121212] transition-all shadow-sm ${
               selected ? 'border-app-accent text-app-accent scale-110 shadow-app-accent/10' : 'border-app-border text-app-text-secondary opacity-80'

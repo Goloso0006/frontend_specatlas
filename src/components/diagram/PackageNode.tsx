@@ -3,13 +3,13 @@ import type { DiagramPackageNodeDTO } from '../../types/diagrams'
 
 export function PackageNode({ data, selected }: NodeProps<Node<DiagramPackageNodeDTO>>) {
   const palette: Record<string, string> = {
-    neutral: 'rgba(255,255,255,0.04)',
-    gris: 'rgba(148,163,184,0.06)',
-    azul: 'rgba(59,130,246,0.06)',
-    verde: 'rgba(16,185,129,0.06)',
-    dorado: 'rgba(168,140,74,0.06)',
-    violeta: 'rgba(124,58,237,0.06)',
-    rojo: 'rgba(220,38,38,0.06)',
+    neutral: 'rgba(255,255,255,0.03)',
+    gris: 'rgba(148,163,184,0.05)',
+    azul: 'rgba(59,130,246,0.05)',
+    verde: 'rgba(16,185,129,0.05)',
+    dorado: 'rgba(168,140,74,0.05)',
+    violeta: 'rgba(124,58,237,0.05)',
+    rojo: 'rgba(220,38,38,0.05)',
   }
 
   const rawColor = data.style?.color || 'neutral'
@@ -17,55 +17,104 @@ export function PackageNode({ data, selected }: NodeProps<Node<DiagramPackageNod
 
   return (
     <div
-      className={`relative w-full h-full rounded-lg transition-all ${
-        selected ? 'ring-2 ring-blue-500/20 shadow-lg' : ''
-      }`}
+      className="relative w-full h-full rounded-lg"
       style={{
         background: packageColor,
-        border: selected ? '1px solid rgba(59,130,246,0.6)' : '1px solid var(--color-border)',
-        zIndex: 0,
+        // Border: dashed when idle, solid blue when selected — purely visual, no zIndex here.
+        // The actual z-order is controlled by the React Flow node-level zIndex (set to 0 in
+        // addNodeToCanvas / diagramSourceToReactFlow). Do NOT set zIndex inside this div
+        // because it would create a new stacking context and break the global ordering.
+        border: selected
+          ? '1.5px solid rgba(59,130,246,0.7)'
+          : '1.5px dashed var(--color-border)',
+        // Only the drag handle area (header) needs pointer events.
+        // The full interior uses pointer-events:none so that class nodes placed
+        // inside the package bounds remain clickable and selectable.
+        pointerEvents: 'none',
+        boxShadow: selected ? '0 0 0 3px rgba(59,130,246,0.15)' : 'none',
       }}
     >
-      <NodeResizer
-        isVisible={true}
-        minWidth={480}
-        minHeight={300}
-        maxWidth={2000}
-        maxHeight={1400}
-        handleClassName="!w-2 !h-2 !bg-blue-400 !border-2 !border-white dark:!border-slate-900 opacity-100 hover:!bg-blue-600"
-        lineClassName="!border-blue-400"
-      />
-
-      {/* Header/Tab */}
-      <div className="absolute -top-[22px] left-0 h-[22px] px-3 bg-slate-100 dark:bg-slate-800 border-t-2 border-l-2 border-r-2 border-slate-300 dark:border-slate-700 rounded-t-md flex items-center">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-          Package
-        </span>
+      {/* NodeResizer: always rendered so it responds immediately after creation.
+          The resize handles themselves need pointer-events so wrap in a passthrough div. */}
+      <div style={{ pointerEvents: 'all' }}>
+        <NodeResizer
+          isVisible={true}
+          minWidth={200}
+          minHeight={150}
+          maxWidth={2000}
+          maxHeight={1400}
+          handleStyle={{
+            width: 8,
+            height: 8,
+            background: selected ? '#60a5fa' : '#94a3b8',
+            border: '2px solid white',
+            borderRadius: 2,
+          }}
+          lineStyle={{
+            borderColor: selected ? 'rgba(59,130,246,0.5)' : 'transparent',
+          }}
+        />
       </div>
 
-      <div className="p-3">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2 mb-2">
-          <div className="text-left font-bold text-slate-800 dark:text-slate-100">
-            {data.name}
-          </div>
-          {selected && typeof data.childCount === 'number' && (
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md bg-white/5">
-              {data.childCount} clases
-            </div>
-          )}
-        </div>
-        {data.description && (
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 italic text-center">
-            {data.description}
-          </p>
+      {/* Header/Tab — needs pointer-events so the user can click to select & drag the package */}
+      <div
+        className="absolute -top-[24px] left-0 h-[24px] px-3 flex items-center gap-2 rounded-t-md select-none"
+        style={{
+          pointerEvents: 'all',
+          background: selected
+            ? 'rgba(59,130,246,0.15)'
+            : 'rgba(148,163,184,0.1)',
+          border: selected
+            ? '1px solid rgba(59,130,246,0.5)'
+            : '1px solid var(--color-border)',
+          borderBottom: 'none',
+          cursor: 'move',
+        }}
+      >
+        {/* Package icon */}
+        <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+        </svg>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {data.name || 'Package'}
+        </span>
+        {selected && typeof data.childCount === 'number' && data.childCount > 0 && (
+          <span className="text-[9px] text-slate-400 dark:text-slate-500 ml-1">
+            ({data.childCount})
+          </span>
         )}
       </div>
 
-      {/* Handles for connections if needed */}
-      <Handle type="target" position={Position.Top} className="opacity-0 group-hover:opacity-100" />
-      <Handle type="source" position={Position.Bottom} className="opacity-0 group-hover:opacity-100" />
-      <Handle type="target" position={Position.Left} className="opacity-0 group-hover:opacity-100" />
-      <Handle type="source" position={Position.Right} className="opacity-0 group-hover:opacity-100" />
+      {/* Description — decorative only, pointer-events:none so it does not block class clicks */}
+      {data.description && (
+        <div
+          className="absolute bottom-2 left-3 right-3 text-[10px] text-slate-400 dark:text-slate-500 italic truncate"
+          style={{ pointerEvents: 'none' }}
+        >
+          {data.description}
+        </div>
+      )}
+
+      {/* Connection handles: very thin hit area, hidden until package is selected */}
+      <div style={{ pointerEvents: 'all' }}>
+        <Handle
+          type="target" position={Position.Top}
+          style={{ opacity: selected ? 0.5 : 0, transition: 'opacity 0.2s' }}
+        />
+        <Handle
+          type="source" position={Position.Bottom}
+          style={{ opacity: selected ? 0.5 : 0, transition: 'opacity 0.2s' }}
+        />
+        <Handle
+          type="target" position={Position.Left}
+          style={{ opacity: selected ? 0.5 : 0, transition: 'opacity 0.2s' }}
+        />
+        <Handle
+          type="source" position={Position.Right}
+          style={{ opacity: selected ? 0.5 : 0, transition: 'opacity 0.2s' }}
+        />
+      </div>
     </div>
   )
 }

@@ -81,6 +81,8 @@ export type DiagramRelationDTO = {
   id: string
   source: string
   target: string
+  sourceHandle?: string | null
+  targetHandle?: string | null
   type?: string
   data?: {
     relationshipType: DiagramRelationshipType | DiagramUseCaseRelationshipType

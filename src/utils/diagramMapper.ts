@@ -89,10 +89,15 @@ export function parseDiagramSource(input: DiagramSourceDTO | string | null | und
     return createEmptyDiagramSource()
   }
 
+  // Accept both "edges" and "relationships" as field names (AI backends differ)
+  const rawEdges = Array.isArray(parsed.edges) ? parsed.edges
+    : Array.isArray((parsed as any).relationships) ? (parsed as any).relationships
+    : []
+
   return {
     diagramType: parsed.diagramType === 'USE_CASE' ? 'USE_CASE' : 'CLASS',
     nodes: Array.isArray(parsed.nodes) ? parsed.nodes.map(normalizeNode) : [],
-    edges: Array.isArray(parsed.edges) ? parsed.edges.map(normalizeEdge) : [],
+    edges: rawEdges.map(normalizeEdge),
   }
 }
 
@@ -138,22 +143,27 @@ export function diagramSourceToReactFlow(source: DiagramSourceDTO): {
       } else if (source.diagramType === 'USE_CASE') {
         type = node.kind === 'actor' ? 'actorNode' : 'useCaseNode'
       }
-      
+
+      // @xyflow/react uses the node-level `zIndex` for rendering order.
+      // Packages must always stay behind class/actor/useCase nodes.
+      const zIndex = node.kind === 'package' ? 0 : 10
+
       const baseReactFlowNode = {
         id: node.id,
         type,
         position: node.position,
         data: node,
+        zIndex,
       }
 
-      // Para packages, asignar el tamaño en node.style para que React Flow lo use
+      // For packages, assign size in node.style so React Flow uses it for resizing
       if (node.kind === 'package') {
         return {
           ...baseReactFlowNode,
           style: {
             width: (node as any).style?.width ?? 640,
             height: (node as any).style?.height ?? 420,
-          }
+          },
         }
       }
 
@@ -163,11 +173,38 @@ export function diagramSourceToReactFlow(source: DiagramSourceDTO): {
       id: edge.id,
       source: edge.source,
       target: edge.target,
+      sourceHandle: edge.sourceHandle || null,
+      targetHandle: edge.targetHandle || null,
       type: edge.type || (source.diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
       data: edge,
       label: edge.data?.label || '',
+      zIndex: 1000, // edges always above nodes
     })),
   }
+}
+
+/**
+ * Enforces correct z-order on a list of React Flow nodes:
+ * - packageNode  → zIndex 0  (background container)
+ * - everything else → zIndex 10 (always in front of packages)
+ *
+ * Call this after loading a diagram or after any operation that may have
+ * changed node types (e.g. drag-stop reassignment of packageId).
+ * It is a pure function and does NOT mutate the input array.
+ */
+export function normalizeNodeLayering<T extends { type?: string; zIndex?: number }>(
+  nodes: T[]
+): T[] {
+  let changed = false
+  const next = nodes.map(n => {
+    const expected = n.type === 'packageNode' ? 0 : 10
+    if (n.zIndex !== expected) {
+      changed = true
+      return { ...n, zIndex: expected }
+    }
+    return n
+  })
+  return changed ? next : nodes
 }
 
 export function reactFlowToDiagramSource(
@@ -201,6 +238,8 @@ export function reactFlowToDiagramSource(
       ...(edge.data ?? createDiagramRelation(edge.source, edge.target)),
       source: edge.source,
       target: edge.target,
+      sourceHandle: edge.sourceHandle || null,
+      targetHandle: edge.targetHandle || null,
       type: edge.type || (diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
     })),
   }
@@ -208,7 +247,12 @@ export function reactFlowToDiagramSource(
 
 function safeParseJson(value: string): DiagramSourceDTO | null {
   try {
-    return JSON.parse(value) as DiagramSourceDTO
+    let parsed = JSON.parse(value)
+    // Handle double-stringified JSON which happens if backend doesn't deserialize correctly
+    while (typeof parsed === 'string') {
+      parsed = JSON.parse(parsed)
+    }
+    return parsed as DiagramSourceDTO
   } catch {
     return null
   }
@@ -268,15 +312,54 @@ export function normalizeNode(node: any): DiagramNodeDTO {
 }
 
 export function normalizeEdge(edge: any): DiagramRelationDTO {
+  // The AI backend returns edges with "from"/"to" and top-level "label"/"type".
+  // Internally we use "source"/"target" and nested "data.relationshipType".
+  // This function accepts BOTH formats.
+  const source = typeof edge.source === 'string' && edge.source
+    ? edge.source
+    : typeof edge.from === 'string' && edge.from
+      ? edge.from
+      : ''
+
+  const target = typeof edge.target === 'string' && edge.target
+    ? edge.target
+    : typeof edge.to === 'string' && edge.to
+      ? edge.to
+      : ''
+
+  // Relationship type: accept top-level "type"/"relationshipType" or nested data.relationshipType
+  // (the AI emits {"type": "association"} at the edge root, not inside "data")
+  const rawRelType =
+    edge.data?.relationshipType ??
+    edge.relationshipType ??
+    (typeof edge.type === 'string' && edge.type !== 'umlEdge' && edge.type !== 'useCaseEdge'
+      ? edge.type
+      : undefined) ??
+    'ASSOCIATION'
+
+  // Label: accept top-level "label" or nested data.label
+  const label =
+    typeof edge.data?.label === 'string' ? edge.data.label :
+    typeof edge.label === 'string' ? edge.label :
+    ''
+
+  // Edge renderer type: umlEdge for class diagrams, useCaseEdge for use case diagrams
+  // If AI sent a semantic type ("association"), keep "umlEdge" as the renderer
+  const semanticTypes = ['association','aggregation','composition','inheritance','implementation','dependency','include','extend','generalization','ASSOCIATION','AGGREGATION','COMPOSITION','INHERITANCE','IMPLEMENTATION','DEPENDENCY','INCLUDE','EXTEND','GENERALIZATION']
+  const rendererType = typeof edge.type === 'string' && !semanticTypes.includes(edge.type)
+    ? edge.type
+    : 'umlEdge'
+
   return {
-    id: typeof edge.id === 'string' ? edge.id : createEdgeId(),
-    source: typeof edge.source === 'string' ? edge.source : '',
-    target: typeof edge.target === 'string' ? edge.target : '',
-    type: typeof edge.type === 'string' ? edge.type : 'umlEdge',
+    id: typeof edge.id === 'string' && edge.id ? edge.id : createEdgeId(),
+    source,
+    target,
+    type: rendererType,
     data: {
-      relationshipType: normalizeRelationshipType(edge.data?.relationshipType),
-      label: typeof edge.data?.label === 'string' ? edge.data.label : '',
-      description: typeof edge.data?.description === 'string' ? edge.data.description : '',
+      relationshipType: normalizeRelationshipType(rawRelType),
+      label,
+      description: typeof edge.data?.description === 'string' ? edge.data.description :
+                   typeof edge.description === 'string' ? edge.description : '',
       sourceMultiplicity: typeof edge.data?.sourceMultiplicity === 'string' ? edge.data.sourceMultiplicity : '1',
       targetMultiplicity: typeof edge.data?.targetMultiplicity === 'string' ? edge.data.targetMultiplicity : '1',
     },

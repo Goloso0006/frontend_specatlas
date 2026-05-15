@@ -96,6 +96,7 @@ export interface DiagramEditorController {
   setIsSidebarOpen: (value: boolean) => void
   setShowValidationModal: (value: boolean) => void
   setShowAiModal: (value: boolean) => void
+  clearSelection: () => void
 }
 
 const HELP_TIPS = [
@@ -269,13 +270,19 @@ export function useDiagramEditorController(): DiagramEditorController {
           relType = 'GENERALIZATION'
         }
         relDTO.type = 'useCaseEdge'
-        relDTO.data = { relationshipType: relType, label: '', description: '' }
+        relDTO.data = { ...relDTO.data, relationshipType: relType, label: '', description: '' }
       }
+
+      // Important: store sourceHandle and targetHandle so React Flow knows which dot was connected
+      relDTO.sourceHandle = connection.sourceHandle || null
+      relDTO.targetHandle = connection.targetHandle || null
 
       const newEdge: Edge<DiagramRelationDTO> = {
         id: relDTO.id,
         source: relDTO.source,
         target: relDTO.target,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
         type: relDTO.type || (diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
         data: relDTO,
         label: relDTO.data?.label || '',
@@ -303,12 +310,22 @@ export function useDiagramEditorController(): DiagramEditorController {
   }, [nodes.length])
 
   const addNodeToCanvas = useCallback((nodeDTO: DiagramNodeDTO, nodeType: string) => {
+    // Packages stay behind class nodes: zIndex 0 vs 10
+    const zIndex = nodeType === 'packageNode' ? 0 : 10
     const newNode: Node<DiagramNodeDTO> = {
       id: nodeDTO.id,
       type: nodeType,
       position: nodeDTO.position,
       data: nodeDTO,
       selected: true,
+      zIndex,
+      // For packages: set style.width/height so React Flow renders at the correct size
+      ...(nodeType === 'packageNode' && {
+        style: {
+          width: (nodeDTO as any).style?.width ?? 640,
+          height: (nodeDTO as any).style?.height ?? 420,
+        },
+      }),
     }
     setNodes(nds => [...nds.map(n => ({ ...n, selected: false })), newNode])
     setSelectedNodeId(newNode.id)
@@ -629,5 +646,6 @@ export function useDiagramEditorController(): DiagramEditorController {
     setIsSidebarOpen,
     setShowValidationModal,
     setShowAiModal,
+    clearSelection,
   }
 }

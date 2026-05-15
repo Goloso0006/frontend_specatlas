@@ -13,6 +13,8 @@ interface DiagramPropertiesPanelProps {
   updateEdge: (nextEdge: DiagramRelationDTO) => void
   onDeleteNode: (id: string) => void
   onDeleteEdge: (id: string) => void
+  /** Called when the X button is pressed — should close sidebar AND clear selection */
+  onClose?: () => void
 }
 
 export function DiagramPropertiesPanel({
@@ -27,7 +29,15 @@ export function DiagramPropertiesPanel({
   updateEdge,
   onDeleteNode,
   onDeleteEdge,
+  onClose,
 }: DiagramPropertiesPanelProps) {
+  const handleClose = () => {
+    if (onClose) {
+      onClose()
+    } else {
+      setIsSidebarOpen(false)
+    }
+  }
   return (
     <>
       <aside
@@ -48,8 +58,9 @@ export function DiagramPropertiesPanel({
               )}
             </div>
             <button
-              onClick={() => setIsSidebarOpen(false)}
+              onClick={handleClose}
               className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              title="Cerrar panel"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

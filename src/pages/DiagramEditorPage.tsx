@@ -59,6 +59,7 @@ export function DiagramEditorPage() {
     setDiagramName,
     setIsSidebarOpen,
     setShowValidationModal,
+    clearSelection,
   } = controller
 
   /* ── Guards ── */
@@ -119,6 +120,7 @@ export function DiagramEditorPage() {
               onConnect={handleConnect}
               onSelectionChange={handleSelectionChange}
               onNodeDragStop={handleNodeDragStop}
+              onPaneClick={clearSelection}
             />
           </main>
 
@@ -134,6 +136,7 @@ export function DiagramEditorPage() {
             updateEdge={updateEdge}
             onDeleteNode={handleDeleteNode}
             onDeleteEdge={handleDeleteEdge}
+            onClose={() => { setIsSidebarOpen(false); clearSelection() }}
           />
         </div>
 

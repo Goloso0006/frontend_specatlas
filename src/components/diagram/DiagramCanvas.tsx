@@ -45,6 +45,7 @@ export interface DiagramCanvasProps {
   onConnect: (connection: Connection) => void
   onSelectionChange: OnSelectionChangeFunc
   onNodeDragStop?: (event: any, node: Node) => void
+  onPaneClick?: () => void
 }
 
 export function DiagramCanvas({
@@ -56,6 +57,7 @@ export function DiagramCanvas({
   onConnect,
   onSelectionChange,
   onNodeDragStop,
+  onPaneClick,
 }: DiagramCanvasProps) {
   const isEmpty = nodes.length === 0
 
@@ -83,17 +85,24 @@ export function DiagramCanvas({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onSelectionChange={onSelectionChange}
-            onNodeDragStop={onNodeDragStop}
+          onNodeDragStop={onNodeDragStop}
+          onPaneClick={onPaneClick}
           fitView
           nodesConnectable={true}
           minZoom={0.05}
           maxZoom={2}
           colorMode="dark"
+          // elevateEdgesOnSelect=false + elevateNodesOnSelect=false:
+          // let the node-level zIndex control layering so packages (zIndex:0)
+          // never rise above class nodes (zIndex:10) when selected.
+          elevateEdgesOnSelect={false}
+          elevateNodesOnSelect={false}
           defaultEdgeOptions={{
-          type: 'smoothstep',
-          animated: false,
-        }}
-      >
+            type: 'smoothstep',
+            animated: false,
+            zIndex: 1000,
+          }}
+        >
         <UmlMarkers />
         <Background gap={24} size={1} color="#cbd5e1" className="dark:opacity-10" />
         <MiniMap

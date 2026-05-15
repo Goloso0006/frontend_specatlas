@@ -43,10 +43,21 @@ export function mapGeneratedClassDiagramToCanvas(source: DiagramSourceDTO): Gene
     }
   })
 
-  // 2. Normalize Edges
-  const edges = (source.edges || []).map(edge => {
-    return normalizeEdge(edge)
-  })
+  // 2. Normalize Edges — validate that source/target IDs exist among generated nodes
+  const nodeIdSet = new Set(nodes.map(n => n.id))
+  const edges = (source.edges || [])
+    .map(edge => normalizeEdge(edge))
+    .filter(edge => {
+      const srcOk = nodeIdSet.has(edge.source)
+      const tgtOk = nodeIdSet.has(edge.target)
+      if (!srcOk || !tgtOk) {
+        const msg = `[DiagramMapper] Skipping edge "${edge.id}": ${!srcOk ? `source "${edge.source}" not found` : ''} ${!tgtOk ? `target "${edge.target}" not found` : ''}`.trim()
+        warnings.push(msg)
+        console.warn(msg)
+        return false
+      }
+      return true
+    })
 
   return {
     nodes,
@@ -108,8 +119,21 @@ export function mapGeneratedUseCaseDiagramToCanvas(source: DiagramSourceDTO): Ge
     })
   })
 
-  // 5. Normalize Edges
-  const edges = (source.edges || []).map(edge => normalizeEdge(edge))
+  // 5. Normalize Edges — validate source/target IDs exist
+  const ucNodeIdSet = new Set(mappedNodes.map(n => n.id))
+  const edges = (source.edges || [])
+    .map(edge => normalizeEdge(edge))
+    .filter(edge => {
+      const srcOk = ucNodeIdSet.has(edge.source)
+      const tgtOk = ucNodeIdSet.has(edge.target)
+      if (!srcOk || !tgtOk) {
+        const msg = `[DiagramMapper] Skipping edge "${edge.id}": ${!srcOk ? `source "${edge.source}" not found` : ''} ${!tgtOk ? `target "${edge.target}" not found` : ''}`.trim()
+        warnings.push(msg)
+        console.warn(msg)
+        return false
+      }
+      return true
+    })
 
   return {
     nodes: mappedNodes,
