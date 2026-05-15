@@ -1,2 +1,2 @@
-export { FunctionalRequirementAIPage } from './FunctionalRequirementAI/FunctionalRequirementAIViewe'
-export { default } from './FunctionalRequirementAI/FunctionalRequirementAIViewe'
+export { FunctionalRequirementAIPage } from './FunctionalRequirementAI/FunctionalRequirementAIView'
+export { default } from './FunctionalRequirementAI/FunctionalRequirementAIView'
