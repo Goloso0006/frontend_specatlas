@@ -178,7 +178,8 @@ export function useRequirementAI(projectId: string, requirementType: Requirement
           setQuotaCountdown(retryAfter)
         }
       } else {
-        addError('Error al generar propuestas con IA. Intenta de nuevo.')
+        const detail = error?.message || 'Error desconocido'
+        addError(`Error al generar propuestas con IA: ${detail}`)
       }
     } finally {
       setIsGenerating(false)

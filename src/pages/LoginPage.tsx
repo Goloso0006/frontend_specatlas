@@ -40,7 +40,8 @@ export function LoginPage() {
       if (error?.message?.toLowerCase().includes('timeout') || error?.message?.toLowerCase().includes('network')) {
         setStatus('El servidor está tardando más de lo esperado. Intenta nuevamente en unos segundos.')
       } else {
-        setStatus('No fue posible iniciar sesion. Verifica credenciales.')
+        const backendMsg = error?.message || 'Verifica tus credenciales e intenta de nuevo.'
+        setStatus(`Error de acceso: ${backendMsg}`)
       }
     } finally {
       setIsLoading(false)
