@@ -31,6 +31,72 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Solution Section */}
+        <section id="solution" className="py-24 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
+                  SpecAtlas: Análisis
+                  <span className="block text-[var(--color-text-secondary)]">activo e inteligente</span>
+                </h2>
+                <p className="text-lg text-[var(--color-text-secondary)] mb-8 leading-relaxed">
+                  A diferencia de herramientas que solo almacenan requisitos, SpecAtlas es un entorno
+                  activo que analiza, valida y cuestiona la información usando IA.
+                </p>
+                <div className="space-y-4">
+                  {[
+                    'Convierte texto libre en requisitos estructurados en <10 segundos',
+                    'Detecta ambigüedades automáticamente (IEEE 830 / ISO 25010)',
+                    'Búsqueda semántica con pgvector (768 dimensiones)',
+                    'Análisis de impacto con grafos de dependencias (Neo4j)',
+                    'Generación de diagramas UML con IA (Google Gemini 2.5 Flash)'
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <p className="text-[var(--color-text-secondary)]">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="relative">
+                <div className="relative bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-8 shadow-lg">
+                  <div className="space-y-5">
+                    <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                      <div className="text-xs font-mono text-[var(--color-text-muted)] mb-2">
+                        <img src="/iconsHomeSectionSolution/noun-text-5035477.svg" alt="Texto original" className="inline-block w-4 h-4 mr-2 align-text-bottom" />
+                        Texto original:
+                      </div>
+                      <div className="text-sm text-[var(--color-text-secondary)] italic">"El sistema debe ser rápido y fácil de usar"</div>
+                    </div>
+                    <div className="flex justify-center">
+                      <div className="w-8 h-8 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-border-strong)]">
+                      <div className="text-xs font-mono text-[var(--color-accent)] mb-2 font-semibold"><img src="/iconsHomeSectionSolution/noun-item-7552539.svg" alt="Requisito estructurado" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Requisito estructurado:</div>
+                      <div className="text-sm text-[var(--color-text-primary)] space-y-2">
+                        <div><span className="font-medium">Título:</span> Tiempo de respuesta del sistema</div>
+                        <div><span className="font-medium">Criterio BDD:</span> Dado que el usuario realiza una acción, cuando el sistema procesa la solicitud, entonces la respuesta debe ser menor a 2 segundos</div>
+                        <div className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-card)] p-2 rounded-md mt-2">
+                          <img src="/iconsHomeSectionSolution/noun-warning-6740277.svg" alt="Advertencia" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Ambigüedad detectada: "fácil" sin métrica definida
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="features" className="py-24 px-6">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
