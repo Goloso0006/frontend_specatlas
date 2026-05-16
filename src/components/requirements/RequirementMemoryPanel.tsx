@@ -13,6 +13,15 @@ type TabType = 'semantica' | 'estructural' | 'procedimental' | 'trazabilidad'
 export const RequirementMemoryPanel: React.FC<RequirementMemoryPanelProps> = ({ memory, onClose, qualityIssues }) => {
   const [activeTab, setActiveTab] = useState<TabType>('semantica')
 
+  // Global warnings from any section
+  const allWarnings = [
+    ...(memory.semantic?.warnings || []),
+    ...(memory.structural?.warnings || []),
+    ...(memory.procedural?.warnings || []),
+    ...(memory.traceability?.warnings || []),
+    ...((memory as any).warnings || [])
+  ]
+
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'semantica', label: 'Semántica', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> },
     { id: 'estructural', label: 'Estructural', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
@@ -58,6 +67,20 @@ export const RequirementMemoryPanel: React.FC<RequirementMemoryPanelProps> = ({ 
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+          {allWarnings.length > 0 && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-wider">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                Advertencias del sistema
+              </div>
+              <ul className="list-disc list-inside space-y-1">
+                {Array.from(new Set(allWarnings)).map((w, i) => (
+                  <li key={i} className="text-[11px] text-amber-700/80 leading-tight">{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {activeTab === 'semantica' && <SemanticSection memory={memory.semantic} />}
           {activeTab === 'estructural' && <StructuralSection memory={memory.structural} />}
           {activeTab === 'procedimental' && <ProceduralSection memory={memory.procedural} qualityIssues={qualityIssues} />}
@@ -68,7 +91,10 @@ export const RequirementMemoryPanel: React.FC<RequirementMemoryPanelProps> = ({ 
   )
 }
 
-function SemanticSection({ memory }: { memory: RequirementMemoryResponse['semantic'] }) {
+function SemanticSection({ memory: rawMemory }: { memory: RequirementMemoryResponse['semantic'] }) {
+  const memory = rawMemory ?? { similarRequirements: [], warnings: [] }
+  const similarRequirements = memory.similarRequirements || []
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[var(--color-accent)]">
@@ -76,14 +102,14 @@ function SemanticSection({ memory }: { memory: RequirementMemoryResponse['semant
         Memoria Semántica
       </div>
       
-      {memory.similarRequirements.length === 0 ? (
+      {similarRequirements.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-[var(--color-border)] rounded-2xl flex flex-col items-center justify-center text-center">
           <svg className="w-12 h-12 text-[var(--color-border-strong)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
           <p className="text-[var(--color-text-muted)] text-sm">No se encontraron requisitos similares relevantes.</p>
         </div>
       ) : (
         <div className="grid gap-4">
-          {memory.similarRequirements.map(match => (
+          {similarRequirements.map(match => (
             <div key={match.requirementId} className="border border-[var(--color-border)] rounded-xl p-4 bg-[var(--color-bg)] hover:border-[var(--color-accent)] transition-colors group">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -112,15 +138,23 @@ function SemanticSection({ memory }: { memory: RequirementMemoryResponse['semant
   )
 }
 
-function StructuralSection({ memory }: { memory: RequirementMemoryResponse['structural'] }) {
-  const hasNeo4jWarning = memory.warnings?.some(w => w.toLowerCase().includes('neo4j') || w.toLowerCase().includes('nodo'))
+function StructuralSection({ memory: rawMemory }: { memory: RequirementMemoryResponse['structural'] }) {
+  const memory = rawMemory ?? { 
+    outgoingRelations: [], 
+    incomingRelations: [], 
+    dependencies: [], 
+    conflicts: [], 
+    impactedRequirements: [], 
+    warnings: [] 
+  }
+  const hasNeo4jWarning = (memory.warnings || []).some(w => w.toLowerCase().includes('neo4j') || w.toLowerCase().includes('nodo'))
   
   const sections: { title: string; items: StructuralRelation[] }[] = [
-    { title: 'Relaciones salientes', items: memory.outgoingRelations },
-    { title: 'Relaciones entrantes', items: memory.incomingRelations },
-    { title: 'Dependencias', items: memory.dependencies },
-    { title: 'Conflictos', items: memory.conflicts },
-    { title: 'Requisitos impactados', items: memory.impactedRequirements }
+    { title: 'Relaciones salientes', items: memory.outgoingRelations || [] },
+    { title: 'Relaciones entrantes', items: memory.incomingRelations || [] },
+    { title: 'Dependencias', items: memory.dependencies || [] },
+    { title: 'Conflictos', items: memory.conflicts || [] },
+    { title: 'Requisitos impactados', items: memory.impactedRequirements || [] }
   ]
 
   const totalRelations = sections.reduce((acc, s) => acc + (s.items?.length || 0), 0)
@@ -173,7 +207,11 @@ function StructuralSection({ memory }: { memory: RequirementMemoryResponse['stru
   )
 }
 
-function ProceduralSection({ memory, qualityIssues }: { memory: RequirementMemoryResponse['procedural'], qualityIssues?: any[] }) {
+function ProceduralSection({ memory: rawMemory, qualityIssues }: { memory: RequirementMemoryResponse['procedural'], qualityIssues?: any[] }) {
+  const memory = rawMemory ?? { activeRules: [], violations: [], warnings: [] }
+  const activeRules = memory.activeRules || []
+  const violations = memory.violations || []
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[var(--color-accent)]">
@@ -181,7 +219,7 @@ function ProceduralSection({ memory, qualityIssues }: { memory: RequirementMemor
         Memoria Procedimental
       </div>
 
-      {memory.activeRules.length === 0 ? (
+      {activeRules.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-[var(--color-border)] rounded-2xl flex flex-col items-center justify-center text-center">
           <p className="text-[var(--color-text-muted)] text-sm">No hay reglas activas para este proyecto.</p>
         </div>
@@ -190,7 +228,7 @@ function ProceduralSection({ memory, qualityIssues }: { memory: RequirementMemor
           <div className="space-y-3">
             <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Reglas de validación activas</h4>
             <div className="grid gap-3">
-              {memory.activeRules.map(rule => (
+              {activeRules.map(rule => (
                 <div key={rule.id} className="p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[var(--color-text-primary)]">{rule.title}</span>
@@ -208,11 +246,11 @@ function ProceduralSection({ memory, qualityIssues }: { memory: RequirementMemor
             </div>
           </div>
 
-          {(memory.violations.length > 0 || (qualityIssues && qualityIssues.length > 0)) && (
+          {(violations.length > 0 || (qualityIssues && qualityIssues.length > 0)) && (
             <div className="space-y-3">
               <h4 className="text-[10px] font-bold uppercase tracking-widest text-rose-500 ml-1">Observaciones detectadas</h4>
               <div className="grid gap-2">
-                {memory.violations.map((v, i) => {
+                {violations.map((v, i) => {
                   const severity = v.severity || 'WARNING'
                   const colorCls = severity === 'ERROR' ? 'bg-rose-500/5 border-rose-500/20 text-rose-600' : 
                                    severity === 'WARNING' ? 'bg-amber-500/5 border-amber-500/20 text-amber-600' : 
@@ -250,7 +288,20 @@ function ProceduralSection({ memory, qualityIssues }: { memory: RequirementMemor
   )
 }
 
-function TraceabilitySection({ memory }: { memory: RequirementMemoryResponse['traceability'] }) {
+function TraceabilitySection({ memory: rawMemory }: { memory: RequirementMemoryResponse['traceability'] }) {
+  const memory = rawMemory ?? { 
+    relatedCodes: [], 
+    relatedDiagrams: [], 
+    relatedTestCases: [], 
+    relatedArchitecture: [], 
+    links: [], 
+    warnings: [] 
+  }
+  const relatedTestCases = memory.relatedTestCases || []
+  const relatedDiagrams = memory.relatedDiagrams || []
+  const relatedArchitecture = memory.relatedArchitecture || []
+  const links = memory.links || []
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -264,11 +315,11 @@ function TraceabilitySection({ memory }: { memory: RequirementMemoryResponse['tr
         {/* Test Cases */}
         <div className="space-y-3">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Casos de prueba</h4>
-          {memory.relatedTestCases?.length === 0 ? (
+          {relatedTestCases.length === 0 ? (
             <p className="text-xs text-[var(--color-text-muted)] ml-1 italic">No hay casos de prueba asociados.</p>
           ) : (
             <div className="grid gap-2">
-              {memory.relatedTestCases?.map(tc => (
+              {relatedTestCases.map(tc => (
                 <div key={tc.id} className="flex items-center gap-3 p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs">
                   <span className="font-mono font-bold text-cyan-600 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">{tc.code}</span>
                   <span className="font-bold text-[var(--color-text-primary)]">{tc.title}</span>
@@ -281,11 +332,11 @@ function TraceabilitySection({ memory }: { memory: RequirementMemoryResponse['tr
         {/* Diagrams */}
         <div className="space-y-3">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Diagramas asociados</h4>
-          {memory.relatedDiagrams.length === 0 ? (
+          {relatedDiagrams.length === 0 ? (
             <p className="text-xs text-[var(--color-text-muted)] ml-1 italic">No hay diagramas asociados.</p>
           ) : (
             <div className="grid gap-2">
-              {memory.relatedDiagrams.map(diag => (
+              {relatedDiagrams.map(diag => (
                 <div key={diag.id} className="flex items-center gap-3 p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs">
                   <svg className="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   <span className="font-bold text-[var(--color-text-primary)]">{diag.name}</span>
@@ -301,11 +352,11 @@ function TraceabilitySection({ memory }: { memory: RequirementMemoryResponse['tr
         {/* Architecture */}
         <div className="space-y-3">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Arquitectura / Código</h4>
-          {memory.relatedArchitecture?.length === 0 ? (
+          {relatedArchitecture.length === 0 ? (
             <p className="text-xs text-[var(--color-text-muted)] ml-1 italic">No hay elementos de arquitectura asociados.</p>
           ) : (
             <div className="grid gap-2">
-              {memory.relatedArchitecture?.map((arch, i) => (
+              {relatedArchitecture.map((arch, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-xs">
                   <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 text-[9px] font-bold uppercase tracking-tighter border border-amber-500/20">{arch.type}</span>
                   <span className="font-bold text-[var(--color-text-primary)]">{arch.name}</span>
@@ -319,11 +370,11 @@ function TraceabilitySection({ memory }: { memory: RequirementMemoryResponse['tr
         {/* Generic Links */}
         <div className="space-y-3">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Enlaces de trazabilidad</h4>
-          {memory.links?.length === 0 ? (
+          {links.length === 0 ? (
             <p className="text-xs text-[var(--color-text-muted)] ml-1 italic">No hay enlaces adicionales.</p>
           ) : (
             <div className="grid gap-2">
-              {memory.links?.map(link => (
+              {links.map(link => (
                 <div key={link.id} className="p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold text-cyan-600 uppercase">{link.targetType}</span>

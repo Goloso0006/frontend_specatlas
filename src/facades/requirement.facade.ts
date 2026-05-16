@@ -1,4 +1,5 @@
 import { requirementsApi, validationRulesApi, traceabilityApi, testCasesApi } from '../api/services/requirementsApi'
+import { adaptRequirementDTO } from '../adapters/requirements.adapter'
 import type {
   DuplicateCheckRequest,
   DuplicateMatchResponse,
@@ -76,10 +77,24 @@ export class RequirementFacade {
    * Does NOT persist automatically.
    */
   async improveRequirement(dto: RequirementDTO): Promise<RequirementDTO> {
-    return this.api.improve({
-      ...dto,
+    if (!dto.requirementType) {
+      throw new Error('MISSING_REQUIREMENT_TYPE')
+    }
+
+    const response = await this.api.improve({
       projectId: dto.projectId.trim(),
+      requirement: {
+        ...dto,
+        projectId: dto.projectId.trim(),
+      }
     })
+
+    const improved = response.improvedRequirement ?? response.improved
+    if (!improved) {
+      throw new Error('IA no devolvió una propuesta válida')
+    }
+
+    return adaptRequirementDTO(improved)
   }
 
   /**

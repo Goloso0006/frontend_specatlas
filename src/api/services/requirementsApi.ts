@@ -23,6 +23,8 @@ import type {
   EvaluationResponse,
   TraceabilityLink,
   TestCase,
+  ImproveRequirementRequest,
+  ImproveRequirementResponse,
 } from '../../types/requirements'
 import type { ImpactGraphResponse } from '../../types/graph'
 
@@ -52,12 +54,12 @@ export const requirementsApi = {
     }
   },
 
-  async improve(payload: RequirementDTO): Promise<RequirementDTO> {
-    const data = await httpProxy.post<RequirementDTO | ApiResponse<RequirementDTO>>(
+  async improve(payload: ImproveRequirementRequest): Promise<ImproveRequirementResponse> {
+    const data = await httpProxy.post<ImproveRequirementResponse | ApiResponse<ImproveRequirementResponse>>(
       endpoints.requirements.improve,
       payload,
     )
-    return adaptRequirementDTO(unwrapData(data))
+    return unwrapData(data)
   },
 
   async getMemory(id: string): Promise<RequirementMemoryResponse> {

@@ -225,3 +225,16 @@ export interface RequirementDeleteImpactResponse {
   relatedCodes: string[]
   warnings: string[]
 }
+
+export interface ImproveRequirementRequest {
+  projectId: string
+  requirement: RequirementDTO
+}
+
+export interface ImproveRequirementResponse {
+  original: RequirementDTO
+  improvedRequirement?: RequirementDTO
+  improved?: RequirementDTO
+  warnings?: string[]
+  improvementSummary?: string
+}

@@ -251,14 +251,29 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
   const handleImprove = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
     if (!row || !row.requirement.id) return // disabled for drafts
+    const { requirement } = row
+    
+    // Ensure requirementType is set for the payload
+    const payload = { ...requirement, requirementType: 'NON_FUNCTIONAL' as const }
+    
     setStatus(localId, 'checking') // Use checking to denote loading
     try {
-      const improved = await requirementFacade.improveRequirement(row.requirement)
+      const improved = await requirementFacade.improveRequirement(payload)
       if (improved) {
-        setAiPreview({ current: row.requirement, suggested: improved, localId })
+        setAiPreview({ current: requirement, suggested: improved, localId })
         setStatus(localId, 'saved') // restore status, let modal handle apply
-      } else setStatus(localId, 'error', 'IA no respondió')
-    } catch { setStatus(localId, 'error', 'Error IA') }
+      } else {
+        setStatus(localId, 'error', 'IA no respondió')
+      }
+    } catch (e: any) {
+      if (e.message === 'MISSING_REQUIREMENT_TYPE') {
+        setStatus(localId, 'error', 'No se pudo mejorar el requisito porque falta el tipo de requisito.')
+      } else if (e.status === 400 || e.statusCode === 400) {
+        setStatus(localId, 'error', e.message || 'La solicitud de mejora no es válida. Verifica que el requisito tenga proyecto, tipo y descripción.')
+      } else {
+        setStatus(localId, 'error', e.message || 'Error IA')
+      }
+    }
   }
 
   const handleCheckDuplicates = async (localId: string) => {

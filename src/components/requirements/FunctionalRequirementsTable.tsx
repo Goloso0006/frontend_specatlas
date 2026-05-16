@@ -216,17 +216,27 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
       setRowStatus(localId, 'incomplete', 'Escribe algo primero')
       return
     }
+    
+    // Ensure requirementType is set for the payload
+    const payload = { ...requirement, requirementType: 'FUNCTIONAL' as const }
+    
     setRowStatus(localId, 'checking') // Use 'checking' to denote loading AI
     try {
-      const improved = await requirementFacade.improveRequirement(requirement)
+      const improved = await requirementFacade.improveRequirement(payload)
       if (improved) {
         setAiPreview({ current: requirement, suggested: improved, localId })
         setRowStatus(localId, 'saved') // restore status, let the modal handle applying
       } else {
         setRowStatus(localId, 'error', 'IA no respondió')
       }
-    } catch {
-      setRowStatus(localId, 'error', 'Error IA')
+    } catch (e: any) {
+      if (e.message === 'MISSING_REQUIREMENT_TYPE') {
+        setRowStatus(localId, 'error', 'No se pudo mejorar el requisito porque falta el tipo de requisito.')
+      } else if (e.status === 400 || e.statusCode === 400) {
+        setRowStatus(localId, 'error', e.message || 'La solicitud de mejora no es válida. Verifica que el requisito tenga proyecto, tipo y descripción.')
+      } else {
+        setRowStatus(localId, 'error', e.message || 'Error IA')
+      }
     }
   }
 
