@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { EditableRequirementRow, type RowStatus } from './EditableRequirementRow'
 import { RequirementAiImprovePreview } from './RequirementAiImprovePreview'
+import { RequirementSimilarityPanel } from './RequirementSimilarityPanel'
+import { RequirementMemoryPanel } from './RequirementMemoryPanel'
 import { RequirementTableDetail } from './RequirementTableDetail'
 import { DeleteConfirmationModal } from './DeleteConfirmationModal'
+import { RequirementDeleteImpactModal } from './RequirementDeleteImpactModal'
+import { RequirementFiltersBar } from './RequirementFiltersBar'
+import { RequirementTraceabilityPanel } from './RequirementTraceabilityPanel'
 import { requirementFacade } from '../../facades/requirement.facade'
 import { generateNextCode } from '../../utils/requirementCodeUtils'
 import { sortRequirements } from '../../utils/requirementSortUtils'
-import type { RequirementDTO } from '../../types/requirements'
+import {
+  EMPTY_FILTERS,
+  buildFilterOptions,
+  filterRequirements,
+  hasActiveFilters,
+  type RequirementFilters,
+} from '../../utils/requirementFilterUtils'
+import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
+import type { RequirementDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse, RuleViolation } from '../../types/requirements'
 
 interface FunctionalRequirementsTableProps {
   projectId: string
@@ -21,122 +34,12 @@ interface TableRow {
   errorMessage?: string
 }
 
-// ── Filter types ─────────────────────────────────────────────────────────────
-
-interface FilterState {
-  search: string
-  actor: string
-  isoClass: string
-  hasCriteria: '' | 'yes' | 'no'
-}
-
-const EMPTY_FILTERS: FilterState = { search: '', actor: '', isoClass: '', hasCriteria: '' }
-
 function toTableRows(requirements: RequirementDTO[]): TableRow[] {
   return sortRequirements(requirements).map(r => ({
     localId: r.id || crypto.randomUUID(),
     requirement: r,
     status: 'saved' as RowStatus,
   }))
-}
-
-function applyFilters(rows: TableRow[], f: FilterState): TableRow[] {
-  return rows.filter(({ requirement: r }) => {
-    if (f.search) {
-      const q = f.search.toLowerCase()
-      const hit = r.code?.toLowerCase().includes(q)
-        || r.title?.toLowerCase().includes(q)
-        || r.description?.toLowerCase().includes(q)
-      if (!hit) return false
-    }
-    if (f.actor) {
-      const actorMatch = r.actors?.some(a => a.toLowerCase().includes(f.actor.toLowerCase()))
-      if (!actorMatch) return false
-    }
-    if (f.isoClass) {
-      if (!r.isoClassification?.toLowerCase().includes(f.isoClass.toLowerCase())) return false
-    }
-    if (f.hasCriteria === 'yes' && !(r.acceptanceCriteria?.length)) return false
-    if (f.hasCriteria === 'no' && (r.acceptanceCriteria?.length ?? 0) > 0) return false
-    return true
-  })
-}
-
-// ── Collect unique filter values ──────────────────────────────────────────────
-
-function uniqueActors(rows: TableRow[]): string[] {
-  const set = new Set<string>()
-  rows.forEach(({ requirement: r }) => r.actors?.forEach(a => a && set.add(a)))
-  return [...set].sort()
-}
-
-function uniqueIsoClasses(rows: TableRow[]): string[] {
-  const set = new Set<string>()
-  rows.forEach(({ requirement: r }) => r.isoClassification && set.add(r.isoClassification))
-  return [...set].sort()
-}
-
-// ── FilterBar component ───────────────────────────────────────────────────────
-
-function FilterBar({
-  filters, onChange, actors, isoClasses, totalShown, totalAll,
-}: {
-  filters: FilterState
-  onChange: (f: FilterState) => void
-  actors: string[]
-  isoClasses: string[]
-  totalShown: number
-  totalAll: number
-}) {
-  const isActive = Object.values(filters).some(v => v !== '')
-  const inp = 'h-7 px-2.5 text-[11px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] placeholder:text-[var(--color-text-muted)]'
-  const sel = inp + ' cursor-pointer'
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 px-2 py-2 bg-[var(--color-surface)]/40 border border-[var(--color-border)] rounded-xl">
-      <svg className="w-3.5 h-3.5 text-[var(--color-text-muted)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-      </svg>
-
-      <input
-        value={filters.search}
-        onChange={e => onChange({ ...filters, search: e.target.value })}
-        placeholder="Buscar código, título, descripción…"
-        className={`${inp} w-52`}
-      />
-
-      {actors.length > 0 && (
-        <select value={filters.actor} onChange={e => onChange({ ...filters, actor: e.target.value })} className={sel}>
-          <option value="">Todos los actores</option>
-          {actors.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-      )}
-
-      {isoClasses.length > 0 && (
-        <select value={filters.isoClass} onChange={e => onChange({ ...filters, isoClass: e.target.value })} className={sel}>
-          <option value="">Clasificación ISO</option>
-          {isoClasses.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      )}
-
-      <select value={filters.hasCriteria} onChange={e => onChange({ ...filters, hasCriteria: e.target.value as FilterState['hasCriteria'] })} className={sel}>
-        <option value="">BDD: todos</option>
-        <option value="yes">Con criterios</option>
-        <option value="no">Sin criterios</option>
-      </select>
-
-      {isActive && (
-        <button onClick={() => onChange(EMPTY_FILTERS)} className="h-7 px-2.5 text-[11px] rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors font-medium flex items-center gap-1">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          Limpiar
-        </button>
-      )}
-
-      <span className="ml-auto text-[10px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-        {isActive ? `${totalShown} / ${totalAll}` : `${totalAll} total`}
-      </span>
-    </div>
-  )
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -146,29 +49,90 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   initialRequirements,
   onRequirementsChange,
 }) => {
-  // Fix: sync rows whenever initialRequirements changes (re-enter screen / refetch).
-  // We don't use a lazy initializer because it only runs once on mount.
+  // rows = all rows including unsaved drafts, maintained in sorted order
   const [rows, setRows] = useState<TableRow[]>(() => toTableRows(initialRequirements))
 
   useEffect(() => {
     // When parent refetches and passes new requirements, rebuild rows.
     // Keep unsaved drafts (rows without a backend id) so the user doesn't lose work.
+    // Merge all rows and sort together so drafts land in their natural code position.
     setRows(prev => {
       const drafts = prev.filter(r => !r.requirement.id && r.status !== 'saved')
-      const saved = toTableRows(initialRequirements)
-      // Merge: saved rows first (sorted), then any unsaved drafts on top
-      return [...drafts, ...saved]
+      const savedReqs = toTableRows(initialRequirements)
+      // Combine drafts with saved rows and sort everything together by code
+      const allReqs = [
+        ...drafts.map(d => d.requirement),
+        ...savedReqs.map(s => s.requirement),
+      ]
+      const sortedReqs = sortRequirements(allReqs)
+      // Reconstruct TableRow list preserving localId and status
+      const byId = new Map([
+        ...drafts.map(d => [d.requirement.code ?? d.localId, d] as const),
+        ...savedReqs.map(s => [s.requirement.id ?? s.localId, s] as const),
+      ])
+      return sortedReqs.map(req => {
+        const key = req.id || req.code || ''
+        return byId.get(key) ?? savedReqs.find(s => s.requirement.id === req.id || s.requirement.code === req.code) ?? drafts.find(d => d.requirement.code === req.code) ?? { localId: crypto.randomUUID(), requirement: req, status: 'saved' as RowStatus }
+      })
     })
   }, [initialRequirements])
 
-  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
+  const [filters, setFilters] = useState<RequirementFilters>(EMPTY_FILTERS)
   const [aiPreview, setAiPreview] = useState<{ current: RequirementDTO; suggested: RequirementDTO; localId: string } | null>(null)
+  const [duplicatePreview, setDuplicatePreview] = useState<{ localId: string; matches: any[] } | null>(null)
+  const [memoryPreview, setMemoryPreview] = useState<{ localId: string; memory: RequirementMemoryResponse } | null>(null)
   const [selectedLocalId, setSelectedLocalId] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ localId: string; requirement: RequirementDTO; impact?: RequirementDeleteImpactResponse } | null>(null)
+  const [proceduralViolations, setProceduralViolations] = useState<Map<string, RuleViolation[]>>(new Map())
+  const [traceabilityPreview, setTraceabilityPreview] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
 
-  const visibleRows = applyFilters(rows, filters)
+  // Filter options are derived from the FULL rows (including drafts) so that
+  // dropdown options remain stable while filters are active.
+  const filterOptions = useMemo(
+    () => buildFilterOptions(rows.map(r => r.requirement)),
+    [rows],
+  )
+
+  // visibleRows: apply filters to all rows (preserves draft rows, correct order)
+  const visibleRows = useMemo(
+    () => {
+      const reqs = filterRequirements(rows.map(r => r.requirement), filters)
+      const reqIds = new Set(reqs.map(r => r.id || r.code))
+      return rows.filter(r => reqIds.has(r.requirement.id || r.requirement.code))
+    },
+    [rows, filters],
+  )
+
   const selectedRow = rows.find(r => r.localId === selectedLocalId)
-  const isFiltering = Object.values(filters).some(v => v !== '')
+  const isFiltering = hasActiveFilters(filters)
+
+  // ── Live quality analysis ──────────────────────────────────────────────────
+  // Runs purely locally (no backend, no AI). Keyed by localId for O(1) lookup.
+  // useMemo so it only recomputes when row requirements actually change.
+  const qualityMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof analyzeRequirementText>>()
+    for (const row of rows) {
+      const localIssues = analyzeRequirementText({
+        title: row.requirement.title,
+        description: row.requirement.description,
+        acceptanceCriteria: row.requirement.acceptanceCriteria,
+        requirementType: row.requirement.requirementType ?? 'FUNCTIONAL',
+      })
+      
+      const violations = proceduralViolations.get(row.localId) || []
+      const proceduralIssues = violations.map(v => ({
+        id: `rule-${v.ruleId}-${crypto.randomUUID().slice(0, 8)}`,
+        ruleId: v.ruleId,
+        severity: v.severity.toLowerCase() as any,
+        field: 'procedural' as any,
+        message: v.message,
+        suggestion: `Regla: ${v.ruleName}`
+      }))
+
+      map.set(row.localId, [...localIssues, ...proceduralIssues])
+    }
+    return map
+  }, [rows, proceduralViolations])
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -193,8 +157,17 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
       nonFunctionalDetail: null, projectId, relatedCodes: [],
     }
     const newLocalId = crypto.randomUUID()
-    // New draft goes to top; saved rows stay sorted
-    setRows(prev => [{ localId: newLocalId, requirement: newReq, status: 'draft' }, ...prev])
+    const newRow = { localId: newLocalId, requirement: newReq, status: 'draft' as RowStatus }
+    // Insert draft in sorted position so new RF-004 appears after RF-003, not at top
+    setRows(prev => {
+      const allReqs = sortRequirements([...prev.map(r => r.requirement), newReq])
+      const byCode = new Map([...prev.map(r => [r.requirement.code ?? r.localId, r] as const)])
+      return allReqs.map(req =>
+        (req.code === nextCode && !req.id)
+          ? newRow
+          : byCode.get(req.code ?? '') ?? prev.find(r => r.requirement.id === req.id) ?? newRow
+      )
+    })
     setSelectedLocalId(newLocalId)
     // Clear filters so the new row is visible
     setFilters(EMPTY_FILTERS)
@@ -218,12 +191,10 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
           const updated = prev.map(r =>
             r.localId === localId ? { ...r, requirement: saved, status: 'saved' as RowStatus, errorMessage: undefined } : r,
           )
-          // Re-sort after save so new items land in the right position
-          const drafts = updated.filter(r => !r.requirement.id && r.status !== 'saved')
-          const savedRows = sortRequirements(updated.filter(r => r.requirement.id || r.status === 'saved').map(r => r.requirement))
-            .map(req => updated.find(r => r.requirement.id === req.id)!)
-            .filter(Boolean)
-          return [...drafts, ...savedRows]
+          // Re-sort ALL rows together (drafts + saved) so newly saved items land in correct position
+          const allReqs = sortRequirements(updated.map(r => r.requirement))
+          const byLocalId = new Map(updated.map(r => [r.requirement.id || r.localId, r] as const))
+          return allReqs.map(req => byLocalId.get(req.id || '') ?? byLocalId.get(updated.find(r => r.requirement.code === req.code)?.localId ?? '') ?? updated.find(r => r.requirement.code === req.code)!).filter(Boolean)
         })
         onRequirementsChange?.()
       } else {
@@ -240,17 +211,17 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     const row = rows.find(r => r.localId === localId)
     if (!row) return
     const { requirement } = row
+    if (!requirement.id) return // disabled for drafts
     if (!requirement.title.trim() && !requirement.description.trim()) {
       setRowStatus(localId, 'incomplete', 'Escribe algo primero')
       return
     }
-    setRowStatus(localId, 'checking')
+    setRowStatus(localId, 'checking') // Use 'checking' to denote loading AI
     try {
-      const text = `Código: ${requirement.code}\nTítulo: ${requirement.title}\nDescripción: ${requirement.description}`
-      const improved = await requirementFacade.convertManualRequirement(text, projectId)
+      const improved = await requirementFacade.improveRequirement(requirement)
       if (improved) {
         setAiPreview({ current: requirement, suggested: improved, localId })
-        setRowStatus(localId, 'draft')
+        setRowStatus(localId, 'saved') // restore status, let the modal handle applying
       } else {
         setRowStatus(localId, 'error', 'IA no respondió')
       }
@@ -259,24 +230,94 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     }
   }
 
+  // ── Duplicates ───────────────────────────────────────────────────────────
+
+  const handleCheckDuplicates = async (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row) return
+    const { requirement } = row
+    if (!requirement.title.trim() && !requirement.description.trim()) {
+      setRowStatus(localId, 'incomplete', 'Escribe algo primero')
+      return
+    }
+    setRowStatus(localId, 'checking')
+    try {
+      const matches = await requirementFacade.checkDuplicates({
+        projectId,
+        title: requirement.title,
+        description: requirement.description
+      })
+      setRowStatus(localId, row.status === 'checking' ? 'draft' : row.status)
+      setDuplicatePreview({ localId, matches })
+    } catch {
+      setRowStatus(localId, 'error', 'Error al verificar duplicados')
+    }
+  }
+
+  const handleEvaluateRules = async (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row) return
+    setRowStatus(localId, 'checking')
+    try {
+      const response = await requirementFacade.evaluateRequirementAgainstRules(row.requirement, projectId)
+      setProceduralViolations(prev => {
+        const next = new Map(prev)
+        next.set(localId, response.violations)
+        return next
+      })
+      setRowStatus(localId, row.requirement.id ? 'saved' : 'draft')
+    } catch {
+      setRowStatus(localId, 'error', 'Error al validar reglas')
+    }
+  }
+
+  // ── Memory ───────────────────────────────────────────────────────────────
+
+  const handleViewMemory = async (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row || !row.requirement.id) return
+    setRowStatus(localId, 'checking')
+    try {
+      const memory = await requirementFacade.getRequirementMemory(row.requirement.id)
+      setRowStatus(localId, row.status === 'checking' ? 'saved' : row.status)
+      setMemoryPreview({ localId, memory })
+    } catch {
+      setRowStatus(localId, 'error', 'Error al cargar memoria')
+    }
+  }
+
+  const handleManageTraceability = (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row || !row.requirement.id) return
+    setTraceabilityPreview({ localId, requirement: row.requirement })
+  }
+
   const applyAiImprovement = () => {
     if (!aiPreview) return
     const { suggested, localId } = aiPreview
     setRows(prev => prev.map(r =>
       r.localId === localId
-        ? { ...r, requirement: { ...r.requirement, ...suggested, code: r.requirement.code }, status: 'ai_improved' }
+        ? { ...r, requirement: { ...r.requirement, ...suggested, id: r.requirement.id, code: r.requirement.code }, status: 'ai_improved' }
         : r,
     ))
     setAiPreview(null)
   }
 
   // ── Delete ───────────────────────────────────────────────────────────────
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleDeleteRequest = (localId: string) => {
+  const handleDeleteRequest = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
     if (!row) return
     if (row.requirement.id) {
-      setDeleteConfirm({ localId, requirement: row.requirement })
+      setRowStatus(localId, 'checking')
+      try {
+        const impact = await requirementFacade.getRequirementDeleteImpact(row.requirement.id)
+        setRowStatus(localId, 'saved')
+        setDeleteConfirm({ localId, requirement: row.requirement, impact })
+      } catch {
+        setRowStatus(localId, 'error', 'Error al calcular impacto')
+      }
     } else {
       setRows(prev => prev.filter(r => r.localId !== localId))
       if (selectedLocalId === localId) setSelectedLocalId(null)
@@ -287,14 +328,17 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     if (!deleteConfirm) return
     const { localId, requirement } = deleteConfirm
     setRowStatus(localId, 'saving')
-    setDeleteConfirm(null)
+    setIsDeleting(true)
     try {
       await requirementFacade.deleteRequirement(requirement.id!)
       setRows(prev => prev.filter(r => r.localId !== localId))
       if (selectedLocalId === localId) setSelectedLocalId(null)
       onRequirementsChange?.()
+      setDeleteConfirm(null)
     } catch {
       setRowStatus(localId, 'error', 'Error al borrar')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -326,13 +370,13 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
       </div>
 
       {/* Filter bar */}
-      <FilterBar
+      <RequirementFiltersBar
         filters={filters}
-        onChange={setFilters}
-        actors={uniqueActors(rows)}
-        isoClasses={uniqueIsoClasses(rows)}
+        options={filterOptions}
+        onFiltersChange={setFilters}
         totalShown={visibleRows.length}
         totalAll={rows.length}
+        showRnfFilters={false}
       />
 
       <div className="relative flex-1 flex">
@@ -356,13 +400,28 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
                   {visibleRows.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-24 text-center">
-                        <div className="flex flex-col items-center gap-3 opacity-30">
-                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <p className="text-sm italic font-medium">
-                            {isFiltering ? 'Sin resultados para los filtros actuales' : 'No hay requisitos funcionales en este proyecto'}
-                          </p>
+                        <div className="flex flex-col items-center gap-3">
+                          {isFiltering ? (
+                            <>
+                              <svg className="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                              </svg>
+                              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Ningún requisito coincide con los filtros actuales</p>
+                              <button
+                                onClick={() => setFilters(EMPTY_FILTERS)}
+                                className="text-xs text-[var(--color-accent)] hover:underline font-medium"
+                              >
+                                Limpiar filtros
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-12 h-12 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <p className="text-sm italic font-medium opacity-30">No hay requisitos funcionales en este proyecto</p>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -375,11 +434,16 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
                         status={row.status}
                         errorMessage={row.errorMessage}
                         isSelected={selectedLocalId === row.localId}
+                        qualityIssues={qualityMap.get(row.localId)}
                         onUpdate={updates => updateRow(row.localId, updates)}
                         onSave={() => handleSave(row.localId)}
-                        onImprove={() => handleImprove(row.localId)}
+                        onImprove={() => setAiPreview({ current: row.requirement, suggested: row.requirement, localId: row.localId })}
+                        onCheckDuplicates={() => handleCheckDuplicates(row.localId)}
+                        onViewMemory={() => handleViewMemory(row.localId)}
+                        onEvaluateRules={() => handleEvaluateRules(row.localId)}
+                        onManageTraceability={() => handleManageTraceability(row.localId)}
                         onDelete={() => handleDeleteRequest(row.localId)}
-                        onSelect={() => setSelectedLocalId(row.localId)}
+                        onSelect={() => setSelectedLocalId(row.localId === selectedLocalId ? null : row.localId)}
                       />
                     ))
                   )}
@@ -422,6 +486,50 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
           suggested={aiPreview.suggested}
           onApply={applyAiImprovement}
           onCancel={() => setAiPreview(null)}
+        />
+      )}
+
+      {duplicatePreview && (
+        <RequirementSimilarityPanel
+          matches={duplicatePreview.matches}
+          onClose={() => setDuplicatePreview(null)}
+          onImproveWithAi={() => {
+            const lid = duplicatePreview.localId
+            setDuplicatePreview(null)
+            handleImprove(lid)
+          }}
+        />
+      )}
+
+      {memoryPreview && (
+        <RequirementMemoryPanel
+          memory={memoryPreview.memory}
+          onClose={() => setMemoryPreview(null)}
+          qualityIssues={qualityMap.get(memoryPreview.localId)}
+        />
+      )}
+
+      {traceabilityPreview && (
+        <RequirementTraceabilityPanel
+          requirement={traceabilityPreview.requirement}
+          onClose={() => setTraceabilityPreview(null)}
+        />
+      )}
+
+      {deleteConfirm && deleteConfirm.impact && (
+        <RequirementDeleteImpactModal
+          impact={deleteConfirm.impact}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {deleteConfirm && !deleteConfirm.impact && (
+        <DeleteConfirmationModal
+          requirement={deleteConfirm.requirement}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
         />
       )}
     </div>

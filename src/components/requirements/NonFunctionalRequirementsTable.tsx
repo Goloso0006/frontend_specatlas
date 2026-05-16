@@ -1,10 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { requirementFacade } from '../../facades/requirement.facade'
 import { generateNextCode } from '../../utils/requirementCodeUtils'
 import { sortRequirements } from '../../utils/requirementSortUtils'
 import { DeleteConfirmationModal } from './DeleteConfirmationModal'
+import { RequirementDeleteImpactModal } from './RequirementDeleteImpactModal'
 import { RequirementAiImprovePreview } from './RequirementAiImprovePreview'
-import type { RequirementDTO, NonFunctionalDetailDTO } from '../../types/requirements'
+import { RequirementSimilarityPanel } from './RequirementSimilarityPanel'
+import { RequirementMemoryPanel } from './RequirementMemoryPanel'
+import { RequirementFiltersBar } from './RequirementFiltersBar'
+import { RequirementTraceabilityPanel } from './RequirementTraceabilityPanel'
+import { RequirementQualityBadge } from './RequirementQualityBadge'
+import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
+import { validateNonFunctionalDetail } from '../../utils/nonFunctionalRequirementValidator'
+import {
+  EMPTY_FILTERS,
+  buildFilterOptions,
+  filterRequirements,
+  hasActiveFilters,
+  type RequirementFilters,
+} from '../../utils/requirementFilterUtils'
+import type { RequirementDTO, NonFunctionalDetailDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse, RuleViolation } from '../../types/requirements'
 
 type RowStatus = 'draft' | 'saved' | 'saving' | 'error' | 'incomplete' | 'ai_improved' | 'checking'
 
@@ -81,72 +96,8 @@ const EMPTY_DETAIL: NonFunctionalDetailDTO = {
   context: '',
 }
 
-interface FilterState {
-  search: string
-  category: string
-  metric: string
-  verification: string
-}
-const EMPTY_FILTERS: FilterState = { search: '', category: '', metric: '', verification: '' }
-
 function toRows(reqs: RequirementDTO[]): TableRow[] {
   return sortRequirements(reqs).map(r => ({ localId: r.id || crypto.randomUUID(), requirement: r, status: 'saved' as RowStatus }))
-}
-
-function applyFilters(rows: TableRow[], f: FilterState): TableRow[] {
-  return rows.filter(({ requirement: r }) => {
-    if (f.search) {
-      const q = f.search.toLowerCase()
-      if (!r.code?.toLowerCase().includes(q) && !r.title?.toLowerCase().includes(q) && !r.description?.toLowerCase().includes(q)) return false
-    }
-    if (f.category && r.nonFunctionalDetail?.category !== f.category) return false
-    if (f.metric) {
-      if (!r.nonFunctionalDetail?.metricName?.toLowerCase().includes(f.metric.toLowerCase())) return false
-    }
-    if (f.verification) {
-      if (!r.nonFunctionalDetail?.verificationMethod?.toLowerCase().includes(f.verification.toLowerCase())) return false
-    }
-    return true
-  })
-}
-
-function uniqueCategories(rows: TableRow[]): string[] {
-  const set = new Set<string>()
-  rows.forEach(r => r.requirement.nonFunctionalDetail?.category && set.add(r.requirement.nonFunctionalDetail.category))
-  return [...set].sort()
-}
-
-function NfFilterBar({ filters, onChange, categories, totalShown, totalAll }: {
-  filters: FilterState; onChange: (f: FilterState) => void
-  categories: string[]; totalShown: number; totalAll: number
-}) {
-  const isActive = Object.values(filters).some(v => v !== '')
-  const inp = 'h-7 px-2.5 text-[11px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] placeholder:text-[var(--color-text-muted)]'
-  return (
-    <div className="flex flex-wrap items-center gap-2 px-2 py-2 bg-[var(--color-surface)]/40 border border-[var(--color-border)] rounded-xl">
-      <svg className="w-3.5 h-3.5 text-[var(--color-text-muted)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-      </svg>
-      <input value={filters.search} onChange={e => onChange({ ...filters, search: e.target.value })} placeholder="Buscar código, título, descripción…" className={`${inp} w-52`} />
-      {categories.length > 0 && (
-        <select value={filters.category} onChange={e => onChange({ ...filters, category: e.target.value })} className={`${inp} cursor-pointer`}>
-          <option value="">Todas las categorías</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      )}
-      <input value={filters.metric} onChange={e => onChange({ ...filters, metric: e.target.value })} placeholder="Métrica…" className={`${inp} w-32`} />
-      <input value={filters.verification} onChange={e => onChange({ ...filters, verification: e.target.value })} placeholder="Verificación…" className={`${inp} w-32`} />
-      {isActive && (
-        <button onClick={() => onChange(EMPTY_FILTERS)} className="h-7 px-2.5 text-[11px] rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors font-medium flex items-center gap-1">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          Limpiar
-        </button>
-      )}
-      <span className="ml-auto text-[10px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-        {isActive ? `${totalShown} / ${totalAll}` : `${totalAll} total`}
-      </span>
-    </div>
-  )
 }
 
 interface Props {
@@ -157,21 +108,81 @@ interface Props {
 
 export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, initialRequirements, onRequirementsChange }) => {
   const [rows, setRows] = useState<TableRow[]>(() => toRows(initialRequirements))
-  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
+  const [filters, setFilters] = useState<RequirementFilters>(EMPTY_FILTERS)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ localId: string; requirement: RequirementDTO; impact?: RequirementDeleteImpactResponse } | null>(null)
   const [aiPreview, setAiPreview] = useState<{ current: RequirementDTO; suggested: RequirementDTO; localId: string } | null>(null)
+  const [duplicatePreview, setDuplicatePreview] = useState<{ localId: string; matches: any[] } | null>(null)
+  const [memoryPreview, setMemoryPreview] = useState<{ localId: string; memory: RequirementMemoryResponse } | null>(null)
+  const [proceduralViolations, setProceduralViolations] = useState<Map<string, RuleViolation[]>>(new Map())
+  const [traceabilityPreview, setTraceabilityPreview] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
 
   // Fix: sync rows when parent refetches (re-entering the screen)
+  // Merge all rows (drafts + saved) sorted by code, preserving unsaved drafts
   useEffect(() => {
     setRows(prev => {
       const drafts = prev.filter(r => !r.requirement.id && r.status !== 'saved')
-      return [...drafts, ...toRows(initialRequirements)]
+      const savedReqs = toRows(initialRequirements)
+      // Combine drafts with saved rows and sort everything together by code
+      const allReqs = [
+        ...drafts.map(d => d.requirement),
+        ...savedReqs.map(s => s.requirement),
+      ]
+      const sortedReqs = sortRequirements(allReqs)
+      const byId = new Map([
+        ...drafts.map(d => [d.requirement.code ?? d.localId, d] as const),
+        ...savedReqs.map(s => [s.requirement.id ?? s.localId, s] as const),
+      ])
+      return sortedReqs.map(req => {
+        const key = req.id || req.code || ''
+        return byId.get(key) ?? savedReqs.find(s => s.requirement.id === req.id || s.requirement.code === req.code) ?? drafts.find(d => d.requirement.code === req.code) ?? { localId: crypto.randomUUID(), requirement: req, status: 'saved' as RowStatus }
+      })
     })
   }, [initialRequirements])
 
-  const visibleRows = applyFilters(rows, filters)
-  const isFiltering = Object.values(filters).some(v => v !== '')
+  // Filter options derived from full rows (stable while filters are active)
+  const filterOptions = useMemo(
+    () => buildFilterOptions(rows.map(r => r.requirement)),
+    [rows],
+  )
+
+  // visibleRows: apply shared filter logic, preserve sorted order
+  const visibleRows = useMemo(() => {
+    const reqs = filterRequirements(rows.map(r => r.requirement), filters)
+    const reqIds = new Set(reqs.map(r => r.id || r.code))
+    return rows.filter(r => reqIds.has(r.requirement.id || r.requirement.code))
+  }, [rows, filters])
+
+  const isFiltering = hasActiveFilters(filters)
+
+  // ── Live quality analysis ──────────────────────────────────────────────────
+  // Pure local analysis, no backend calls, no AI. keyed by localId.
+  const qualityMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof analyzeRequirementText>>()
+    for (const row of rows) {
+      const localIssues = analyzeRequirementText({
+        title: row.requirement.title,
+        description: row.requirement.description,
+        acceptanceCriteria: row.requirement.acceptanceCriteria,
+        requirementType: row.requirement.requirementType ?? 'NON_FUNCTIONAL',
+      })
+      
+      const violations = proceduralViolations.get(row.localId) || []
+      const proceduralIssues = violations.map(v => ({
+        id: `rule-${v.ruleId}-${crypto.randomUUID().slice(0, 8)}`,
+        ruleId: v.ruleId,
+        severity: v.severity.toLowerCase() as any,
+        field: 'procedural' as any,
+        message: v.message,
+        suggestion: `Regla: ${v.ruleName}`
+      }))
+
+      const detailIssues = validateNonFunctionalDetail(row.requirement)
+
+      map.set(row.localId, [...localIssues, ...proceduralIssues, ...detailIssues])
+    }
+    return map
+  }, [rows, proceduralViolations])
 
   const updateRow = (localId: string, updates: Partial<RequirementDTO>) =>
     setRows(prev => prev.map(r => r.localId === localId ? { ...r, requirement: { ...r.requirement, ...updates }, status: r.status === 'saved' ? 'draft' : r.status } : r))
@@ -195,7 +206,17 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
       nonFunctionalDetail: { ...EMPTY_DETAIL }, projectId, relatedCodes: [],
     }
     const lid = crypto.randomUUID()
-    setRows(prev => [{ localId: lid, requirement: req, status: 'draft' }, ...prev])
+    const newRow = { localId: lid, requirement: req, status: 'draft' as RowStatus }
+    // Insert draft in sorted position so RNF-003 appears after RNF-002, not at top
+    setRows(prev => {
+      const allReqs = sortRequirements([...prev.map(r => r.requirement), req])
+      const byCode = new Map([...prev.map(r => [r.requirement.code ?? r.localId, r] as const)])
+      return allReqs.map(r =>
+        (r.code === code && !r.id)
+          ? newRow
+          : byCode.get(r.code ?? '') ?? prev.find(p => p.requirement.id === r.id) ?? newRow
+      )
+    })
     setExpandedId(lid)
     setFilters(EMPTY_FILTERS) // clear filters so new row is visible
   }
@@ -215,10 +236,10 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
       if (saved) {
         setRows(prev => {
           const updated = prev.map(r => r.localId === localId ? { ...r, requirement: saved, status: 'saved' as RowStatus, errorMessage: undefined } : r)
-          const drafts = updated.filter(r => !r.requirement.id && r.status !== 'saved')
-          const savedRows = sortRequirements(updated.filter(r => r.requirement.id || r.status === 'saved').map(r => r.requirement))
-            .map(req => updated.find(r => r.requirement.id === req.id)!).filter(Boolean)
-          return [...drafts, ...savedRows]
+          // Re-sort ALL rows together (drafts + saved) so newly saved items land in correct position
+          const allReqs = sortRequirements(updated.map(r => r.requirement))
+          const byLocalId = new Map(updated.map(r => [r.requirement.id || r.localId, r] as const))
+          return allReqs.map(req => byLocalId.get(req.id || '') ?? byLocalId.get(updated.find(r => r.requirement.code === req.code)?.localId ?? '') ?? updated.find(r => r.requirement.code === req.code)!).filter(Boolean)
         })
         onRequirementsChange?.()
       } else setStatus(localId, 'error', 'Error al guardar')
@@ -229,43 +250,111 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
 
   const handleImprove = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
-    if (!row) return
-    setStatus(localId, 'checking')
+    if (!row || !row.requirement.id) return // disabled for drafts
+    setStatus(localId, 'checking') // Use checking to denote loading
     try {
-      const text = `Código: ${row.requirement.code}\nTítulo: ${row.requirement.title}\nDescripción: ${row.requirement.description}`
-      const improved = await requirementFacade.convertManualRequirement(text, projectId)
+      const improved = await requirementFacade.improveRequirement(row.requirement)
       if (improved) {
         setAiPreview({ current: row.requirement, suggested: improved, localId })
-        setStatus(localId, 'draft')
+        setStatus(localId, 'saved') // restore status, let modal handle apply
       } else setStatus(localId, 'error', 'IA no respondió')
     } catch { setStatus(localId, 'error', 'Error IA') }
   }
 
-  const handleDeleteRequest = (localId: string) => {
+  const handleCheckDuplicates = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
     if (!row) return
-    if (row.requirement.id) setDeleteConfirm({ localId, requirement: row.requirement })
-    else { setRows(prev => prev.filter(r => r.localId !== localId)); if (expandedId === localId) setExpandedId(null) }
+    const { requirement } = row
+    if (!requirement.title.trim() && !requirement.description.trim()) {
+      setStatus(localId, 'incomplete', 'Escribe algo primero')
+      return
+    }
+    setStatus(localId, 'checking')
+    try {
+      const matches = await requirementFacade.checkDuplicates({
+        projectId,
+        title: requirement.title,
+        description: requirement.description
+      })
+      setStatus(localId, row.status === 'checking' ? 'draft' : row.status)
+      setDuplicatePreview({ localId, matches })
+    } catch {
+      setStatus(localId, 'error', 'Error al verificar duplicados')
+    }
+  }
+
+  const handleViewMemory = async (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row || !row.requirement.id) return
+    setStatus(localId, 'checking')
+    try {
+      const memory = await requirementFacade.getRequirementMemory(row.requirement.id)
+      setStatus(localId, row.status === 'checking' ? 'saved' : row.status)
+      setMemoryPreview({ localId, memory })
+    } catch {
+      setStatus(localId, 'error', 'Error al cargar memoria')
+    }
+  }
+
+  const handleManageTraceability = (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row || !row.requirement.id) return
+    setTraceabilityPreview({ localId, requirement: row.requirement })
+  }
+
+  const handleEvaluateRules = async (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row) return
+    setStatus(localId, 'checking')
+    try {
+      const response = await requirementFacade.evaluateRequirementAgainstRules(row.requirement, projectId)
+      setProceduralViolations(prev => {
+        const next = new Map(prev)
+        next.set(localId, response.violations)
+        return next
+      })
+      setStatus(localId, row.requirement.id ? 'saved' : 'draft')
+    } catch {
+      setStatus(localId, 'error', 'Error al validar reglas')
+    }
+  }
+
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteRequest = async (localId: string) => {
+    const row = rows.find(r => r.localId === localId)
+    if (!row) return
+    if (row.requirement.id) {
+      setStatus(localId, 'checking')
+      try {
+        const impact = await requirementFacade.getRequirementDeleteImpact(row.requirement.id)
+        setStatus(localId, 'saved')
+        setDeleteConfirm({ localId, requirement: row.requirement, impact })
+      } catch {
+        setStatus(localId, 'error', 'Error al calcular impacto')
+      }
+    } else {
+      setRows(prev => prev.filter(r => r.localId !== localId))
+      if (expandedId === localId) setExpandedId(null)
+    }
   }
 
   const confirmDelete = async () => {
     if (!deleteConfirm) return
     const { localId, requirement } = deleteConfirm
-    setStatus(localId, 'saving'); setDeleteConfirm(null)
+    setStatus(localId, 'saving')
+    setIsDeleting(true)
     try {
       await requirementFacade.deleteRequirement(requirement.id!)
       setRows(prev => prev.filter(r => r.localId !== localId))
       if (expandedId === localId) setExpandedId(null)
       onRequirementsChange?.()
-    } catch { setStatus(localId, 'error', 'Error al borrar') }
-  }
-
-  const applyAi = () => {
-    if (!aiPreview) return
-    setRows(prev => prev.map(r => r.localId === aiPreview.localId
-      ? { ...r, requirement: { ...r.requirement, ...aiPreview.suggested, code: r.requirement.code }, status: 'ai_improved' }
-      : r))
-    setAiPreview(null)
+      setDeleteConfirm(null)
+    } catch {
+      setStatus(localId, 'error', 'Error al borrar')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const statusBadge = (status: RowStatus) => {
@@ -297,7 +386,14 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
       </div>
 
       {/* Filter bar */}
-      <NfFilterBar filters={filters} onChange={setFilters} categories={uniqueCategories(rows)} totalShown={visibleRows.length} totalAll={rows.length} />
+      <RequirementFiltersBar
+        filters={filters}
+        options={filterOptions}
+        onFiltersChange={setFilters}
+        totalShown={visibleRows.length}
+        totalAll={rows.length}
+        showRnfFilters={true}
+      />
 
       {/* Table */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl shadow-xl overflow-hidden">
@@ -316,9 +412,28 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
             <tbody>
               {visibleRows.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-24 text-center">
-                  <div className="flex flex-col items-center gap-3 opacity-30">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                    <p className="text-sm italic font-medium">{isFiltering ? 'Sin resultados para los filtros actuales' : 'No hay requisitos no funcionales en este proyecto'}</p>
+                  <div className="flex flex-col items-center gap-3">
+                    {isFiltering ? (
+                      <>
+                        <svg className="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                        </svg>
+                        <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Ningún requisito coincide con los filtros actuales</p>
+                        <button
+                          onClick={() => setFilters(EMPTY_FILTERS)}
+                          className="text-xs text-[var(--color-accent)] hover:underline font-medium"
+                        >
+                          Limpiar filtros
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-12 h-12 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <p className="text-sm italic font-medium opacity-30">No hay requisitos no funcionales en este proyecto</p>
+                      </>
+                    )}
                   </div>
                 </td></tr>
               ) : visibleRows.map(row => {
@@ -345,14 +460,38 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                         {row.requirement.description && <p className="text-[11px] text-[var(--color-text-muted)] truncate mt-0.5 px-0.5">{row.requirement.description}</p>}
                       </td>
                       <td className="px-4 py-3 text-[11px] text-[var(--color-text-secondary)] font-mono">{metricLabel}</td>
-                      <td className="px-4 py-3">{statusBadge(row.status)}{row.errorMessage && <p className="text-[9px] text-rose-500 mt-0.5">{row.errorMessage}</p>}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col gap-1">
+                          {statusBadge(row.status)}
+                          {row.errorMessage && <p className="text-[9px] text-rose-500 mt-0.5">{row.errorMessage}</p>}
+                          {/* Quality badge — purely informational, never blocks save */}
+                          {(() => {
+                            const qi = qualityMap.get(row.localId)
+                            return qi && qi.length > 0 ? <RequirementQualityBadge issues={qi} /> : null
+                          })()}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={e => { e.stopPropagation(); handleSave(row.localId) }} disabled={row.status === 'saving'} title="Guardar" className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                           </button>
-                          <button onClick={e => { e.stopPropagation(); handleImprove(row.localId) }} disabled={row.status === 'saving'} title="Mejorar con IA" className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-500/10 transition-colors disabled:opacity-30">
+                          <button onClick={e => { e.stopPropagation(); handleImprove(row.localId) }} disabled={row.status === 'saving' || !row.requirement.id} title={!row.requirement.id ? "Guarda el requisito antes de mejorarlo con IA" : "Mejorar con IA"} className={`p-1.5 rounded-lg text-purple-600 hover:bg-purple-500/10 transition-colors disabled:opacity-30 ${!row.requirement.id ? 'cursor-not-allowed' : ''}`}>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); handleCheckDuplicates(row.localId) }} disabled={row.status === 'saving'} title="Verificar duplicados" className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); handleViewMemory(row.localId) }} disabled={row.status === 'saving' || !row.requirement.id} title={!row.requirement.id ? "Guarda el requisito antes de consultar su memoria" : "Ver memoria"} className={`p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-500/10 transition-colors disabled:opacity-30 ${!row.requirement.id ? 'cursor-not-allowed' : ''}`}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); handleEvaluateRules(row.localId) }} disabled={row.status === 'saving'} title="Validar reglas del proyecto" className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); handleManageTraceability(row.localId) }} disabled={row.status === 'saving' || !row.requirement.id} title={!row.requirement.id ? "Guarda el requisito antes de gestionar trazabilidad" : "Gestionar trazabilidad"} className={`p-1.5 rounded-lg text-cyan-600 hover:bg-cyan-500/10 transition-colors disabled:opacity-30 ${!row.requirement.id ? 'cursor-not-allowed' : ''}`}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
                           </button>
                           <button onClick={e => { e.stopPropagation(); handleDeleteRequest(row.localId) }} disabled={row.status === 'saving'} title="Eliminar" className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-500/10 transition-colors disabled:opacity-30">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -430,7 +569,58 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
       </div>
 
       {deleteConfirm && <DeleteConfirmationModal requirement={deleteConfirm.requirement} onConfirm={confirmDelete} onCancel={() => setDeleteConfirm(null)} />}
-      {aiPreview && <RequirementAiImprovePreview current={aiPreview.current} suggested={aiPreview.suggested} onApply={applyAi} onCancel={() => setAiPreview(null)} />}
+      {aiPreview && (
+        <RequirementAiImprovePreview
+          current={aiPreview.current}
+          suggested={aiPreview.suggested}
+          onCancel={() => setAiPreview(null)}
+          onApply={() => {
+            setRows(prev => prev.map(r => r.localId === aiPreview.localId ? { ...r, requirement: { ...r.requirement, ...aiPreview.suggested, id: r.requirement.id, code: r.requirement.code }, status: 'ai_improved' } : r))
+            setAiPreview(null)
+          }}
+        />
+      )}
+      {duplicatePreview && (
+        <RequirementSimilarityPanel
+          matches={duplicatePreview.matches}
+          onClose={() => setDuplicatePreview(null)}
+          onImproveWithAi={() => {
+            const lid = duplicatePreview.localId
+            setDuplicatePreview(null)
+            handleImprove(lid)
+          }}
+        />
+      )}
+      {deleteConfirm && deleteConfirm.impact && (
+        <RequirementDeleteImpactModal
+          impact={deleteConfirm.impact}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+          isDeleting={isDeleting}
+        />
+      )}
+      {deleteConfirm && !deleteConfirm.impact && (
+        <DeleteConfirmationModal
+          requirement={deleteConfirm.requirement}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {memoryPreview && (
+        <RequirementMemoryPanel
+          memory={memoryPreview.memory}
+          onClose={() => setMemoryPreview(null)}
+          qualityIssues={[]}
+        />
+      )}
+
+      {traceabilityPreview && (
+        <RequirementTraceabilityPanel
+          requirement={traceabilityPreview.requirement}
+          onClose={() => setTraceabilityPreview(null)}
+        />
+      )}
     </div>
   )
 }

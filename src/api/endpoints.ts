@@ -12,6 +12,9 @@ export const endpoints = {
     base: '/api/requirements',
     convert: '/api/requirements/convert',
     convertBatch: '/api/requirements/convert-batch',
+    improve: '/api/requirements/improve',
+    memory: (id: string) => `/api/requirements/${id}/memory`,
+    deleteImpact: (id: string) => `/api/requirements/${id}/delete-impact`,
     save: '/api/requirements/save',
     byId: (id: string) => `/api/requirements/${id}`,
     byProject: (projectId: string) => `/api/requirements/project/${projectId}`,
@@ -20,6 +23,13 @@ export const endpoints = {
     impact: (id: string) => `/api/requirements/${id}/impact`,
     dependency: '/api/requirements/dependency',
     conflicts: (id: string) => `/api/requirements/${id}/conflicts`,
+  },
+  validationRules: {
+    base: '/api/validation-rules',
+    byId: (id: string) => `/api/validation-rules/${id}`,
+    byProject: (projectId: string) => `/api/validation-rules/project/${projectId}`,
+    toggle: (id: string) => `/api/validation-rules/${id}/toggle`,
+    evaluate: '/api/validation-rules/evaluate-requirement',
   },
   diagrams: {
     base: '/api/diagrams',
@@ -38,9 +48,15 @@ export const endpoints = {
     impact: (id: string) => `/api/graph/impact/${id}`,
     inferRelations: (projectId: string) => `/api/graph/infer-relations/${projectId}`,
   },
-  validationRules: {
-    base: '/api/validation-rules',
-    byId: (id: string) => `/api/validation-rules/${id}`,
-    byProject: (projectId: string) => `/api/validation-rules/project/${projectId}`,
+  traceability: {
+    base: '/api/traceability',
+    byRequirement: (id: string) => `/api/traceability/requirement/${id}`,
+    byProject: (projectId: string) => `/api/traceability/project/${projectId}`,
+    byId: (id: string) => `/api/traceability/${id}`,
+  },
+  testCases: {
+    base: '/api/test-cases',
+    byProject: (projectId: string) => `/api/test-cases/project/${projectId}`,
+    byId: (id: string) => `/api/test-cases/${id}`,
   },
 } as const

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import { RequirementQualityBadge } from './RequirementQualityBadge'
+import type { RequirementQualityIssue } from '../../utils/requirementQualityAnalyzer'
 import type { RequirementDTO } from '../../types/requirements'
 
 export type RowStatus = 'draft' | 'saved' | 'incomplete' | 'ai_improved' | 'error' | 'saving' | 'checking'
@@ -9,9 +11,15 @@ export interface EditableRequirementRowProps {
   status: RowStatus
   errorMessage?: string
   isSelected?: boolean
+  /** Live quality issues from the local analyzer. Displayed as a badge — never blocks save. */
+  qualityIssues?: RequirementQualityIssue[]
   onUpdate: (updates: Partial<RequirementDTO>) => void
   onSave: () => void
   onImprove: () => void
+  onCheckDuplicates?: () => void
+  onViewMemory?: () => void
+  onEvaluateRules?: () => void
+  onManageTraceability?: () => void
   onDelete: () => void
   onSelect: () => void
 }
@@ -21,9 +29,14 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
   status,
   errorMessage,
   isSelected,
+  qualityIssues,
   onUpdate,
   onSave,
   onImprove,
+  onCheckDuplicates,
+  onViewMemory,
+  onEvaluateRules,
+  onManageTraceability,
   onDelete,
   onSelect
 }) => {
@@ -123,7 +136,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
         </span>
       </td>
 
-      {/* Estado */}
+      {/* Estado + calidad */}
       <td className="px-4 py-3 w-28 align-top">
         <div className="flex flex-col gap-1 mt-1">
           <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md inline-block w-fit shadow-sm ${
@@ -148,6 +161,10 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
               {errorMessage}
             </span>
           )}
+          {/* Quality badge — purely informational, never blocks save */}
+          {qualityIssues && qualityIssues.length > 0 && (
+            <RequirementQualityBadge issues={qualityIssues} />
+          )}
         </div>
       </td>
 
@@ -166,12 +183,56 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onImprove(); }}
-            disabled={status === 'saving'}
-            title="Mejorar con IA"
-            className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-500/10 transition-colors disabled:opacity-30"
+            disabled={status === 'saving' || !requirement.id}
+            title={!requirement.id ? "Guarda el requisito antes de mejorarlo con IA" : "Mejorar con IA"}
+            className={`p-1.5 rounded-lg text-purple-600 hover:bg-purple-500/10 transition-colors disabled:opacity-30 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </button>
+          {onCheckDuplicates && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCheckDuplicates(); }}
+              disabled={status === 'saving'}
+              title="Verificar duplicados"
+              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onViewMemory?.(); }}
+            disabled={status === 'saving' || !requirement.id}
+            title={!requirement.id ? "Guarda el requisito antes de consultar su memoria" : "Ver memoria del requisito"}
+            className={`p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-500/10 transition-colors disabled:opacity-30 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </button>
+          {onEvaluateRules && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEvaluateRules(); }}
+              disabled={status === 'saving'}
+              title="Validar reglas del proyecto"
+              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onManageTraceability?.(); }}
+            disabled={status === 'saving' || !requirement.id}
+            title={!requirement.id ? "Guarda el requisito antes de gestionar trazabilidad" : "Gestionar trazabilidad"}
+            className={`p-1.5 rounded-lg text-cyan-600 hover:bg-cyan-500/10 transition-colors disabled:opacity-30 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
           </button>
           <button

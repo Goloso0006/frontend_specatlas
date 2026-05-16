@@ -43,13 +43,20 @@ export function adaptRequirementNode(response: Partial<RequirementNode> | null |
 }
 
 export function adaptDuplicateMatchResponse(
-  response: Partial<DuplicateMatchResponse> | null | undefined,
+  // @ts-ignore - allow legacy requirementCode if backend hasn't updated
+  response: Partial<DuplicateMatchResponse & { requirementCode?: string }> | null | undefined,
 ): DuplicateMatchResponse {
   return {
     requirementId: normalizeString(response?.requirementId),
-    requirementCode: normalizeString(response?.requirementCode),
+    code: normalizeString(response?.code || response?.requirementCode),
     title: normalizeString(response?.title),
+    description: response?.description ? normalizeString(response.description) : undefined,
+    requirementType: response?.requirementType,
     similarity: normalizeNumber(response?.similarity),
+    similarityPercentage: response?.similarityPercentage ? normalizeNumber(response.similarityPercentage) : undefined,
+    level: response?.level,
+    explanation: response?.explanation ? normalizeString(response.explanation) : undefined,
+    recommendation: response?.recommendation ? normalizeString(response.recommendation) : undefined,
   }
 }
 

@@ -227,9 +227,9 @@ export const DuplicateWarningPanel: React.FC<DuplicateWarningPanelProps> = ({
               key={dup.requirementId}
               className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)]"
             >
-              {dup.requirementCode && (
+              {dup.code && (
                 <span className="flex-shrink-0 inline-flex items-center h-5 px-1.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--color-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)] mt-0.5">
-                  {dup.requirementCode}
+                  {dup.code}
                 </span>
               )}
               <div className="flex-1 min-w-0">

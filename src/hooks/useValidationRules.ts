@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react'
-import { validationRuleFacade } from '../facades/validationRule.facade'
+import { requirementFacade } from '../facades/requirement.facade'
 import { useApiOperation } from './useLoadingError'
 import { isValidProjectId } from '../context/ProjectContext'
-import type { ValidationRuleRequest, ValidationRuleResponse } from '../types/validationRules'
+import type { ValidationRule } from '../types/requirements'
 
 export function useValidationRules(projectId: string) {
-  const EMPTY_RULE: ValidationRuleRequest = {
+  const EMPTY_RULE: ValidationRule = {
     projectId,
     name: '',
     description: '',
-    ruleType: '',
-    condition: '',
-    severity: 'WARN',
-    enabled: true,
+    type: 'AMBIGUOUS_TERMS',
+    target: 'BOTH',
+    severity: 'WARNING',
+    active: true,
   }
 
-  const [form, setForm] = useState<ValidationRuleRequest>(EMPTY_RULE)
-  const [rules, setRules] = useState<ValidationRuleResponse[]>([])
+  const [form, setForm] = useState<ValidationRule>(EMPTY_RULE)
+  const [rules, setRules] = useState<ValidationRule[]>([])
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null)
   const { run, isLoading } = useApiOperation()
 
@@ -29,7 +29,7 @@ export function useValidationRules(projectId: string) {
 
   async function handleList() {
     await run(async () => {
-      const data = await validationRuleFacade.getRulesByProject(projectId)
+      const data = await requirementFacade.listValidationRules(projectId)
       setRules(data)
     })
   }
@@ -37,16 +37,16 @@ export function useValidationRules(projectId: string) {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     
-    if (!form.name.trim() || !form.ruleType.trim() || !form.condition.trim() || !form.description.trim()) {
-      alert('Todos los campos son obligatorios.')
+    if (!form.name.trim() || !form.description.trim()) {
+      alert('Nombre y descripción son obligatorios.')
       return
     }
 
     await run(async () => {
       if (selectedRuleId) {
-        await validationRuleFacade.updateRule(selectedRuleId, form)
+        await requirementFacade.updateValidationRule(selectedRuleId, form)
       } else {
-        await validationRuleFacade.createRule(form)
+        await requirementFacade.createValidationRule(form)
       }
       await handleList()
       handleReset()
@@ -56,22 +56,30 @@ export function useValidationRules(projectId: string) {
   async function handleDelete(id: string) {
     if (!window.confirm('¿Eliminar esta regla?')) return
     await run(async () => {
-      await validationRuleFacade.deleteRule(id)
+      await requirementFacade.deleteValidationRule(id)
       await handleList()
       if (selectedRuleId === id) handleReset()
     })
   }
 
-  function handleSelect(rule: ValidationRuleResponse) {
-    setSelectedRuleId(rule.id)
+  async function handleToggle(id: string) {
+    await run(async () => {
+      await requirementFacade.toggleValidationRule(id)
+      await handleList()
+    })
+  }
+
+  function handleSelect(rule: ValidationRule) {
+    setSelectedRuleId(rule.id || null)
     setForm({
       projectId: rule.projectId,
       name: rule.name,
       description: rule.description,
-      ruleType: rule.ruleType,
-      condition: rule.condition,
+      type: rule.type,
+      target: rule.target,
       severity: rule.severity,
-      enabled: rule.enabled,
+      active: rule.active,
+      config: rule.config,
     })
   }
 
@@ -80,7 +88,7 @@ export function useValidationRules(projectId: string) {
     setForm(EMPTY_RULE)
   }
 
-  function setFormValue<K extends keyof ValidationRuleRequest>(key: K, value: ValidationRuleRequest[K]) {
+  function setFormValue<K extends keyof ValidationRule>(key: K, value: ValidationRule[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
@@ -92,6 +100,7 @@ export function useValidationRules(projectId: string) {
     isLoading,
     handleSave,
     handleDelete,
+    handleToggle,
     handleSelect,
     handleReset,
   }

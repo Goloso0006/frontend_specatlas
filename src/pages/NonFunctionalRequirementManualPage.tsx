@@ -1,43 +1,103 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { requirementFacade } from '../facades/requirement.facade'
-import { useApiOperation } from '../hooks/useLoadingError'
 import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { NonFunctionalRequirementsTable } from '../components/requirements/NonFunctionalRequirementsTable'
+import { sortRequirements } from '../utils/requirementSortUtils'
 import type { RequirementDTO } from '../types/requirements'
 
 export function NonFunctionalRequirementManualPage() {
   const { projectId: routeProjectId } = useParams()
   const { projectId: contextProjectId } = useProject()
-  const { run, isLoading } = useApiOperation()
 
   const projectId = routeProjectId ?? contextProjectId ?? ''
 
   const [requirements, setRequirements] = useState<RequirementDTO[]>([])
-  const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [showInstructions, setShowInstructions] = useState(true)
 
-  const loadRequirements = useCallback(async (activeProjectId: string) => {
-    const data = await run(
-      () => requirementFacade.getRequirementsByProject(activeProjectId, 'NON_FUNCTIONAL'),
-      { errorMessage: 'Error al cargar los requisitos no funcionales.' }
-    )
-    if (data) {
-      setRequirements(data)
-      setInitialLoadDone(true)
-    }
-  }, [run])
+  // ── Primary load effect ──────────────────────────────────────────────────
+  // Runs whenever projectId changes (navigation, route param change).
+  // Uses a cancellation flag to avoid stale responses overwriting fresh data.
 
   useEffect(() => {
-    if (isValidProjectId(projectId)) {
-      void loadRequirements(projectId)
+    if (!isValidProjectId(projectId)) {
+      setRequirements([])
+      setLoadError(null)
+      return
     }
-  }, [projectId, loadRequirements])
+
+    let cancelled = false
+
+    async function load() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const data = await requirementFacade.getRequirementsByProject(projectId, 'NON_FUNCTIONAL')
+        if (!cancelled) {
+          setRequirements(sortRequirements(Array.isArray(data) ? data : []))
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError('No fue posible cargar los requisitos no funcionales. Intenta de nuevo.')
+          setRequirements([])
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [projectId])
+
+  // ── Reload callback (used after create/update/delete in the table) ───────
+
+  function reloadRequirements() {
+    if (!isValidProjectId(projectId)) return
+
+    let cancelled = false
+
+    async function load() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const data = await requirementFacade.getRequirementsByProject(projectId, 'NON_FUNCTIONAL')
+        if (!cancelled) {
+          setRequirements(sortRequirements(Array.isArray(data) ? data : []))
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError('No fue posible recargar los requisitos.')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }
+
+  // ── Guard ──────────────────────────────────────────────────────────────
 
   if (!isValidProjectId(projectId)) {
     return <NoProjectSelected message="Selecciona un proyecto para gestionar sus requisitos no funcionales." />
   }
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)] flex flex-col">
@@ -118,16 +178,26 @@ export function NonFunctionalRequirementManualPage() {
 
       {/* MAIN */}
       <main className="flex-1 px-6 py-6 overflow-x-hidden">
-        {!initialLoadDone && isLoading ? (
+        {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
             <div className="w-12 h-12 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-[var(--color-text-muted)] font-medium">Cargando requisitos no funcionales…</p>
+          </div>
+        ) : loadError ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <p className="text-sm text-rose-500 font-medium">{loadError}</p>
+            <button
+              onClick={reloadRequirements}
+              className="px-4 py-2 text-sm font-bold rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all"
+            >
+              Reintentar
+            </button>
           </div>
         ) : (
           <NonFunctionalRequirementsTable
             projectId={projectId}
             initialRequirements={requirements}
-            onRequirementsChange={() => loadRequirements(projectId)}
+            onRequirementsChange={reloadRequirements}
           />
         )}
       </main>

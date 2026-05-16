@@ -17,6 +17,7 @@ export function ValidationRulesPage() {
     isLoading,
     handleSave,
     handleDelete,
+    handleToggle,
     handleSelect,
     handleReset,
   } = useValidationRules(projectId)
@@ -33,6 +34,7 @@ export function ValidationRulesPage() {
           selectedRuleId={selectedRuleId}
           onSelect={handleSelect}
           onDelete={handleDelete}
+          onToggle={handleToggle}
         />
         
         <ValidationRuleForm

@@ -15,8 +15,14 @@ import type {
   DuplicateMatchResponse,
   RequirementBatchResponse,
   RequirementDTO,
+  RequirementMemoryResponse,
+  RequirementDeleteImpactResponse,
   RequirementNode,
   SearchResponse,
+  ValidationRule,
+  EvaluationResponse,
+  TraceabilityLink,
+  TestCase,
 } from '../../types/requirements'
 import type { ImpactGraphResponse } from '../../types/graph'
 
@@ -44,6 +50,28 @@ export const requirementsApi = {
       warnings: unwrapped.warnings || [],
       sourceSummary: unwrapped.sourceSummary || ''
     }
+  },
+
+  async improve(payload: RequirementDTO): Promise<RequirementDTO> {
+    const data = await httpProxy.post<RequirementDTO | ApiResponse<RequirementDTO>>(
+      endpoints.requirements.improve,
+      payload,
+    )
+    return adaptRequirementDTO(unwrapData(data))
+  },
+
+  async getMemory(id: string): Promise<RequirementMemoryResponse> {
+    const data = await httpProxy.get<RequirementMemoryResponse | ApiResponse<RequirementMemoryResponse>>(
+      endpoints.requirements.memory(id),
+    )
+    return unwrapData(data)
+  },
+
+  async getDeleteImpact(id: string): Promise<RequirementDeleteImpactResponse> {
+    const data = await httpProxy.get<RequirementDeleteImpactResponse | ApiResponse<RequirementDeleteImpactResponse>>(
+      endpoints.requirements.deleteImpact(id),
+    )
+    return unwrapData(data)
   },
 
   async save(payload: RequirementDTO): Promise<RequirementDTO> {
@@ -105,8 +133,8 @@ export const requirementsApi = {
     return adaptRequirementNodeList(unwrapData(data))
   },
 
-  async deleteById(requirementId: string): Promise<void> {
-    await httpProxy.delete(endpoints.requirements.byId(requirementId))
+  async delete(id: string): Promise<void> {
+    await httpProxy.delete(endpoints.requirements.byId(id))
   },
 
   async getGraphImpact(requirementId: string): Promise<ImpactGraphResponse> {
@@ -116,3 +144,106 @@ export const requirementsApi = {
     return unwrapData(data)
   },
 }
+
+export const validationRulesApi = {
+  async listByProject(projectId: string): Promise<ValidationRule[]> {
+    const data = await httpProxy.get<ValidationRule[] | ApiResponse<ValidationRule[]>>(
+      endpoints.validationRules.byProject(projectId),
+    )
+    return unwrapData(data)
+  },
+
+  async create(payload: ValidationRule): Promise<ValidationRule> {
+    const data = await httpProxy.post<ValidationRule | ApiResponse<ValidationRule>>(
+      endpoints.validationRules.base,
+      payload,
+    )
+    return unwrapData(data)
+  },
+
+  async update(id: string, payload: Partial<ValidationRule>): Promise<ValidationRule> {
+    const data = await httpProxy.put<ValidationRule | ApiResponse<ValidationRule>>(
+      `${endpoints.validationRules.base}/${id}`,
+      payload,
+    )
+    return unwrapData(data)
+  },
+
+  async delete(id: string): Promise<void> {
+    await httpProxy.delete(`${endpoints.validationRules.base}/${id}`)
+  },
+
+  async toggle(id: string): Promise<ValidationRule> {
+    const data = await httpProxy.post<ValidationRule | ApiResponse<ValidationRule>>(
+      endpoints.validationRules.toggle(id),
+      {},
+    )
+    return unwrapData(data)
+  },
+
+  async evaluate(requirement: RequirementDTO, projectId: string): Promise<EvaluationResponse> {
+    const data = await httpProxy.post<EvaluationResponse | ApiResponse<EvaluationResponse>>(
+      endpoints.validationRules.evaluate,
+      { requirement, projectId },
+    )
+    return unwrapData(data)
+  },
+}
+
+export const traceabilityApi = {
+  async getByRequirement(requirementId: string): Promise<TraceabilityLink[]> {
+    const data = await httpProxy.get<TraceabilityLink[] | ApiResponse<TraceabilityLink[]>>(
+      endpoints.traceability.byRequirement(requirementId),
+    )
+    return unwrapData(data)
+  },
+
+  async listByProject(projectId: string): Promise<TraceabilityLink[]> {
+    const data = await httpProxy.get<TraceabilityLink[] | ApiResponse<TraceabilityLink[]>>(
+      endpoints.traceability.byProject(projectId),
+    )
+    return unwrapData(data)
+  },
+
+  async create(payload: TraceabilityLink): Promise<TraceabilityLink> {
+    const data = await httpProxy.post<TraceabilityLink | ApiResponse<TraceabilityLink>>(
+      endpoints.traceability.base,
+      payload,
+    )
+    return unwrapData(data)
+  },
+
+  async delete(id: string): Promise<void> {
+    await httpProxy.delete(endpoints.traceability.byId(id))
+  },
+}
+
+export const testCasesApi = {
+  async listByProject(projectId: string): Promise<TestCase[]> {
+    const data = await httpProxy.get<TestCase[] | ApiResponse<TestCase[]>>(
+      endpoints.testCases.byProject(projectId),
+    )
+    return unwrapData(data)
+  },
+
+  async create(payload: TestCase): Promise<TestCase> {
+    const data = await httpProxy.post<TestCase | ApiResponse<TestCase>>(
+      endpoints.testCases.base,
+      payload,
+    )
+    return unwrapData(data)
+  },
+
+  async update(id: string, payload: Partial<TestCase>): Promise<TestCase> {
+    const data = await httpProxy.put<TestCase | ApiResponse<TestCase>>(
+      endpoints.testCases.byId(id),
+      payload,
+    )
+    return unwrapData(data)
+  },
+
+  async delete(id: string): Promise<void> {
+    await httpProxy.delete(endpoints.testCases.byId(id))
+  },
+}
+

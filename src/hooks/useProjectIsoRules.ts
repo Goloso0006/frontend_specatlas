@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApiOperation } from './useLoadingError'
-import { validationRuleFacade } from '../facades/validationRule.facade'
+import { requirementFacade } from '../facades/requirement.facade'
 import { isValidProjectId } from '../context/ProjectContext'
 import {
   ISO_PRESETS,
@@ -9,7 +9,7 @@ import {
   getPresetWithRules,
   searchIsoRules,
 } from '../constants/validationRuleTemplates'
-import type { ValidationRuleRequest } from '../types/validationRules'
+import type { ValidationRule } from '../types/requirements'
 
 type IsoRulesDraft = {
   manualSelectedRuleIds: string[]
@@ -172,7 +172,7 @@ export function useProjectIsoRules(projectId: string | undefined) {
       }
 
       try {
-        const existing = await validationRuleFacade.getRulesByProject(projectId)
+        const existing = await requirementFacade.listValidationRules(projectId)
         if (existing.length > 0) {
           const ids = existing
             .map((rule) => ISO_RULE_CATALOG.find((candidate) => candidate.code === rule.name)?.id)
@@ -232,17 +232,18 @@ export function useProjectIsoRules(projectId: string | undefined) {
 
     await run(
       async () => {
-        const rulesToCreate: ValidationRuleRequest[] = selectedRules.map((rule) => ({
+        const rulesToCreate: ValidationRule[] = selectedRules.map((rule) => ({
           projectId,
           name: rule.code,
           description: rule.description,
-          ruleType: rule.ruleType,
-          condition: rule.condition,
-          severity: rule.level === 'essential' ? 'ERROR' : 'WARN',
-          enabled: true,
+          type: rule.ruleType as any,
+          target: 'BOTH',
+          severity: rule.level === 'essential' ? 'ERROR' : 'WARNING',
+          active: true,
+          config: rule.condition,
         }))
 
-        await Promise.all(rulesToCreate.map((rule) => validationRuleFacade.createRule(rule)))
+        await Promise.all(rulesToCreate.map((rule) => requirementFacade.createValidationRule(rule)))
 
         try {
           localStorage.removeItem(`iso_rules_draft_${projectId}`)

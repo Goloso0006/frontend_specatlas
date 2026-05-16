@@ -25,7 +25,8 @@ function extractCodePrefix(code: string | undefined | null): string {
  * Stable sort for requirements:
  * 1. Sort by code prefix (RF before RNF alphabetically)
  * 2. Then by numeric part ascending (RF-001 < RF-002 < RF-010)
- * 3. Fallback: requirements without valid codes sort last
+ * 3. Fallback to createdAt ASC for requirements without valid numeric codes
+ * 4. If createdAt is also missing, preserve stable original order
  *
  * Does NOT mutate the original array.
  */
@@ -34,6 +35,10 @@ export function sortRequirements(requirements: RequirementDTO[]): RequirementDTO
     const prefixA = extractCodePrefix(a.code)
     const prefixB = extractCodePrefix(b.code)
 
+    // Requirements without any code prefix sort last
+    if (!prefixA && prefixB) return 1
+    if (prefixA && !prefixB) return -1
+
     if (prefixA !== prefixB) {
       return prefixA.localeCompare(prefixB)
     }
@@ -41,9 +46,20 @@ export function sortRequirements(requirements: RequirementDTO[]): RequirementDTO
     const numA = extractCodeNumber(a.code)
     const numB = extractCodeNumber(b.code)
 
-    if (numA !== numB) return numA - numB
+    if (numA !== numB) {
+      // Both Infinity (unparseable) → fall through to createdAt
+      if (numA !== Infinity && numB !== Infinity) return numA - numB
+    } else if (numA !== Infinity) {
+      // Same valid number, preserve order
+      return 0
+    }
 
-    // Fallback: preserve original relative order (stable sort)
+    // Fallback: sort by createdAt ASC for requirements without valid codes
+    const dateA = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : Infinity
+    const dateB = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : Infinity
+    if (dateA !== dateB) return dateA - dateB
+
+    // Stable fallback: preserve original relative order
     return 0
   })
 }

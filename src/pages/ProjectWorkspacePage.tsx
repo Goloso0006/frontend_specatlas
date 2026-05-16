@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { projectFacade } from '../facades/project.facade'
 import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { useApiOperation } from '../hooks/useLoadingError'
-import { validationRuleFacade } from '../facades/validationRule.facade'
+import { requirementFacade } from '../facades/requirement.facade'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import type { ProjectResponse } from '../types/projects'
 
@@ -24,7 +24,7 @@ export function ProjectWorkspacePage() {
       const skipKey = `iso_rules_skipped_${projectId}`
       const skipped = localStorage.getItem(skipKey)
       if (skipped !== '1') {
-        const validationRules = await validationRuleFacade.getRulesByProject(projectId)
+        const validationRules = await requirementFacade.listValidationRules(projectId)
 
         // If the project does not yet have ISO rules saved, return to the onboarding step.
         if (validationRules.length === 0) {

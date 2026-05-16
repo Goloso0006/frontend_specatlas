@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { projectFacade } from '../facades/project.facade'
-import { validationRuleFacade } from '../facades/validationRule.facade'
+import { requirementFacade } from '../facades/requirement.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { isValidProjectId } from '../context/ProjectContext'
 import type { ProjectResponse } from '../types/projects'
-import type { ValidationRuleResponse } from '../types/validationRules'
+import type { ValidationRule } from '../types/requirements'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
 
@@ -13,7 +13,7 @@ export function ProjectInfoPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectResponse | null>(null)
-  const [rules, setRules] = useState<ValidationRuleResponse[]>([])
+  const [rules, setRules] = useState<ValidationRule[]>([])
   const { run } = useApiOperation()
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function ProjectInfoPage() {
     run(async () => {
       const [projData, rulesData] = await Promise.all([
         projectFacade.getProject(projectId),
-        validationRuleFacade.getRulesByProject(projectId)
+        requirementFacade.listValidationRules(projectId)
       ])
       setProject(projData)
       setRules(rulesData)
@@ -89,7 +89,7 @@ export function ProjectInfoPage() {
                 <div key={rule.id} className="p-4 bg-white dark:bg-[#1e1e1e] border border-app-border rounded-xl">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="font-semibold">{rule.name}</h3>
-                    <Badge variant={rule.severity === 'ERROR' ? 'danger' : rule.severity === 'WARN' ? 'warning' : 'neutral'}>
+                    <Badge variant={rule.severity === 'ERROR' ? 'danger' : rule.severity === 'WARNING' ? 'warning' : 'neutral'}>
                       {rule.severity}
                     </Badge>
                   </div>

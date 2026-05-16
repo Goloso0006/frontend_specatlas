@@ -40,7 +40,7 @@ export function DuplicateList({ results }: { results: DuplicateMatchResponse[] }
         <DataCard
           key={item.requirementId}
           title={item.title}
-          subtitle={item.requirementCode}
+          subtitle={item.code}
         >
           <SimilarityBadge value={item.similarity} />
         </DataCard>

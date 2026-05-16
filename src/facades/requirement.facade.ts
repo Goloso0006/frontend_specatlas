@@ -1,11 +1,17 @@
-import { requirementsApi } from '../api/services/requirementsApi'
+import { requirementsApi, validationRulesApi, traceabilityApi, testCasesApi } from '../api/services/requirementsApi'
 import type {
   DuplicateCheckRequest,
   DuplicateMatchResponse,
   RequirementBatchResponse,
   RequirementDTO,
+  RequirementMemoryResponse,
+  RequirementDeleteImpactResponse,
   RequirementNode,
   SearchResponse,
+  ValidationRule,
+  EvaluationResponse,
+  TraceabilityLink,
+  TestCase,
 } from '../types/requirements'
 
 import type { ImpactGraphResponse } from '../types/graph'
@@ -65,6 +71,32 @@ export class RequirementFacade {
   }
 
   /**
+   * Improves a requirement's content via AI.
+   * Sends the current requirement state and returns the AI's improved proposal.
+   * Does NOT persist automatically.
+   */
+  async improveRequirement(dto: RequirementDTO): Promise<RequirementDTO> {
+    return this.api.improve({
+      ...dto,
+      projectId: dto.projectId.trim(),
+    })
+  }
+
+  /**
+   * Retrieves the intelligent memory for a specific requirement.
+   */
+  async getRequirementMemory(requirementId: string): Promise<RequirementMemoryResponse> {
+    return this.api.getMemory(requirementId)
+  }
+
+  /**
+   * Retrieves the impact of deleting a requirement.
+   */
+  async getRequirementDeleteImpact(requirementId: string): Promise<RequirementDeleteImpactResponse> {
+    return this.api.getDeleteImpact(requirementId)
+  }
+
+  /**
    * Retrieves all requirements for a given project, optionally filtered by type or category.
    */
   async getRequirementsByProject(projectId: string, requirementType?: string, category?: string): Promise<RequirementDTO[]> {
@@ -118,7 +150,7 @@ export class RequirementFacade {
    * Permanently deletes a requirement by its ID.
    */
   async deleteRequirement(requirementId: string): Promise<void> {
-    return this.api.deleteById(requirementId.trim())
+    return this.api.delete(requirementId.trim())
   }
   
   /**
@@ -126,6 +158,68 @@ export class RequirementFacade {
    */
   async getGraphImpact(requirementId: string): Promise<ImpactGraphResponse> {
     return this.api.getGraphImpact(requirementId)
+  }
+
+  // ── Validation Rules ───────────────────────────────────────────────────
+
+  async listValidationRules(projectId: string): Promise<ValidationRule[]> {
+    return validationRulesApi.listByProject(projectId)
+  }
+
+  async createValidationRule(payload: ValidationRule): Promise<ValidationRule> {
+    return validationRulesApi.create(payload)
+  }
+
+  async updateValidationRule(id: string, payload: Partial<ValidationRule>): Promise<ValidationRule> {
+    return validationRulesApi.update(id, payload)
+  }
+
+  async deleteValidationRule(id: string): Promise<void> {
+    return validationRulesApi.delete(id)
+  }
+
+  async toggleValidationRule(id: string): Promise<ValidationRule> {
+    return validationRulesApi.toggle(id)
+  }
+
+  async evaluateRequirementAgainstRules(requirement: RequirementDTO, projectId: string): Promise<EvaluationResponse> {
+    return validationRulesApi.evaluate(requirement, projectId)
+  }
+
+  // ── Traceability ─────────────────────────────────────────────────────
+
+  async getRequirementTraceability(requirementId: string): Promise<TraceabilityLink[]> {
+    return traceabilityApi.getByRequirement(requirementId)
+  }
+
+  async listProjectTraceabilityLinks(projectId: string): Promise<TraceabilityLink[]> {
+    return traceabilityApi.listByProject(projectId)
+  }
+
+  async createTraceabilityLink(payload: TraceabilityLink): Promise<TraceabilityLink> {
+    return traceabilityApi.create(payload)
+  }
+
+  async deleteTraceabilityLink(linkId: string): Promise<void> {
+    return traceabilityApi.delete(linkId)
+  }
+
+  // ── Test Cases ───────────────────────────────────────────────────────
+
+  async listTestCases(projectId: string): Promise<TestCase[]> {
+    return testCasesApi.listByProject(projectId)
+  }
+
+  async createTestCase(payload: TestCase): Promise<TestCase> {
+    return testCasesApi.create(payload)
+  }
+
+  async updateTestCase(id: string, payload: Partial<TestCase>): Promise<TestCase> {
+    return testCasesApi.update(id, payload)
+  }
+
+  async deleteTestCase(id: string): Promise<void> {
+    return testCasesApi.delete(id)
   }
 
   // ── Orchestrated workflows ──

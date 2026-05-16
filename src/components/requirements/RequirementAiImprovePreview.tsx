@@ -1,5 +1,6 @@
 import React from 'react'
 import type { RequirementDTO } from '../../types/requirements'
+import { validateNonFunctionalDetail } from '../../utils/nonFunctionalRequirementValidator'
 
 interface RequirementAiImprovePreviewProps {
   current: RequirementDTO
@@ -14,6 +15,10 @@ export const RequirementAiImprovePreview: React.FC<RequirementAiImprovePreviewPr
   onApply,
   onCancel
 }) => {
+  const isRnf = suggested.requirementType === 'NON_FUNCTIONAL'
+  const suggestedIssues = isRnf ? validateNonFunctionalDetail(suggested) : []
+  const hasIncompleteRnf = suggestedIssues.length > 0
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -47,6 +52,17 @@ export const RequirementAiImprovePreview: React.FC<RequirementAiImprovePreviewPr
               <p className="text-xs leading-relaxed text-[var(--color-text-secondary)] whitespace-pre-wrap">
                 {current.description || '(Sin descripción)'}
               </p>
+              {isRnf && current.nonFunctionalDetail && (
+                <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Detalle RNF Actual</p>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--color-text-secondary)]">
+                    <div><span className="font-bold">Categoría:</span> {current.nonFunctionalDetail.category || '—'}</div>
+                    <div><span className="font-bold">Métrica:</span> {current.nonFunctionalDetail.metricName || '—'}</div>
+                    <div><span className="font-bold">Objetivo:</span> {current.nonFunctionalDetail.operator || ''} {current.nonFunctionalDetail.targetValue || ''} {current.nonFunctionalDetail.unit || ''}</div>
+                    <div className="col-span-2"><span className="font-bold">Verificación:</span> {current.nonFunctionalDetail.verificationMethod || '—'}</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -68,6 +84,25 @@ export const RequirementAiImprovePreview: React.FC<RequirementAiImprovePreviewPr
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {isRnf && suggested.nonFunctionalDetail && (
+                <div className="mt-4 pt-4 border-t border-[var(--color-accent)]/20">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-2">Detalle RNF Sugerido</p>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--color-text-primary)]">
+                    <div><span className="font-bold">Categoría:</span> {suggested.nonFunctionalDetail.category || '—'}</div>
+                    <div><span className="font-bold">Métrica:</span> {suggested.nonFunctionalDetail.metricName || '—'}</div>
+                    <div><span className="font-bold">Objetivo:</span> {suggested.nonFunctionalDetail.operator || ''} {suggested.nonFunctionalDetail.targetValue || ''} {suggested.nonFunctionalDetail.unit || ''}</div>
+                    <div className="col-span-2"><span className="font-bold">Verificación:</span> {suggested.nonFunctionalDetail.verificationMethod || '—'}</div>
+                    {suggested.nonFunctionalDetail.context && <div className="col-span-2"><span className="font-bold">Contexto:</span> {suggested.nonFunctionalDetail.context}</div>}
+                    {suggested.nonFunctionalDetail.rationale && <div className="col-span-2"><span className="font-bold">Justificación:</span> {suggested.nonFunctionalDetail.rationale}</div>}
+                  </div>
+                </div>
+              )}
+              {hasIncompleteRnf && (
+                <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2 text-amber-600">
+                  <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <p className="text-[10px] leading-tight">La propuesta de IA aún tiene detalles no funcionales incompletos. Puedes aplicarla y completar los campos manualmente.</p>
                 </div>
               )}
             </div>
