@@ -211,31 +211,49 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     const row = rows.find(r => r.localId === localId)
     if (!row) return
     const { requirement } = row
-    if (!requirement.id) return // disabled for drafts
-    if (!requirement.title.trim() && !requirement.description.trim()) {
-      setRowStatus(localId, 'incomplete', 'Escribe algo primero')
+    
+    // Draft protection: require saved requirement
+    if (!requirement.id) {
+      setRowStatus(localId, 'error', 'Guarda el requisito antes de mejorarlo con IA.')
       return
     }
     
-    // Ensure requirementType is set for the payload
-    const payload = { ...requirement, requirementType: 'FUNCTIONAL' as const }
+    // Content validation
+    if (!requirement.title.trim() && !requirement.description.trim()) {
+      setRowStatus(localId, 'error', 'El requisito debe tener título o descripción.')
+      return
+    }
     
-    setRowStatus(localId, 'checking') // Use 'checking' to denote loading AI
+    // Build payload with explicit requirementType for FUNCTIONAL requirements
+    const payload: RequirementDTO = {
+      ...requirement,
+      projectId: requirement.projectId.trim(),
+      requirementType: 'FUNCTIONAL',
+    }
+    
+    setRowStatus(localId, 'checking') // Use 'checking' to denote AI processing
     try {
       const improved = await requirementFacade.improveRequirement(payload)
       if (improved) {
         setAiPreview({ current: requirement, suggested: improved, localId })
         setRowStatus(localId, 'saved') // restore status, let the modal handle applying
       } else {
-        setRowStatus(localId, 'error', 'IA no respondió')
+        setRowStatus(localId, 'error', 'La IA no devolvió una propuesta válida.')
       }
     } catch (e: any) {
-      if (e.message === 'MISSING_REQUIREMENT_TYPE') {
-        setRowStatus(localId, 'error', 'No se pudo mejorar el requisito porque falta el tipo de requisito.')
-      } else if (e.status === 400 || e.statusCode === 400) {
-        setRowStatus(localId, 'error', e.message || 'La solicitud de mejora no es válida. Verifica que el requisito tenga proyecto, tipo y descripción.')
+      const errorMsg = e.message || 'Error al mejorar requisito'
+      
+      // Check if it's a 400 Bad Request from backend
+      if (e.status === 400 || e.statusCode === 400) {
+        setRowStatus(
+          localId,
+          'error',
+          'La solicitud de mejora no es válida. Verifica que el requisito tenga proyecto, tipo y descripción.'
+        )
+      } else if (errorMsg === 'MISSING_REQUIREMENT_TYPE') {
+        setRowStatus(localId, 'error', 'Tipo de requisito obligatorio.')
       } else {
-        setRowStatus(localId, 'error', e.message || 'Error IA')
+        setRowStatus(localId, 'error', errorMsg)
       }
     }
   }

@@ -75,10 +75,33 @@ export class RequirementFacade {
    * Improves a requirement's content via AI.
    * Sends the current requirement state and returns the AI's improved proposal.
    * Does NOT persist automatically.
+   * 
+   * Validation:
+   * - requirement.id must exist (draft protection)
+   * - projectId must exist
+   * - requirementType must be set to 'FUNCTIONAL' or 'NON_FUNCTIONAL'
+   * - title or description must exist
    */
   async improveRequirement(dto: RequirementDTO): Promise<RequirementDTO> {
+    // Validate required fields
+    const errors: string[] = []
+
+    if (!dto.id) {
+      errors.push('El requisito debe tener un ID (guarda primero).')
+    }
+    if (!dto.projectId || !dto.projectId.trim()) {
+      errors.push('El proyecto es obligatorio.')
+    }
     if (!dto.requirementType) {
-      throw new Error('MISSING_REQUIREMENT_TYPE')
+      errors.push('El tipo de requisito es obligatorio.')
+    }
+    const hasContent = (dto.title && dto.title.trim()) || (dto.description && dto.description.trim())
+    if (!hasContent) {
+      errors.push('El requisito debe tener al menos un título o descripción.')
+    }
+
+    if (errors.length > 0) {
+      throw new Error(errors.join(' '))
     }
 
     const response = await this.api.improve({
@@ -86,12 +109,14 @@ export class RequirementFacade {
       requirement: {
         ...dto,
         projectId: dto.projectId.trim(),
+        requirementType: dto.requirementType,
       }
     })
 
+    // Normalize response: support both improvedRequirement and improved fields
     const improved = response.improvedRequirement ?? response.improved
     if (!improved) {
-      throw new Error('IA no devolvió una propuesta válida')
+      throw new Error('La propuesta de IA no es válida.')
     }
 
     return adaptRequirementDTO(improved)

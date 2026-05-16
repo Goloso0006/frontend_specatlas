@@ -253,25 +253,42 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
     if (!row || !row.requirement.id) return // disabled for drafts
     const { requirement } = row
     
-    // Ensure requirementType is set for the payload
-    const payload = { ...requirement, requirementType: 'NON_FUNCTIONAL' as const }
+    // Content validation
+    if (!requirement.title.trim() && !requirement.description.trim()) {
+      setStatus(localId, 'error', 'El requisito debe tener título o descripción.')
+      return
+    }
     
-    setStatus(localId, 'checking') // Use checking to denote loading
+    // Build payload with explicit requirementType for NON_FUNCTIONAL requirements
+    const payload: RequirementDTO = {
+      ...requirement,
+      projectId: requirement.projectId.trim(),
+      requirementType: 'NON_FUNCTIONAL',
+    }
+    
+    setStatus(localId, 'checking') // Use 'checking' to denote AI processing
     try {
       const improved = await requirementFacade.improveRequirement(payload)
       if (improved) {
         setAiPreview({ current: requirement, suggested: improved, localId })
-        setStatus(localId, 'saved') // restore status, let modal handle apply
+        setStatus(localId, 'saved') // restore status, let the modal handle applying
       } else {
-        setStatus(localId, 'error', 'IA no respondió')
+        setStatus(localId, 'error', 'La IA no devolvió una propuesta válida.')
       }
     } catch (e: any) {
-      if (e.message === 'MISSING_REQUIREMENT_TYPE') {
-        setStatus(localId, 'error', 'No se pudo mejorar el requisito porque falta el tipo de requisito.')
-      } else if (e.status === 400 || e.statusCode === 400) {
-        setStatus(localId, 'error', e.message || 'La solicitud de mejora no es válida. Verifica que el requisito tenga proyecto, tipo y descripción.')
+      const errorMsg = e.message || 'Error al mejorar requisito'
+      
+      // Check if it's a 400 Bad Request from backend
+      if (e.status === 400 || e.statusCode === 400) {
+        setStatus(
+          localId,
+          'error',
+          'La solicitud de mejora no es válida. Verifica que el requisito tenga proyecto, tipo y descripción.'
+        )
+      } else if (errorMsg === 'MISSING_REQUIREMENT_TYPE') {
+        setStatus(localId, 'error', 'Tipo de requisito obligatorio.')
       } else {
-        setStatus(localId, 'error', e.message || 'Error IA')
+        setStatus(localId, 'error', errorMsg)
       }
     }
   }
