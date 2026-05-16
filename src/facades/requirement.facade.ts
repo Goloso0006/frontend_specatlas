@@ -104,14 +104,19 @@ export class RequirementFacade {
       throw new Error(errors.join(' '))
     }
 
-    const response = await this.api.improve({
+    const payload = {
       projectId: dto.projectId.trim(),
       requirement: {
         ...dto,
         projectId: dto.projectId.trim(),
         requirementType: dto.requirementType,
       }
-    })
+    }
+
+    // Debug: log the payload being sent to backend
+    console.log('🚀 AI improve payload:', payload)
+
+    const response = await this.api.improve(payload)
 
     // Normalize response: support both improvedRequirement and improved fields
     const improved = response.improvedRequirement ?? response.improved
