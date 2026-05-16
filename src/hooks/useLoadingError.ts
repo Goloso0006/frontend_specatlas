@@ -41,9 +41,11 @@ export function useApiOperation() {
         const result = await monitor.track(name, operation)
         return result
       } catch (error) {
-        const message =
-          options?.errorMessage ??
-          (error instanceof Error ? error.message : 'Ocurrió un error inesperado.')
+        const originalMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.'
+        const message = options?.errorMessage 
+          ? `${options.errorMessage} (Detalle: ${originalMessage})` 
+          : originalMessage
+        
         addError(message, options?.retry)
         return null
       } finally {

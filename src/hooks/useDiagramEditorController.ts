@@ -194,6 +194,13 @@ export function useDiagramEditorController(): DiagramEditorController {
     [run, syncDiagramResponse],
   )
 
+  // Sincronizar projectId con la ruta si cambia externamente
+  useEffect(() => {
+    if (routeProjectId && routeProjectId !== projectId) {
+      setProjectId(routeProjectId)
+    }
+  }, [routeProjectId, projectId])
+
   useEffect(() => {
     if (routeDiagramId) {
       handleLoadDiagram(routeDiagramId)
@@ -509,9 +516,7 @@ export function useDiagramEditorController(): DiagramEditorController {
       ? () => diagramFacade.generateClassDiagram(projectId.trim())
       : () => diagramFacade.generateUseCaseDiagram(projectId.trim())
 
-    const data = await run(generator, {
-      errorMessage: 'No fue posible generar el diagrama con IA. Verifica que el proyecto tenga requisitos definidos.',
-    })
+    const data = await run(generator)
     if (data) {
       const source = parseDiagramSource(data.sourceJson)
       const proposal = isClass
