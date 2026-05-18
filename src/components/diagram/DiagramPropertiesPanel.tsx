@@ -15,6 +15,8 @@ interface DiagramPropertiesPanelProps {
   onDeleteEdge: (id: string) => void
   /** Called when the X button is pressed — should close sidebar AND clear selection */
   onClose?: () => void
+  sidebarTabPreference?: string | null
+  setSidebarTabPreference?: (val: string | null) => void
 }
 
 export function DiagramPropertiesPanel({
@@ -30,6 +32,8 @@ export function DiagramPropertiesPanel({
   onDeleteNode,
   onDeleteEdge,
   onClose,
+  sidebarTabPreference,
+  setSidebarTabPreference,
 }: DiagramPropertiesPanelProps) {
 
   const handleClose = () => {
@@ -65,6 +69,8 @@ export function DiagramPropertiesPanel({
             onDeleteNode={onDeleteNode}
             onDeleteEdge={onDeleteEdge}
             onClose={handleClose}
+            sidebarTabPreference={sidebarTabPreference}
+            setSidebarTabPreference={setSidebarTabPreference}
           />
         </div>
       </aside>

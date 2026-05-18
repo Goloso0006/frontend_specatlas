@@ -17,6 +17,7 @@ export interface DiagramToolbarProps {
   onAddActor: () => void
   onAddUseCase: () => void
   onAddPackage: () => void
+  onAutoLayout?: () => void
 }
 
 export function DiagramToolbar({
@@ -25,6 +26,7 @@ export function DiagramToolbar({
   onAddActor,
   onAddUseCase,
   onAddPackage,
+  onAutoLayout,
 }: DiagramToolbarProps) {
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
@@ -117,6 +119,20 @@ export function DiagramToolbar({
       </div>
 
       <div className="w-8 h-px bg-slate-200 dark:bg-slate-800 my-2" />
+
+      {onAutoLayout && (
+        <button
+          onClick={onAutoLayout}
+          className="w-12 h-12 flex items-center justify-center rounded-xl bg-[var(--color-bg-card)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] hover:text-indigo-500 transition-all duration-300 shadow-md border border-[var(--color-border)]"
+          title="Reorganizar diagrama automáticamente"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+      )}
+
+
     </div>
   )
 }

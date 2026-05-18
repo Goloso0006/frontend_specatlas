@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { DiagramNodeDTO, DiagramClassNodeDTO, DiagramRelationDTO, DiagramType } from '../../types/diagrams'
 import { NodeEditor } from './NodeEditor'
 import { EdgeEditor } from './EdgeEditor'
@@ -22,6 +22,8 @@ export interface DiagramSidebarProps {
   onDeleteNode: (id: string) => void
   onDeleteEdge: (id: string) => void
   onClose?: () => void
+  sidebarTabPreference?: string | null
+  setSidebarTabPreference?: (val: string | null) => void
 }
 
 export function DiagramSidebar({
@@ -35,6 +37,8 @@ export function DiagramSidebar({
   onDeleteNode,
   onDeleteEdge,
   onClose,
+  sidebarTabPreference,
+  setSidebarTabPreference,
 }: DiagramSidebarProps) {
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
@@ -45,12 +49,25 @@ export function DiagramSidebar({
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
   const [isSubScreen, setIsSubScreen] = useState(false)
 
+  const prevSelectedNodeIdRef = useRef<string | null>(null)
+
   useEffect(() => {
-    setDraftNode(selectedNode)
-    setHasChanges(false)
-    setFeedbackMessage(null)
-    setIsSubScreen(false)
-  }, [selectedNode?.id, selectedNode])
+    // Only reset draftNode and hasChanges when switching to a DIFFERENT node
+    if (selectedNode?.id !== prevSelectedNodeIdRef.current) {
+      setDraftNode(selectedNode)
+      setHasChanges(false)
+      setFeedbackMessage(null)
+      setIsSubScreen(false)
+      prevSelectedNodeIdRef.current = selectedNode?.id ?? null
+    } else {
+      // ID is the same, but check if there was an external change (e.g., Undo/Redo)
+      // that makes selectedNode structurally different from our draftNode
+      if (selectedNode && JSON.stringify(selectedNode) !== JSON.stringify(draftNode)) {
+        setDraftNode(selectedNode)
+        setHasChanges(false)
+      }
+    }
+  }, [selectedNode, draftNode])
 
   useEffect(() => {
     setDraftEdge(selectedEdge)
@@ -64,13 +81,24 @@ export function DiagramSidebar({
   }
 
   const handleDraftNodeChange = (updated: DiagramNodeDTO) => {
+    if (import.meta.env.DEV) {
+      console.log("[METHOD_GENERATE_EDITOR_DRAFT]", (updated as any).methods)
+    }
     setDraftNode(updated)
     setHasChanges(true)
+    onUpdateNode(updated)
+    if (import.meta.env.DEV) {
+      console.log("[METHOD_GENERATE_NODE_DATA]", {
+        nodeId: updated.id,
+        methods: (updated as any).methods
+      })
+    }
   }
 
   const handleDraftEdgeChange = (updated: DiagramRelationDTO) => {
     setDraftEdge(updated)
     setHasChanges(true)
+    onUpdateEdge(updated)
   }
 
   const applyNodeChanges = () => {
@@ -161,36 +189,140 @@ export function DiagramSidebar({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
           {draftNode.kind === 'package' ? (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
               <Input
                 label="Nombre del Paquete"
                 value={draftNode.name}
                 onChange={(e) => handleDraftNodeChange({ ...draftNode, name: e.target.value })}
               />
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Color</label>
-                <input
-                  type="color"
-                  className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1"
-                  value={draftNode.style?.color || '#ffffff'}
-                  onChange={(e) => handleDraftNodeChange({
-                    ...draftNode,
-                    style: {
-                      width: draftNode.style?.width || 300,
-                      height: draftNode.style?.height || 200,
-                      color: e.target.value,
-                    },
-                  })}
-                />
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Preajustes de Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Azul', value: '#3b82f6' },
+                    { label: 'Verde', value: '#10b981' },
+                    { label: 'Gris', value: '#64748b' },
+                    { label: 'Violeta', value: '#8b5cf6' },
+                    { label: 'Rojo', value: '#ef4444' },
+                    { label: 'Dorado', value: '#d97706' },
+                  ].map(preset => (
+                    <button
+                      key={preset.value}
+                      onClick={() => handleDraftNodeChange({
+                        ...draftNode,
+                        style: {
+                          width: draftNode.style?.width || 300,
+                          height: draftNode.style?.height || 200,
+                          color: preset.value,
+                        },
+                      })}
+                      className={`w-6 h-6 rounded-full border border-zinc-200 dark:border-zinc-800 transition-all ${draftNode.style?.color === preset.value ? 'ring-2 ring-blue-500 scale-110 shadow' : 'hover:scale-105'}`}
+                      style={{ backgroundColor: preset.value }}
+                      title={preset.label}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    className="w-6 h-6 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white p-0.5 cursor-pointer"
+                    value={draftNode.style?.color || '#ffffff'}
+                    onChange={(e) => handleDraftNodeChange({
+                      ...draftNode,
+                      style: {
+                        width: draftNode.style?.width || 300,
+                        height: draftNode.style?.height || 200,
+                        color: e.target.value,
+                      },
+                    })}
+                    title="Color personalizado"
+                  />
+                </div>
               </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Descripción</label>
                 <textarea
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:border-blue-500 outline-none min-h-[100px]"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:border-blue-500 outline-none min-h-[80px]"
                   value={(draftNode as any).description || ''}
                   onChange={(e) => handleDraftNodeChange({ ...draftNode, description: e.target.value } as any)}
                   placeholder="Descripción del grupo..."
                 />
+              </div>
+
+              <label className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-850 cursor-pointer select-none nodrag">
+                <input
+                  type="checkbox"
+                  checked={!!(draftNode as any).locked}
+                  onChange={(e) => handleDraftNodeChange({ ...draftNode, locked: e.target.checked } as any)}
+                  className="w-4 h-4 text-blue-600 rounded border-zinc-300"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-350">Bloquear paquete</span>
+                  <span className="text-[9px] text-zinc-400">Previene arrastres o traslados en el lienzo</span>
+                </div>
+              </label>
+
+              {nodes.filter(n => (n as any).packageId === draftNode.id).length > 0 && (
+                <button
+                  onClick={() => {
+                    const contained = nodes.filter(n => (n as any).packageId === draftNode.id)
+                    if (contained.length === 0) return
+                    let minX = Infinity
+                    let maxX = -Infinity
+                    let minY = Infinity
+                    let maxY = -Infinity
+                    contained.forEach(node => {
+                      const w = node.kind === 'class' ? 260 : node.kind === 'useCase' ? 160 : 120
+                      const h = node.kind === 'class' ? 200 : node.kind === 'useCase' ? 80 : 120
+                      const x = node.position.x
+                      const y = node.position.y
+                      if (x < minX) minX = x
+                      if (x + w > maxX) maxX = x + w
+                      if (y < minY) minY = y
+                      if (y + h > maxY) maxY = y + h
+                    })
+                    handleDraftNodeChange({
+                      ...draftNode,
+                      position: { x: minX - 30, y: minY - 50 },
+                      style: {
+                        ...draftNode.style,
+                        width: maxX - minX + 60,
+                        height: maxY - minY + 80
+                      }
+                    })
+                  }}
+                  className="w-full py-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 rounded-xl font-bold text-xs hover:bg-blue-100 transition-colors"
+                >
+                  ⚡ Auto-ajustar a elementos hijos
+                </button>
+              )}
+
+              <div className="space-y-2 border-t border-zinc-100 dark:border-zinc-900 pt-3">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Elementos Contenidos</span>
+                <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar">
+                  {nodes.filter(n => (n as any).packageId === draftNode.id).map(child => (
+                    <div key={child.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 text-[11px]">
+                      <span className="font-bold text-zinc-700 dark:text-zinc-300 truncate pr-2">
+                        {child.name}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const updatedChild = {
+                            ...child,
+                            packageId: undefined
+                          }
+                          onUpdateNode(updatedChild)
+                        }}
+                        className="text-rose-500 hover:text-rose-600 font-bold shrink-0"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ))}
+                  {nodes.filter(n => (n as any).packageId === draftNode.id).length === 0 && (
+                    <p className="text-[11px] italic text-zinc-400 text-center py-2">Ningún elemento dentro del paquete</p>
+                  )}
+                </div>
               </div>
             </div>
           ) : isClass ? (
@@ -199,6 +331,8 @@ export function DiagramSidebar({
               nodes={nodes}
               onChange={handleDraftNodeChange}
               onSubScreenChange={setIsSubScreen}
+              initialTabPreference={sidebarTabPreference}
+              onClearTabPreference={() => setSidebarTabPreference?.(null)}
             />
           ) : isUseCase ? (
             <UseCaseNodeEditor
@@ -315,6 +449,7 @@ export function DiagramSidebar({
               edge={draftEdge}
               sourceName={sourceName}
               targetName={targetName}
+              nodes={nodes}
               onChange={handleDraftEdgeChange}
               onDelete={onDeleteEdge}
             />
@@ -324,6 +459,7 @@ export function DiagramSidebar({
               edge={draftEdge}
               sourceName={sourceName}
               targetName={targetName}
+              nodes={nodes}
               onChange={handleDraftEdgeChange}
               onDelete={onDeleteEdge}
             />

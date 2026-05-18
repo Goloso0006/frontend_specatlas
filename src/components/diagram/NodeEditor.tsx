@@ -80,7 +80,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
         <span>Derived from requirements</span>
         <input
           className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
-          value={node.derivedFromRequirements.join(', ')}
+          value={(node.derivedFromRequirements || []).join(', ')}
           onChange={(event) => {
             const next = event.target.value
             onChange({
@@ -139,7 +139,7 @@ export function NodeEditor({ node, onChange }: NodeEditorProps) {
         onAdd={() =>
           onChange({
             ...node,
-            methods: [...node.methods, { id: crypto.randomUUID(), name: 'nuevoMetodo', parameters: '', returnType: 'void', visibility: 'public' }],
+            methods: [...node.methods, { id: crypto.randomUUID(), name: 'nuevoMetodo', parameters: [], returnType: 'void', visibility: 'public' }],
           })
         }
       >

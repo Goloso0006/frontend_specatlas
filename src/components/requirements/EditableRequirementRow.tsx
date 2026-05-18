@@ -13,6 +13,8 @@ export interface EditableRequirementRowProps {
   isSelected?: boolean
   /** Live quality issues from the local analyzer. Displayed as a badge — never blocks save. */
   qualityIssues?: RequirementQualityIssue[]
+  duplicateInfo?: { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }
+  traceabilityCount?: number
   onUpdate: (updates: Partial<RequirementDTO>) => void
   onSave: () => void
   onImprove: () => void
@@ -30,6 +32,8 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
   errorMessage,
   isSelected,
   qualityIssues,
+  duplicateInfo,
+  traceabilityCount,
   onUpdate,
   onSave,
   onImprove,
@@ -41,6 +45,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
   onSelect
 }) => {
   const [actorsInput, setActorsInput] = useState((requirement.actors || []).join(', '))
+  const [showMenu, setShowMenu] = useState(false)
 
   // Sync actors input if requirement changes
   useEffect(() => {
@@ -89,6 +94,76 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
             }
           }}
         />
+
+        {/* Horizontal Badges */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2 px-2">
+          {/* Calidad Badge */}
+          {qualityIssues && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                onEvaluateRules?.()
+              }}
+              title="Click para revalidar reglas"
+              className={`cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
+                qualityIssues.length === 0
+                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                  : qualityIssues.some(q => q.severity === 'error')
+                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20'
+                  : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
+              }`}
+            >
+              <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+              {qualityIssues.length === 0
+                ? 'Calidad: OK'
+                : qualityIssues.some(q => q.severity === 'error')
+                ? `Reglas: ${qualityIssues.filter(q => q.severity === 'error').length} err`
+                : `Reglas: ${qualityIssues.filter(q => q.severity === 'warning').length} adv`
+              }
+            </span>
+          )}
+
+          {/* Duplicados Badge */}
+          {duplicateInfo && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                onCheckDuplicates?.()
+              }}
+              title="Click para reanalizar duplicados"
+              className={`cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
+                duplicateInfo.status === 'NONE'
+                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                  : duplicateInfo.status === 'LOW'
+                  ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20'
+                  : duplicateInfo.status === 'MEDIUM'
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
+                  : 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20'
+              }`}
+            >
+              <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+              {duplicateInfo.status === 'NONE' && 'Dups: Sin riesgo'}
+              {duplicateInfo.status === 'LOW' && `Dups: Bajo (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
+              {duplicateInfo.status === 'MEDIUM' && `Dups: Revisar (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
+              {duplicateInfo.status === 'HIGH' && `Dups: Alto (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
+            </span>
+          )}
+
+          {/* Trazabilidad Badge */}
+          {requirement.id && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                onManageTraceability?.()
+              }}
+              title="Click para gestionar trazabilidad"
+              className={`cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors bg-cyan-500/10 text-cyan-500 border-cyan-500/20 hover:bg-cyan-500/20`}
+            >
+              <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+              Traza: {traceabilityCount || 0}
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Descripción */}
@@ -170,91 +245,134 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
 
       {/* Acciones */}
       <td className="px-4 py-3 w-44 align-top">
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+        {showMenu && (
+          <div 
+            className="fixed inset-0 z-30 cursor-default" 
+            onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} 
+          />
+        )}
+        
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity mt-0.5 relative z-40">
+          {/* Primary Action: Guardar */}
           <button
             onClick={(e) => { e.stopPropagation(); onSave(); }}
-            disabled={status === 'saving'}
-            title="Guardar cambios"
+            disabled={status === 'saving' || status === 'saved'}
+            title={status === 'saved' ? "Guardado" : "Guardar cambios"}
             className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </button>
+
+          {/* Primary Action: Mejorar con IA */}
           <button
             onClick={(e) => { e.stopPropagation(); onImprove(); }}
             disabled={status === 'saving' || !requirement.id}
             title={!requirement.id ? "Guarda el requisito antes de mejorarlo con IA" : "Mejorar con IA"}
-            className={`p-1.5 rounded-lg text-purple-600 hover:bg-purple-500/10 transition-colors disabled:opacity-30 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
+            className="p-1.5 rounded-lg text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-30"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </button>
-          {onCheckDuplicates && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onCheckDuplicates(); }}
-              disabled={status === 'saving'}
-              title="Verificar duplicados"
-              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onViewMemory?.(); }}
-            disabled={status === 'saving' || !requirement.id}
-            title={!requirement.id ? "Guarda el requisito antes de consultar su memoria" : "Ver memoria del requisito"}
-            className={`p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-500/10 transition-colors disabled:opacity-30 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </button>
-          {onEvaluateRules && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEvaluateRules(); }}
-              disabled={status === 'saving'}
-              title="Validar reglas del proyecto"
-              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-          )}
+
+          {/* Primary Action: Trazabilidad */}
           <button
             onClick={(e) => { e.stopPropagation(); onManageTraceability?.(); }}
             disabled={status === 'saving' || !requirement.id}
-            title={!requirement.id ? "Guarda el requisito antes de gestionar trazabilidad" : "Gestionar trazabilidad"}
-            className={`p-1.5 rounded-lg text-cyan-600 hover:bg-cyan-500/10 transition-colors disabled:opacity-30 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
+            title={!requirement.id ? "Guarda el requisito antes de gestionar trazabilidad" : "Trazabilidad"}
+            className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-500/10 transition-colors disabled:opacity-30"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onSelect(); }}
-            title="Ver detalle completo"
-            className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'text-[var(--color-accent)] bg-[var(--color-accent-subtle)]' : 'text-blue-600 hover:bg-blue-500/10'}`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            disabled={status === 'saving'}
-            title="Eliminar requisito"
-            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-500/10 transition-colors disabled:opacity-30"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+
+          {/* Secondary Actions Trigger */}
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              title="Más opciones"
+              className={`p-1.5 rounded-lg transition-colors ${showMenu ? 'text-[var(--color-accent)] bg-[var(--color-accent-subtle)]' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+
+            {showMenu && (
+              <div className="absolute right-0 mt-1 w-56 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                {/* Detail View */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); onSelect(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-blue-400 hover:bg-blue-500/10"
+                >
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>Ver detalle completo</span>
+                </button>
+
+                {/* Duplicates Search */}
+                {onCheckDuplicates && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); onCheckDuplicates(); }}
+                    disabled={status === 'saving'}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-amber-500 hover:bg-amber-500/10 disabled:opacity-40"
+                  >
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Reanalizar duplicados</span>
+                  </button>
+                )}
+
+                {/* Rules Validation */}
+                {onEvaluateRules && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); onEvaluateRules(); }}
+                    disabled={status === 'saving'}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-emerald-500 hover:bg-emerald-500/10 disabled:opacity-40"
+                  >
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Revalidar reglas</span>
+                  </button>
+                )}
+
+                {/* Semantic Memory */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); onViewMemory?.(); }}
+                  disabled={status === 'saving' || !requirement.id}
+                  title={!requirement.id ? "Guarda el requisito antes de consultar su memoria" : "Ver análisis semántico"}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-indigo-400 hover:bg-indigo-500/10 disabled:opacity-40 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
+                >
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  <span>Análisis semántico</span>
+                </button>
+
+                {/* Separator */}
+                <div className="h-[1px] bg-[var(--color-border)] my-1" />
+
+                {/* Delete */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete(); }}
+                  disabled={status === 'saving'}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-rose-500 hover:bg-rose-500/10 disabled:opacity-40"
+                >
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Eliminar requisito</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </td>
     </tr>

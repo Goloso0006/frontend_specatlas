@@ -17,6 +17,19 @@ export function adaptRequirementDTO(response: Partial<RequirementDTO> | null | u
     isoClassification: normalizeString(response?.isoClassification),
     projectId: normalizeString(response?.projectId),
     relatedCodes: normalizeStringArray(response?.relatedCodes),
+    requirementType: response?.requirementType,
+    nonFunctionalDetail: response?.nonFunctionalDetail
+      ? {
+          category: normalizeString(response.nonFunctionalDetail.category),
+          metricName: normalizeString(response.nonFunctionalDetail.metricName),
+          operator: normalizeString(response.nonFunctionalDetail.operator),
+          targetValue: normalizeString(response.nonFunctionalDetail.targetValue),
+          unit: normalizeString(response.nonFunctionalDetail.unit),
+          verificationMethod: normalizeString(response.nonFunctionalDetail.verificationMethod),
+          context: normalizeString(response.nonFunctionalDetail.context),
+          rationale: normalizeString(response.nonFunctionalDetail.rationale),
+        }
+      : null,
   }
 }
 

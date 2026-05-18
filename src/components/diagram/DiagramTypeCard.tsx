@@ -1,14 +1,11 @@
 import React from 'react'
 import { Button } from '../ui/Button'
-import type { DiagramType } from '../../types/diagrams'
 
 interface DiagramTypeCardProps {
-  type: DiagramType | 'COMPONENT' | 'SEQUENCE'
   title: string
   description: string
   icon: React.ReactNode
-  onCreate: () => void
-  onGenerate?: () => void
+  onClick: () => void
   disabled?: boolean
 }
 
@@ -16,25 +13,37 @@ export function DiagramTypeCard({
   title,
   description,
   icon,
-  onCreate,
-  onGenerate,
+  onClick,
   disabled = false
 }: DiagramTypeCardProps) {
   return (
-    <div className={`group relative flex flex-col p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-accent)] transition-all duration-300 ${disabled ? 'opacity-60 grayscale' : ''}`}>
+    <div 
+      onClick={onClick}
+      className={`group relative flex flex-col p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-accent)] hover:shadow-lg transition-all duration-300 cursor-pointer ${
+        disabled ? 'opacity-70 hover:border-[var(--color-border)]' : ''
+      }`}
+    >
       <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl bg-[var(--color-accent-subtle)] flex items-center justify-center text-[var(--color-accent)] group-hover:scale-110 transition-transform duration-300">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+          disabled 
+            ? 'bg-[var(--color-surface)] text-[var(--color-text-muted)]' 
+            : 'bg-[var(--color-accent-subtle)] text-[var(--color-accent)]'
+        }`}>
           {icon}
         </div>
         {disabled && (
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
             Próximamente
           </span>
         )}
       </div>
 
       <div className="flex-1">
-        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2 group-hover:text-[var(--color-accent)] transition-colors">
+        <h3 className={`text-lg font-bold mb-2 transition-colors ${
+          disabled 
+            ? 'text-[var(--color-text-secondary)]' 
+            : 'text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]'
+        }`}>
           {title}
         </h3>
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
@@ -42,26 +51,23 @@ export function DiagramTypeCard({
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="pt-2">
         <Button 
-          variant="secondary" 
+          variant={disabled ? "secondary" : "primary"} 
           size="sm" 
-          className="flex-1" 
-          onClick={onCreate}
-          disabled={disabled}
+          className={`w-full h-9 font-semibold text-xs rounded-xl transition-all duration-300 ${
+            disabled 
+              ? 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)] cursor-not-allowed' 
+              : 'bg-[var(--color-accent)] hover:opacity-90 text-[var(--color-accent-foreground)]'
+          }`}
+          onClick={(e) => {
+            // Prevent event bubbling if clicked directly on the button
+            e.stopPropagation();
+            onClick();
+          }}
         >
-          Crear
+          {disabled ? 'Explorar (Próximamente)' : 'Gestionar'}
         </Button>
-        {onGenerate && (
-          <Button 
-            size="sm" 
-            className="flex-1 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white" 
-            onClick={onGenerate}
-            disabled={disabled}
-          >
-            Generar con IA
-          </Button>
-        )}
       </div>
     </div>
   )

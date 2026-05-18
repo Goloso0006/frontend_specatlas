@@ -147,8 +147,8 @@ export interface ProceduralMemorySection {
   warnings: string[]
 }
 
-export type TraceabilityTargetType = 'TEST_CASE' | 'DIAGRAM' | 'CLASS' | 'COMPONENT' | 'MODULE' | 'ARCHITECTURE_ELEMENT'
-export type TraceabilityRelationType = 'VALIDATED_BY' | 'REPRESENTED_IN' | 'IMPLEMENTED_BY' | 'DEPENDS_ON' | 'IMPACTS' | 'REFINES' | 'RELATED_TO'
+export type TraceabilityTargetType = 'TEST_CASE' | 'DIAGRAM' | 'CLASS' | 'COMPONENT' | 'MODULE' | 'ARCHITECTURE_ELEMENT' | 'REQUIREMENT'
+export type TraceabilityRelationType = 'VALIDATED_BY' | 'REPRESENTED_IN' | 'IMPLEMENTED_BY' | 'DEPENDS_ON' | 'IMPACTS' | 'REFINES' | 'RELATED_TO' | 'BLOCKS' | 'DUPLICATES' | 'CONSTRAINS'
 
 export interface TraceabilityLink {
   id?: string

@@ -99,13 +99,14 @@ function SemanticSection({ memory: rawMemory }: { memory: RequirementMemoryRespo
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[var(--color-accent)]">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        Memoria Semántica
+        Análisis Semántico
       </div>
       
       {similarRequirements.length === 0 ? (
-        <div className="p-8 border-2 border-dashed border-[var(--color-border)] rounded-2xl flex flex-col items-center justify-center text-center">
+        <div className="p-8 border-2 border-dashed border-[var(--color-border)] rounded-2xl flex flex-col items-center justify-center text-center bg-[var(--color-surface)]/20 shadow-sm">
           <svg className="w-12 h-12 text-[var(--color-border-strong)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-          <p className="text-[var(--color-text-muted)] text-sm">No se encontraron requisitos similares relevantes.</p>
+          <p className="text-[var(--color-text-primary)] font-bold text-sm mb-1.5">No hay memoria semántica generada para este requisito.</p>
+          <p className="text-[var(--color-text-muted)] text-xs max-w-sm leading-relaxed">Este requisito aún no ha sido comparado con otros o no presenta coincidencias significativas en el corpus del proyecto.</p>
         </div>
       ) : (
         <div className="grid gap-4">

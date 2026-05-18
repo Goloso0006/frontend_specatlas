@@ -19,7 +19,7 @@ import {
   hasActiveFilters,
   type RequirementFilters,
 } from '../../utils/requirementFilterUtils'
-import type { RequirementDTO, NonFunctionalDetailDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse, RuleViolation } from '../../types/requirements'
+import type { RequirementDTO, NonFunctionalDetailDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse } from '../../types/requirements'
 
 type RowStatus = 'draft' | 'saved' | 'saving' | 'error' | 'incomplete' | 'ai_improved' | 'checking'
 
@@ -114,8 +114,79 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
   const [aiPreview, setAiPreview] = useState<{ current: RequirementDTO; suggested: RequirementDTO; localId: string } | null>(null)
   const [duplicatePreview, setDuplicatePreview] = useState<{ localId: string; matches: any[] } | null>(null)
   const [memoryPreview, setMemoryPreview] = useState<{ localId: string; memory: RequirementMemoryResponse } | null>(null)
-  const [proceduralViolations, setProceduralViolations] = useState<Map<string, RuleViolation[]>>(new Map())
+
   const [traceabilityPreview, setTraceabilityPreview] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
+
+  // Duplicates risk and traceability link counts states
+  const [duplicateInfoMap, setDuplicateInfoMap] = useState<Map<string, { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }>>(new Map())
+  const [traceabilityCountMap, setTraceabilityCountMap] = useState<Map<string, number>>(new Map())
+
+  const getDuplicateStatus = (matches: any[]) => {
+    if (!matches || matches.length === 0) return { status: 'NONE' as const, matches: [] }
+    const topMatch = matches[0]
+    const similarity = topMatch.similarityPercentage || (topMatch.similarity ? topMatch.similarity * 100 : 0)
+    if (similarity >= 75) return { status: 'HIGH' as const, matches }
+    if (similarity >= 40) return { status: 'MEDIUM' as const, matches }
+    if (similarity >= 15) return { status: 'LOW' as const, matches }
+    return { status: 'NONE' as const, matches }
+  }
+
+  const runAnalysisForRow = async (localId: string, req: RequirementDTO) => {
+    // 1. Traceability links count
+    if (req.id) {
+      try {
+        const links = await requirementFacade.getRequirementTraceability(req.id)
+        setTraceabilityCountMap(prev => {
+          const next = new Map(prev)
+          next.set(localId, links.length)
+          return next
+        })
+      } catch (err) {
+        console.error("Error loading traceability for row", localId, err)
+      }
+    }
+
+    // 2. Duplicates check
+    if (req.title.trim() || req.description.trim()) {
+      try {
+        const matches = await requirementFacade.checkDuplicates({
+          projectId,
+          title: req.title,
+          description: req.description
+        })
+        const filtered = matches.filter((m: any) => m.requirementId !== req.id)
+        const dupStatus = getDuplicateStatus(filtered)
+        setDuplicateInfoMap(prev => {
+          const next = new Map(prev)
+          next.set(localId, dupStatus)
+          return next
+        })
+      } catch (err) {
+        console.error("Error checking duplicates for row", localId, err)
+      }
+    }
+  }
+
+  const debounceTimersRef = React.useRef<Map<string, any>>(new Map())
+
+  const handleRowChangeDebounced = (localId: string, req: RequirementDTO) => {
+    if (debounceTimersRef.current.has(localId)) {
+      clearTimeout(debounceTimersRef.current.get(localId)!)
+    }
+    const timer = setTimeout(() => {
+      runAnalysisForRow(localId, req)
+    }, 1500)
+    debounceTimersRef.current.set(localId, timer)
+  }
+
+  // Trigger analysis for all rows when initialRequirements loads
+  useEffect(() => {
+    rows.forEach(row => {
+      if (row.requirement.id) {
+        runAnalysisForRow(row.localId, row.requirement)
+      }
+    })
+  }, [initialRequirements])
 
   // Fix: sync rows when parent refetches (re-entering the screen)
   // Merge all rows (drafts + saved) sorted by code, preserving unsaved drafts
@@ -167,25 +238,25 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
         requirementType: row.requirement.requirementType ?? 'NON_FUNCTIONAL',
       })
       
-      const violations = proceduralViolations.get(row.localId) || []
-      const proceduralIssues = violations.map(v => ({
-        id: `rule-${v.ruleId}-${crypto.randomUUID().slice(0, 8)}`,
-        ruleId: v.ruleId,
-        severity: v.severity.toLowerCase() as any,
-        field: 'procedural' as any,
-        message: v.message,
-        suggestion: `Regla: ${v.ruleName}`
-      }))
-
       const detailIssues = validateNonFunctionalDetail(row.requirement)
 
-      map.set(row.localId, [...localIssues, ...proceduralIssues, ...detailIssues])
+      map.set(row.localId, [...localIssues, ...detailIssues])
     }
     return map
-  }, [rows, proceduralViolations])
+  }, [rows])
 
-  const updateRow = (localId: string, updates: Partial<RequirementDTO>) =>
-    setRows(prev => prev.map(r => r.localId === localId ? { ...r, requirement: { ...r.requirement, ...updates }, status: r.status === 'saved' ? 'draft' : r.status } : r))
+  const updateRow = (localId: string, updates: Partial<RequirementDTO>) => {
+    setRows(prev => prev.map(row => {
+      if (row.localId === localId) {
+        const updatedReq = { ...row.requirement, ...updates }
+        if ('title' in updates || 'description' in updates) {
+          handleRowChangeDebounced(localId, updatedReq)
+        }
+        return { ...row, requirement: updatedReq, status: row.status === 'saved' ? 'draft' : row.status }
+      }
+      return row
+    }))
+  }
 
   const updateDetail = (localId: string, delta: Partial<NonFunctionalDetailDTO>) =>
     setRows(prev => prev.map(r => {
@@ -315,41 +386,15 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
     }
   }
 
-  const handleViewMemory = async (localId: string) => {
-    const row = rows.find(r => r.localId === localId)
-    if (!row || !row.requirement.id) return
-    setStatus(localId, 'checking')
-    try {
-      const memory = await requirementFacade.getRequirementMemory(row.requirement.id)
-      setStatus(localId, row.status === 'checking' ? 'saved' : row.status)
-      setMemoryPreview({ localId, memory })
-    } catch {
-      setStatus(localId, 'error', 'Error al cargar memoria')
-    }
-  }
 
   const handleManageTraceability = (localId: string) => {
     const row = rows.find(r => r.localId === localId)
-    if (!row || !row.requirement.id) return
-    setTraceabilityPreview({ localId, requirement: row.requirement })
-  }
-
-  const handleEvaluateRules = async (localId: string) => {
-    const row = rows.find(r => r.localId === localId)
-    if (!row) return
-    setStatus(localId, 'checking')
-    try {
-      const response = await requirementFacade.evaluateRequirementAgainstRules(row.requirement, projectId)
-      setProceduralViolations(prev => {
-        const next = new Map(prev)
-        next.set(localId, response.violations)
-        return next
-      })
-      setStatus(localId, row.requirement.id ? 'saved' : 'draft')
-    } catch {
-      setStatus(localId, 'error', 'Error al validar reglas')
+    if (row) {
+      setTraceabilityPreview({ localId, requirement: row.requirement })
     }
   }
+
+
 
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -477,19 +522,96 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                   <React.Fragment key={row.localId}>
                     <tr onClick={() => setExpandedId(isExpanded ? null : row.localId)}
                       className={`group border-b border-[var(--color-border)] transition-all cursor-pointer ${isExpanded ? 'bg-[var(--color-accent-subtle)]/10 shadow-[inset_4px_0_0_0_var(--color-accent)]' : 'hover:bg-[var(--color-surface)]/30'}`}>
-                      <td className="px-4 py-3 text-[11px] font-mono font-bold text-[var(--color-text-muted)]">{row.requirement.code}</td>
+                      <td className="px-4 py-3 text-[11px] font-mono font-bold text-[var(--color-text-muted)]">{row.requirement.code || 'RNF-Borrador'}</td>
                       <td className="px-4 py-3">
                         {d?.category ? (
                           <span className="inline-flex items-center h-5 px-2 rounded-md text-[10px] font-bold bg-violet-500/10 text-violet-600 border border-violet-500/20">{d.category}</span>
                         ) : <span className="text-[11px] text-[var(--color-text-muted)] italic">Sin categoría</span>}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-left align-top">
                         <input value={row.requirement.title} onClick={e => e.stopPropagation()}
                           onChange={e => updateRow(row.localId, { title: e.target.value })}
                           placeholder="Título del RNF..."
                           className={`w-full text-sm font-semibold bg-transparent border-0 focus:ring-1 focus:ring-[var(--color-accent)] rounded transition-all placeholder:text-[var(--color-text-muted)]/40 ${isInvalid && !row.requirement.title ? 'bg-rose-500/5 ring-1 ring-rose-500/30' : ''}`}
                         />
-                        {row.requirement.description && <p className="text-[11px] text-[var(--color-text-muted)] truncate mt-0.5 px-0.5">{row.requirement.description}</p>}
+                        {row.requirement.description && (
+                          <p className="text-[11px] text-[var(--color-text-muted)] whitespace-pre-wrap break-words mt-1 px-0.5 leading-relaxed max-w-2xl">
+                            {row.requirement.description}
+                          </p>
+                        )}
+
+                        {/* Horizontal Badges for RNF */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          {/* Calidad Badge */}
+                          {(() => {
+                            const qi = qualityMap.get(row.localId) || []
+                            return (
+                              <span
+                                title="Análisis de calidad del RNF"
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
+                                  qi.length === 0
+                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                                    : qi.some(q => q.severity === 'error')
+                                    ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20'
+                                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
+                                }`}
+                              >
+                                <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+                                {qi.length === 0
+                                  ? 'Calidad: OK'
+                                  : qi.some(q => q.severity === 'error')
+                                  ? `Reglas: ${qi.filter(q => q.severity === 'error').length} err`
+                                  : `Reglas: ${qi.filter(q => q.severity === 'warning').length} adv`
+                                }
+                              </span>
+                            )
+                          })()}
+
+                          {/* Duplicados Badge */}
+                          {(() => {
+                            const dupInfo = duplicateInfoMap.get(row.localId)
+                            if (!dupInfo) return null
+                            return (
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCheckDuplicates?.(row.localId)
+                                }}
+                                title="Click para reanalizar duplicados"
+                                className={`cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
+                                  dupInfo.status === 'NONE'
+                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                                    : dupInfo.status === 'LOW'
+                                    ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20'
+                                    : dupInfo.status === 'MEDIUM'
+                                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
+                                    : 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20'
+                                }`}
+                              >
+                                <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+                                {dupInfo.status === 'NONE' && 'Dups: Sin riesgo'}
+                                {dupInfo.status === 'LOW' && `Dups: Bajo (${dupInfo.matches[0] ? Math.round(dupInfo.matches[0].similarityPercentage || dupInfo.matches[0].similarity * 100) : 0}%)`}
+                                {dupInfo.status === 'MEDIUM' && `Dups: Revisar (${dupInfo.matches[0] ? Math.round(dupInfo.matches[0].similarityPercentage || dupInfo.matches[0].similarity * 100) : 0}%)`}
+                                {dupInfo.status === 'HIGH' && `Dups: Alto (${dupInfo.matches[0] ? Math.round(dupInfo.matches[0].similarityPercentage || dupInfo.matches[0].similarity * 100) : 0}%)`}
+                              </span>
+                            )
+                          })()}
+
+                          {/* Trazabilidad Badge */}
+                          {row.requirement.id && (
+                            <span
+                              onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleManageTraceability?.(row.localId)
+                              }}
+                              title="Click para gestionar trazabilidad"
+                              className={`cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors bg-cyan-500/10 text-cyan-500 border-cyan-500/20 hover:bg-cyan-500/20`}
+                            >
+                              <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+                              Traza: {traceabilityCountMap.get(row.localId) || 0}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-[11px] text-[var(--color-text-secondary)] font-mono">{metricLabel}</td>
                       <td className="px-4 py-3">
@@ -504,94 +626,18 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={e => { e.stopPropagation(); handleSave(row.localId) }} disabled={row.status === 'saving'} title="Guardar" className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                           </button>
-                          <button onClick={e => { e.stopPropagation(); handleImprove(row.localId) }} disabled={row.status === 'saving' || !row.requirement.id} title={!row.requirement.id ? "Guarda el requisito antes de mejorarlo con IA" : "Mejorar con IA"} className={`p-1.5 rounded-lg text-purple-600 hover:bg-purple-500/10 transition-colors disabled:opacity-30 ${!row.requirement.id ? 'cursor-not-allowed' : ''}`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                          </button>
-                          <button onClick={e => { e.stopPropagation(); handleCheckDuplicates(row.localId) }} disabled={row.status === 'saving'} title="Verificar duplicados" className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                          </button>
-                          <button onClick={e => { e.stopPropagation(); handleViewMemory(row.localId) }} disabled={row.status === 'saving' || !row.requirement.id} title={!row.requirement.id ? "Guarda el requisito antes de consultar su memoria" : "Ver memoria"} className={`p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-500/10 transition-colors disabled:opacity-30 ${!row.requirement.id ? 'cursor-not-allowed' : ''}`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                          </button>
-                          <button onClick={e => { e.stopPropagation(); handleEvaluateRules(row.localId) }} disabled={row.status === 'saving'} title="Validar reglas del proyecto" className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-30">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                          </button>
-                          <button onClick={e => { e.stopPropagation(); handleManageTraceability(row.localId) }} disabled={row.status === 'saving' || !row.requirement.id} title={!row.requirement.id ? "Guarda el requisito antes de gestionar trazabilidad" : "Gestionar trazabilidad"} className={`p-1.5 rounded-lg text-cyan-600 hover:bg-cyan-500/10 transition-colors disabled:opacity-30 ${!row.requirement.id ? 'cursor-not-allowed' : ''}`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                          </button>
+                          
                           <button onClick={e => { e.stopPropagation(); handleDeleteRequest(row.localId) }} disabled={row.status === 'saving'} title="Eliminar" className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-500/10 transition-colors disabled:opacity-30">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </div>
                       </td>
                     </tr>
-                    {isExpanded && (
-                      <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/20">
-                        <td colSpan={6} className="px-6 py-4">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Descripción */}
-                            <div>
-                              <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5 block">Descripción</label>
-                              <textarea value={row.requirement.description}
-                                onChange={e => updateRow(row.localId, { description: e.target.value })}
-                                placeholder="Describe el requisito no funcional..."
-                                rows={3}
-                                className={`w-full px-3 py-2 text-sm bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] resize-none ${isInvalid && !row.requirement.description ? 'ring-1 ring-rose-500/30' : ''}`}
-                              />
-                              {/* Criterios de aceptación */}
-                              <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5 mt-3 block">Criterios de aceptación</label>
-                              <div className="space-y-1.5">
-                                {(row.requirement.acceptanceCriteria || []).map((c, i) => (
-                                  <div key={i} className="flex gap-2 items-start">
-                                    <span className="text-[var(--color-accent)] font-bold text-xs mt-2">✓</span>
-                                    <input value={c} onChange={e => {
-                                      const next = [...(row.requirement.acceptanceCriteria || [])]
-                                      next[i] = e.target.value
-                                      updateRow(row.localId, { acceptanceCriteria: next })
-                                    }} className="flex-1 px-2 py-1.5 text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]" />
-                                    <button onClick={() => {
-                                      const next = (row.requirement.acceptanceCriteria || []).filter((_, j) => j !== i)
-                                      updateRow(row.localId, { acceptanceCriteria: next })
-                                    }} className="mt-1 text-rose-500 hover:text-rose-700 text-xs">✕</button>
-                                  </div>
-                                ))}
-                                <button onClick={() => updateRow(row.localId, { acceptanceCriteria: [...(row.requirement.acceptanceCriteria || []), ''] })}
-                                  className="text-[11px] text-[var(--color-accent)] hover:underline font-medium">+ Agregar criterio</button>
-                              </div>
-                            </div>
-                            {/* ISO Detail */}
-                            <div>
-                              <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5 block flex items-center gap-1.5">
-                                <span className="inline-block w-2 h-2 rounded-full bg-violet-500" />
-                                Detalle ISO 25010
-                              </label>
-                              <NfDetailPanel
-                                detail={row.requirement.nonFunctionalDetail ?? { ...EMPTY_DETAIL }}
-                                onChange={delta => updateDetail(row.localId, delta)}
-                              />
-                              <div className="flex justify-end gap-2 mt-3">
-                                <button onClick={() => handleImprove(row.localId)} disabled={row.status === 'saving' || row.status === 'checking'}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-[var(--color-border-strong)] text-purple-600 hover:bg-purple-500/10 transition-all disabled:opacity-40">
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                  {row.status === 'checking' ? 'Procesando…' : '✨ Mejorar con IA'}
-                                </button>
-                                <button onClick={() => handleSave(row.localId)} disabled={row.status === 'saving'}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all shadow-sm disabled:opacity-40">
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                  {row.status === 'saving' ? 'Guardando…' : 'Guardar RNF'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+
                   </React.Fragment>
                 )
               })}
@@ -650,9 +696,204 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
       {traceabilityPreview && (
         <RequirementTraceabilityPanel
           requirement={traceabilityPreview.requirement}
+          allRequirements={rows.map(r => r.requirement)}
           onClose={() => setTraceabilityPreview(null)}
         />
       )}
+
+      {/* Centered Floating RNF Detail Modal */}
+      {expandedId && (() => {
+        const row = rows.find(r => r.localId === expandedId)
+        if (!row) return null
+        const isInvalid = row.status === 'incomplete' || row.status === 'error'
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            {/* Modal Backdrop to click and close */}
+            <div 
+              className="absolute inset-0 cursor-default" 
+              onClick={() => setExpandedId(null)} 
+            />
+
+            {/* Modal Content Card */}
+            <div className="relative w-full max-w-4xl max-h-[90vh] bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+              
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface)]/30">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono font-bold text-[var(--color-text-muted)] bg-[var(--color-bg)] px-2.5 py-1 rounded-lg border border-[var(--color-border)]">
+                    {row.requirement.code || 'Borrador'}
+                  </span>
+                  <h3 className="text-base font-bold text-[var(--color-text-primary)]">
+                    Editar Requisito No Funcional
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => setExpandedId(null)}
+                  className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+                
+                {/* Title Input */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2 block">
+                    Título del Requisito
+                  </label>
+                  <input
+                    type="text"
+                    value={row.requirement.title}
+                    onChange={e => updateRow(row.localId, { title: e.target.value })}
+                    placeholder="Título del RNF..."
+                    className={`w-full px-3 py-2 text-sm font-semibold bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all ${
+                      isInvalid && !row.requirement.title ? 'bg-rose-500/5 ring-1 ring-rose-500/30' : ''
+                    }`}
+                  />
+                </div>
+
+                {/* Descripción (Full Width) */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2 block">
+                    Descripción
+                  </label>
+                  <textarea 
+                    value={row.requirement.description || ''}
+                    onChange={e => updateRow(row.localId, { description: e.target.value })}
+                    placeholder="Describe el requisito no funcional..."
+                    rows={4}
+                    className={`w-full px-3 py-2 text-sm bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] resize-none transition-all ${
+                      isInvalid && !row.requirement.description ? 'ring-1 ring-rose-500/30' : ''
+                    }`}
+                  />
+                </div>
+
+                {/* Section: Criterios de Aceptación (Tarjeta Aparte) */}
+                <div className="border-t border-[var(--color-border)]/50 pt-5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 block flex items-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Criterios de Aceptación
+                  </label>
+                  <div className="bg-[var(--color-bg)]/30 border border-[var(--color-border)]/85 rounded-xl p-4 space-y-3">
+                    <div className="space-y-2.5">
+                      {(row.requirement.acceptanceCriteria || []).length === 0 ? (
+                        <p className="text-xs text-[var(--color-text-muted)] italic py-6 text-center">
+                          No hay criterios de aceptación definidos para este requisito.
+                        </p>
+                      ) : (
+                        (row.requirement.acceptanceCriteria || []).map((c, i) => (
+                          <div key={i} className="flex gap-2 items-start bg-[var(--color-surface)]/20 p-2 rounded-lg border border-[var(--color-border)]/50 focus-within:border-[var(--color-accent)]/50 transition-colors">
+                            <span className="text-[var(--color-accent)] font-bold text-xs mt-1.5 ml-1 flex-shrink-0">✓</span>
+                            <textarea 
+                              value={c} 
+                              onChange={e => {
+                                const next = [...(row.requirement.acceptanceCriteria || [])]
+                                next[i] = e.target.value
+                                updateRow(row.localId, { acceptanceCriteria: next })
+                              }} 
+                              placeholder="Escribe un criterio de aceptación..."
+                              rows={3}
+                              className="flex-1 px-2.5 py-1 text-xs bg-transparent border-0 focus:ring-0 resize-none focus:outline-none placeholder:text-[var(--color-text-muted)]/40 overflow-hidden"
+                            />
+                            <button 
+                              onClick={() => {
+                                const next = (row.requirement.acceptanceCriteria || []).filter((_, j) => j !== i)
+                                updateRow(row.localId, { acceptanceCriteria: next })
+                              }} 
+                              className="text-rose-500 hover:text-rose-700 text-xs p-1.5 transition-colors rounded-lg hover:bg-rose-500/10"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex justify-start">
+                      <button 
+                        onClick={() => updateRow(row.localId, { acceptanceCriteria: [...(row.requirement.acceptanceCriteria || []), ''] })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-[var(--color-accent)] bg-[var(--color-accent-subtle)]/30 hover:bg-[var(--color-accent-subtle)]/50 font-bold transition-all"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Agregar criterio de aceptación</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: ISO 25010 */}
+                <div className="border-t border-[var(--color-border)]/50 pt-5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 block flex items-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />
+                    Especificación ISO 25010
+                  </label>
+                  <div className="bg-[var(--color-bg)]/30 border border-[var(--color-border)]/80 rounded-xl p-4">
+                    <NfDetailPanel
+                      detail={row.requirement.nonFunctionalDetail ?? { ...EMPTY_DETAIL }}
+                      onChange={delta => updateDetail(row.localId, delta)}
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface)]/20">
+                {/* Delete Button (danger) */}
+                <button
+                  onClick={() => { handleDeleteRequest(row.localId); setExpandedId(null); }}
+                  disabled={row.status === 'saving'}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all disabled:opacity-40"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Eliminar RNF</span>
+                </button>
+
+                {/* Right side buttons */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setExpandedId(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-all"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    onClick={() => handleImprove(row.localId)}
+                    disabled={row.status === 'saving' || row.status === 'checking'}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all disabled:opacity-40"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>{row.status === 'checking' ? 'Procesando…' : '✨ Mejorar con IA'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => { handleSave(row.localId); setExpandedId(null); }}
+                    disabled={row.status === 'saving'}
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all shadow-md shadow-[var(--color-accent)]/15 active:scale-95 disabled:opacity-40"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{row.status === 'saving' ? 'Guardando…' : 'Aplicar cambios'}</span>
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

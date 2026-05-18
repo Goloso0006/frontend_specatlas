@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useDiagramHistory } from './useDiagramHistory'
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -33,11 +34,13 @@ import {
   reactFlowToDiagramSource,
   serializeDiagramSource,
   validateDiagramSource,
+  generateSafeId,
 } from '../utils/diagramMapper'
 import { validateClassDiagram } from '../utils/classDiagramValidator'
 import { validateUseCaseDiagram } from '../utils/useCaseDiagramValidator'
 import { mapGeneratedClassDiagramToCanvas, mapGeneratedUseCaseDiagramToCanvas, type GeneratedCanvas } from '../utils/generatedDiagramMapper'
 import { mergeDiagramSources } from '../utils/diagramMergeUtils'
+import { autoLayoutDiagram } from '../utils/diagramLayoutUtils'
 import { createActorNode, createUseCaseNode } from '../utils/useCaseDiagramUtils'
 
 export type SaveFeedback = {
@@ -75,6 +78,7 @@ export interface DiagramEditorController {
   handleEdgesChange: OnEdgesChange
   handleSelectionChange: OnSelectionChangeFunc
   handleConnect: (connection: Connection) => void
+  handleReconnect: (oldEdge: Edge<DiagramRelationDTO>, newConnection: Connection) => void
   handleAddElement: (umlType: DiagramUmlType) => void
   handleAddActor: () => void
   handleAddUseCase: () => void
@@ -82,11 +86,15 @@ export interface DiagramEditorController {
   handleDeleteSelected: () => void
   handleDeleteNode: (id: string) => void
   handleDeleteEdge: (id: string) => void
+  handleNodeDragStart: (_e: any, node: any) => void
+  handleNodeDrag: (_e: any, node: any) => void
   handleNodeDragStop: (_e: unknown, node: { id: string; type?: string; position: { x: number; y: number }; data?: unknown; width?: number; height?: number }) => void
   updateNode: (nextNode: DiagramNodeDTO) => void
   updateEdge: (nextEdge: DiagramRelationDTO) => void
   handleSaveDiagram: (force?: boolean) => Promise<void>
   handleGenerateAutoDiagram: () => Promise<void>
+  handleAutoLayout: () => void
+  handleCleanDuplicateEdges: () => void
   handleApplyAiReplace: () => void
   handleApplyAiMerge: () => void
   handleCloseAiModal: () => void
@@ -95,7 +103,33 @@ export interface DiagramEditorController {
   setIsSidebarOpen: (value: boolean) => void
   setShowValidationModal: (value: boolean) => void
   setShowAiModal: (value: boolean) => void
+  sidebarTabPreference: string | null
+  setSidebarTabPreference: (value: string | null) => void
+  sidebarSubViewPreference: string | null
+  setSidebarSubViewPreference: (value: string | null) => void
+  handleAlignNodes: (direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void
+  handleDistributeNodes: (axis: 'horizontal' | 'vertical') => void
+  handleGroupIntoPackage: () => void
+  handleDuplicateSelected: () => void
+  handleDuplicateNode: (id: string) => void
+  handleQuickAddAttribute: (id: string) => void
+  handleQuickAddMethod: (id: string) => void
+  handleQuickCreateRelation: (id: string) => void
+  handleQuickAddInclude: (id: string) => void
+  handleQuickAddExtend: (id: string) => void
+  handleQuickAddToPackage: (id: string, pkgId: string | null) => void
+  setSelectedNodeId: (id: string | null) => void
+  setEditorTarget: (target: 'node' | 'edge' | null) => void
   clearSelection: () => void
+  canUndo: boolean
+  canRedo: boolean
+  isDirty: boolean
+  lastSavedTime: number | null
+  showRecoveryModal: boolean
+  handleRestoreDraft: () => void
+  handleDiscardDraft: () => void
+  handleUndo: () => void
+  handleRedo: () => void
 }
 
 const HELP_TIPS = [
@@ -117,11 +151,18 @@ function useSafeTimeoutFeedback() {
 }
 
 export function useDiagramEditorController(): DiagramEditorController {
-  const { projectId: routeProjectId, diagramId: routeDiagramId } = useParams()
+  const { projectId: routeProjectId, diagramId: routeDiagramId, diagramTypePath } = useParams<{
+    projectId: string
+    diagramId?: string
+    diagramTypePath?: string
+  }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const newType = searchParams.get('type') as DiagramType | null
+  const newType = (
+    searchParams.get('type') ||
+    (diagramTypePath === 'class' ? 'CLASS' : diagramTypePath === 'use-case' ? 'USE_CASE' : '')
+  ) as DiagramType | null
   const actionParam = searchParams.get('action')
 
   const { state: editorState, actions: editorActions } = useDiagramEditorStore()
@@ -130,7 +171,17 @@ export function useDiagramEditorController(): DiagramEditorController {
 
   const [projectId, setProjectId] = useState(routeProjectId ?? '')
   const [diagramId, setDiagramId] = useState(routeDiagramId ?? '')
-  const [diagramName, setDiagramName] = useState('Nuevo Diagrama')
+  
+  const [diagramName, setDiagramNameState] = useState('Nuevo Diagrama')
+  const setDiagramName = useCallback((name: string) => {
+    setDiagramNameState(name)
+    localStorage.setItem('active_diagram_name', name)
+    const currentId = routeDiagramId || ''
+    if (currentId) {
+      localStorage.setItem(`active_diagram_name_${currentId}`, name)
+    }
+  }, [routeDiagramId])
+
   const [diagramType, setDiagramType] = useState<DiagramType>(newType || 'CLASS')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
@@ -144,6 +195,127 @@ export function useDiagramEditorController(): DiagramEditorController {
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
   const [nodes, setNodes] = useState<Node<DiagramNodeDTO>[]>([])
   const [edges, setEdges] = useState<Edge<DiagramRelationDTO>[]>([])
+  const [sidebarTabPreference, setSidebarTabPreference] = useState<string | null>(null)
+  const [sidebarSubViewPreference, setSidebarSubViewPreference] = useState<string | null>(null)
+
+  const [isDirty, setIsDirty] = useState(false)
+  const [lastSavedTime, setLastSavedTime] = useState<number | null>(null)
+
+  const {
+    canUndo,
+    canRedo,
+    pushSnapshot,
+    undo: popUndo,
+    redo: popRedo,
+    clearHistory
+  } = useDiagramHistory()
+
+  const isRestoringHistoryRef = useRef(false)
+  const isDraggingRef = useRef(false)
+  const lastValidationRef = useRef<any>({ valid: true, errors: [] })
+
+  const captureHistorySnapshot = useCallback((reason: string) => {
+    if (isRestoringHistoryRef.current) return
+    pushSnapshot(nodes, edges, selectedNodeId, selectedEdgeId, reason)
+    setIsDirty(true)
+  }, [nodes, edges, selectedNodeId, selectedEdgeId, pushSnapshot])
+
+
+  // Before unload protection (reload/external)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = 'Tienes cambios sin guardar. ¿Deseas salir de todas formas?'
+        return e.returnValue
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
+  // Recovery draft states & checker
+  const [draftKey, setDraftKey] = useState('')
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false)
+  const [draftData, setDraftData] = useState<any>(null)
+
+  useEffect(() => {
+    if (!projectId) return
+    const key = `specatlas.diagramDraft.${projectId}.${diagramId || 'new'}`
+    setDraftKey(key)
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed && (parsed.nodes?.length > 0 || parsed.edges?.length > 0)) {
+          setDraftData(parsed)
+          setShowRecoveryModal(true)
+        }
+      } catch (e) {
+        console.error('Error parsing local draft', e)
+      }
+    }
+  }, [projectId, diagramId])
+
+  const handleRestoreDraft = useCallback(() => {
+    if (draftData) {
+      setNodes(draftData.nodes)
+      setEdges(draftData.edges)
+      setDiagramName(draftData.name)
+      if (draftData.diagramType) {
+        setDiagramType(draftData.diagramType)
+      }
+      setIsDirty(true)
+      showFeedback('success', 'Borrador local restaurado correctamente.')
+    }
+    setShowRecoveryModal(false)
+    setDraftData(null)
+  }, [draftData, showFeedback])
+
+  const handleDiscardDraft = useCallback(() => {
+    if (draftKey) {
+      localStorage.removeItem(draftKey)
+    }
+    setShowRecoveryModal(false)
+    setDraftData(null)
+    showFeedback('info', 'Borrador local descartado.')
+  }, [draftKey, showFeedback])
+
+  // Autosave Draft local effect
+  const autosaveTimerRef = useRef<any>(null)
+  useEffect(() => {
+    if (!isDirty) return
+    if (isDraggingRef.current) return // Do not autosave while dragging
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+    }
+
+    autosaveTimerRef.current = setTimeout(() => {
+      if (!draftKey) return
+
+      const saveAction = () => {
+        const draft = {
+          nodes,
+          edges,
+          diagramType,
+          name: diagramName,
+          timestamp: Date.now(),
+        }
+        localStorage.setItem(draftKey, JSON.stringify(draft))
+      }
+
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(() => saveAction())
+      } else {
+        saveAction()
+      }
+    }, 1500) // Debounce autosave to 1500ms for safety and CPU relaxation
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current)
+    }
+  }, [nodes, edges, diagramName, isDirty, draftKey, diagramType])
 
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
@@ -153,10 +325,17 @@ export function useDiagramEditorController(): DiagramEditorController {
   const selectedEdge = useMemo(() => edges.find(e => e.id === selectedEdgeId) ?? null, [edges, selectedEdgeId])
 
   const validation = useMemo(() => {
+    if (isDraggingRef.current && lastValidationRef.current) {
+      return lastValidationRef.current
+    }
     const source = reactFlowToDiagramSource(nodes, edges, diagramType)
-    if (isClass) return validateClassDiagram(source.nodes, source.edges)
-    if (isUseCase) return validateUseCaseDiagram(source.nodes, source.edges)
-    return validateDiagramSource(source)
+    const result = isClass
+      ? validateClassDiagram(source.nodes, source.edges)
+      : isUseCase
+      ? validateUseCaseDiagram(source.nodes, source.edges)
+      : validateDiagramSource(source)
+    lastValidationRef.current = result
+    return result
   }, [nodes, edges, diagramType, isClass, isUseCase])
 
   const clearSelection = useCallback(() => {
@@ -174,6 +353,7 @@ export function useDiagramEditorController(): DiagramEditorController {
       setProjectId(response.projectId)
       setDiagramName(response.name)
       setDiagramType(response.diagramType)
+      localStorage.setItem(`diagram_type_${response.id}`, response.diagramType)
 
       if (import.meta.env.DEV) {
         console.log("[CLASS_LOAD] raw diagram response", response)
@@ -183,11 +363,51 @@ export function useDiagramEditorController(): DiagramEditorController {
         })
       }
 
-      const source = parseDiagramSource(response.sourceJson || response)
+      const source = parseDiagramSource(response)
       const flow = diagramSourceToReactFlow(source)
 
+      // Helper: Merge methods, preserving parameters from local state if response methods lack them
+      const mergeMethodsPreservingParameters = (localMethod: any, responseMethod: any): any => {
+        const localParams = Array.isArray(localMethod?.parameters) ? localMethod.parameters : []
+        const responseParams = Array.isArray(responseMethod?.parameters) ? responseMethod.parameters : []
+        
+        if (import.meta.env.DEV) {
+          console.log("[METHOD_MERGE]", {
+            methodName: responseMethod?.name || localMethod?.name,
+            localParamsCount: localParams.length,
+            responseParamsCount: responseParams.length,
+            willPreserveLocal: responseParams.length === 0 && localParams.length > 0
+          })
+        }
+        
+        return {
+          ...responseMethod,
+          parameters: responseParams.length > 0 ? responseParams : localParams
+        }
+      }
+
       if (import.meta.env.DEV) {
+        source.nodes.forEach((n: any) => {
+          if (n.kind === 'class') {
+            console.log("[METHOD_LOAD] methods", n.methods)
+          }
+        })
         console.log("[CLASS_LOAD] parsed source", source)
+        console.log("[METHOD_PARAMS_AFTER_FLOW_CONVERSION]", flow.nodes
+          .filter((n: any) => n.type === 'classNode')
+          .map((n: any) => ({
+            id: n.id,
+            name: n.data?.name,
+            methodsCount: n.data?.methods?.length || 0,
+            methods: n.data?.methods?.map((m: any) => ({
+              id: m.id,
+              name: m.name,
+              parametersCount: Array.isArray(m.parameters) ? m.parameters.length : 0,
+              parameters: m.parameters,
+              returnType: m.returnType
+            }))
+          }))
+        )
         console.log("[CLASS_LOAD] mapped", {
           nodes: flow.nodes.length,
           edges: flow.edges.length,
@@ -201,7 +421,55 @@ export function useDiagramEditorController(): DiagramEditorController {
         })
       }
 
-      setNodes(flow.nodes)
+      setNodes(prevNodes => {
+        return flow.nodes.map((flowNode: any) => {
+          const localNode = prevNodes.find((n: any) => n.id === flowNode.id)
+          if (!localNode || flowNode.type !== 'classNode') return flowNode
+          
+          const localData = localNode.data as any
+          const responseData = flowNode.data as any
+          
+          const localMethods = Array.isArray(localData?.methods) ? localData.methods : []
+          const responseMethods = Array.isArray(responseData?.methods) ? responseData.methods : []
+          
+          if (localMethods.length > 0 && responseMethods.length > 0) {
+            const mergedMethods = responseMethods.map((respMethod: any) => {
+              const localMethod = localMethods.find((m: any) => 
+                m.id === respMethod.id || 
+                (m.name === respMethod.name && m.returnType === respMethod.returnType) ||
+                (m.name === flowNode.data.name && respMethod.name === flowNode.data.name) ||
+                (m.name.startsWith('set') && respMethod.name.startsWith('set') && m.name === respMethod.name)
+              )
+              if (!localMethod) return respMethod
+              return mergeMethodsPreservingParameters(localMethod, respMethod)
+            })
+            
+            if (import.meta.env.DEV) {
+              const paramsBefore = responseMethods.reduce((sum: number, m: any) => 
+                sum + (Array.isArray(m.parameters) ? m.parameters.length : 0), 0)
+              const paramsAfter = mergedMethods.reduce((sum: number, m: any) => 
+                sum + (Array.isArray(m.parameters) ? m.parameters.length : 0), 0)
+              if (paramsBefore !== paramsAfter) {
+                console.log("[METHOD_MERGE_RESULT]", {
+                  methodsCount: mergedMethods.length,
+                  paramsBefore,
+                  paramsAfter,
+                  recovered: paramsAfter - paramsBefore
+                })
+              }
+            }
+            
+            return {
+              ...flowNode,
+              data: {
+                ...responseData,
+                methods: mergedMethods
+              }
+            }
+          }
+          return flowNode
+        })
+      })
 
       // Prevent disappearing edges if the backend response didn't include them, but they existed before saving (Rule #3)
       setEdges(prevEdges => {
@@ -215,10 +483,21 @@ export function useDiagramEditorController(): DiagramEditorController {
       })
 
       clearSelection()
+      
+      // Clean dirty, reset history and record last saved time
+      setIsDirty(false)
+      clearHistory()
+      setLastSavedTime(Date.now())
+
+      // Clean autosave drafts
+      const key = `specatlas.diagramDraft.${response.projectId}.${response.id}`
+      localStorage.removeItem(key)
+      localStorage.removeItem(`specatlas.diagramDraft.${response.projectId}.new`)
+
       editorActions.editing(message)
       showFeedback('success', message)
     },
-    [diagramId, navigate, clearSelection, editorActions, showFeedback],
+    [diagramId, navigate, clearSelection, editorActions, showFeedback, clearHistory],
   )
 
   const handleLoadDiagram = useCallback(
@@ -243,6 +522,7 @@ export function useDiagramEditorController(): DiagramEditorController {
       }
     } else if (newType) {
       setDiagramType(newType)
+      localStorage.setItem('diagram_type_new', newType)
       setDiagramName(`Nuevo Diagrama de ${newType === 'CLASS' ? 'Clases' : 'Casos de Uso'}`)
       if (actionParam === 'generate' && isValidProjectId(routeProjectId)) {
         setTimeout(() => {
@@ -298,6 +578,12 @@ export function useDiagramEditorController(): DiagramEditorController {
   const handleConnect = useCallback((connection: Connection) => {
     if (!connection.source || !connection.target) return
 
+    if (connection.source === connection.target) {
+      showFeedback('error', 'Un elemento no se puede relacionar consigo mismo.')
+      return
+    }
+
+    captureHistorySnapshot('Crear relación')
     setEdges(eds => {
       const duplicate = eds.find(e => e.source === connection.source && e.target === connection.target)
       if (duplicate) return eds
@@ -334,7 +620,41 @@ export function useDiagramEditorController(): DiagramEditorController {
 
       return addEdge(newEdge, eds)
     })
-  }, [diagramType, nodes])
+  }, [diagramType, nodes, showFeedback, captureHistorySnapshot])
+
+  const handleReconnect = useCallback((oldEdge: Edge<DiagramRelationDTO>, newConnection: Connection) => {
+    if (!newConnection.source || !newConnection.target) return
+
+    if (newConnection.source === newConnection.target) {
+      showFeedback('error', 'Un elemento no se puede relacionar consigo mismo.')
+      return
+    }
+
+    captureHistorySnapshot('Reconectar relación')
+    setEdges((eds) => {
+      return eds.map((edge) => {
+        if (edge.id === oldEdge.id) {
+          const updatedData = {
+            ...edge.data,
+            source: newConnection.source,
+            target: newConnection.target,
+            sourceHandle: newConnection.sourceHandle || null,
+            targetHandle: newConnection.targetHandle || null,
+          } as DiagramRelationDTO
+
+          return {
+            ...edge,
+            source: newConnection.source,
+            target: newConnection.target,
+            sourceHandle: newConnection.sourceHandle,
+            targetHandle: newConnection.targetHandle,
+            data: updatedData,
+          }
+        }
+        return edge
+      })
+    })
+  }, [showFeedback, captureHistorySnapshot])
 
   const getNextNodeName = useCallback((base: string) => {
     let name = base
@@ -354,6 +674,7 @@ export function useDiagramEditorController(): DiagramEditorController {
   }, [nodes.length])
 
   const addNodeToCanvas = useCallback((nodeDTO: DiagramNodeDTO, nodeType: string) => {
+    captureHistorySnapshot('Agregar elemento')
     // Packages stay behind class nodes: zIndex 0 vs 10
     const zIndex = nodeType === 'packageNode' ? 0 : 10
     const newNode: Node<DiagramNodeDTO> = {
@@ -374,7 +695,7 @@ export function useDiagramEditorController(): DiagramEditorController {
     setNodes(nds => [...nds.map(n => ({ ...n, selected: false })), newNode])
     setSelectedNodeId(newNode.id)
     setEditorTarget('node')
-  }, [])
+  }, [captureHistorySnapshot])
 
   const handleAddElement = useCallback((umlType: DiagramUmlType) => {
     const names: Record<string, string> = {
@@ -423,46 +744,105 @@ export function useDiagramEditorController(): DiagramEditorController {
 
 
   const handleDeleteNode = useCallback((id: string) => {
+    captureHistorySnapshot('Eliminar elemento')
     setNodes(nds => nds.filter(n => n.id !== id))
     setEdges(eds => eds.filter(e => e.source !== id && e.target !== id))
     if (selectedNodeId === id || selectedEdgeId) {
       clearSelection()
     }
-  }, [selectedNodeId, selectedEdgeId, clearSelection])
+  }, [selectedNodeId, selectedEdgeId, clearSelection, captureHistorySnapshot])
 
   const handleDeleteEdge = useCallback((id: string) => {
+    captureHistorySnapshot('Eliminar relación')
     setEdges(eds => eds.filter(e => e.id !== id))
     if (selectedEdgeId === id) {
       setSelectedEdgeId(null)
       setEditorTarget(null)
     }
-  }, [selectedEdgeId])
+  }, [selectedEdgeId, captureHistorySnapshot])
+
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null)
+  const lastPkgCheckTimeRef = useRef(0)
+
+  const handleNodeDragStart = useCallback((_e: unknown, node: Node) => {
+    isDraggingRef.current = true
+    dragStartPosRef.current = { x: node.position.x, y: node.position.y }
+  }, [])
+
+  const handleNodeDrag = useCallback((_e: unknown, node: Node) => {
+    if (node.type === 'packageNode') return
+
+    const now = Date.now()
+    if (now - lastPkgCheckTimeRef.current < 60) {
+      return // Limit package containment hover check rate to ~16fps during drag
+    }
+    lastPkgCheckTimeRef.current = now
+
+    const pkgNodes = nodes.filter(p => p.type === 'packageNode')
+    const nodeWidth = (node.data as any)?.style?.width || 160
+    const nodeHeight = (node.data as any)?.style?.height || 60
+    const centerX = node.position.x + nodeWidth / 2
+    const centerY = node.position.y + nodeHeight / 2
+
+    let overPkgId: string | null = null
+    for (const p of pkgNodes) {
+      const w = (p.data as any)?.style?.width || 640
+      const h = (p.data as any)?.style?.height || 420
+      if (centerX >= p.position.x && centerX <= p.position.x + w && centerY >= p.position.y && centerY <= p.position.y + h) {
+        overPkgId = p.id
+        break
+      }
+    }
+
+    setNodes(prev => {
+      let changed = false
+      const next = prev.map(n => {
+        if (n.type === 'packageNode') {
+          const isOver = n.id === overPkgId
+          if ((n.data as any)?.isDraggedOver !== isOver) {
+            changed = true
+            return { ...n, data: { ...n.data, isDraggedOver: isOver } }
+          }
+        }
+        return n
+      })
+      return changed ? next : prev
+    })
+  }, [nodes])
 
   const handleNodeDragStop = useCallback((_e: unknown, node: { id: string; type?: string; position: { x: number; y: number }; data?: unknown; width?: number; height?: number }) => {
     try {
+      isDraggingRef.current = false
+      const startPos = dragStartPosRef.current || node.position
+      const dx = node.position.x - startPos.x
+      const dy = node.position.y - startPos.y
+      dragStartPosRef.current = null
+
+      if (dx !== 0 || dy !== 0) {
+        captureHistorySnapshot('Mover elemento')
+      }
+
       if (node.type === 'packageNode') {
         setNodes(prevNodes => {
-          const prev = prevNodes.find(n => n.id === node.id)
-          if (!prev) return prevNodes
-          const originalX = (prev.data as any)?.position?.x ?? prev.position.x
-          const originalY = (prev.data as any)?.position?.y ?? prev.position.y
-          const dx = node.position.x - originalX
-          const dy = node.position.y - originalY
-          
           return prevNodes.map(n => {
+            if (n.type === 'packageNode') {
+              const isSelf = n.id === node.id
+              return { 
+                ...n, 
+                position: isSelf ? node.position : n.position,
+                data: { 
+                  ...n.data, 
+                  isDraggedOver: false,
+                  position: isSelf ? node.position : (n.data as any)?.position 
+                } 
+              }
+            }
             if ((n.data as any)?.packageId === node.id) {
               const nextPos = { x: n.position.x + dx, y: n.position.y + dy }
               return { 
                 ...n, 
                 position: nextPos, 
                 data: { ...n.data, position: nextPos } 
-              }
-            }
-            if (n.id === node.id) {
-              return { 
-                ...n, 
-                position: node.position, 
-                data: { ...n.data, position: node.position } 
               }
             }
             return n
@@ -485,25 +865,84 @@ export function useDiagramEditorController(): DiagramEditorController {
               break
             }
           }
-          return prevNodes.map(n => 
-            n.id === node.id 
-              ? { 
-                  ...n, 
+          return prevNodes.map(n => {
+            const isPackage = n.type === 'packageNode'
+            const isSelf = n.id === node.id
+            if (isPackage) {
+              return { ...n, data: { ...n.data, isDraggedOver: false } }
+            }
+            if (isSelf) {
+              return { 
+                ...n, 
+                position: node.position, 
+                data: { 
+                  ...n.data, 
                   position: node.position, 
-                  data: { 
-                    ...n.data, 
-                    position: node.position, 
-                    packageId: containing ? containing.id : undefined 
-                  } 
+                  packageId: containing ? containing.id : undefined 
                 } 
-              : n
-          )
+              }
+            }
+            return n
+          })
         })
       }
     } catch (err) {
       console.error('onNodeDragStop error', err)
     }
-  }, [])
+  }, [captureHistorySnapshot])
+
+  const handleAutoLayout = useCallback(() => {
+    const hasWaypoints = edges.some(e => ((e.data as any)?.waypoints || []).length > 0)
+    if (hasWaypoints) {
+      const confirm = window.confirm(
+        'Reorganizar puede modificar la distribución visual del diagrama y eliminar los puntos de ruta manuales. ¿Deseas continuar?'
+      )
+      if (!confirm) return
+    }
+
+    captureHistorySnapshot('Reorganizar layout')
+    setNodes(nds => autoLayoutDiagram(nds, edges, diagramType))
+
+    // Clear waypoints on layout to ensure clean straight routing
+    setEdges(eds => eds.map(e => ({
+      ...e,
+      data: {
+        ...e.data!,
+        waypoints: []
+      }
+    })))
+
+    showFeedback('info', 'Diagrama reorganizado. Recuerda guardar los cambios.')
+  }, [edges, diagramType, showFeedback, captureHistorySnapshot])
+
+  const handleCleanDuplicateEdges = useCallback(() => {
+    const seen = new Set<string>()
+    const uniqueEdges: typeof edges = []
+    let duplicateCount = 0
+
+    edges.forEach(edge => {
+      const relType = edge.data?.data?.relationshipType || 'ASSOCIATION'
+      const key = `${edge.source}->${edge.target}:${relType}`
+      if (seen.has(key)) {
+        duplicateCount++
+      } else {
+        uniqueEdges.push(edge)
+        seen.add(key)
+      }
+    })
+
+    if (duplicateCount === 0) {
+      showFeedback('info', 'No se encontraron relaciones duplicadas.')
+      return
+    }
+
+    const confirm = window.confirm(`Se encontraron ${duplicateCount} relaciones duplicadas. ¿Deseas eliminarlas todas?`)
+    if (confirm) {
+      captureHistorySnapshot('Eliminar relaciones duplicadas')
+      setEdges(uniqueEdges)
+      showFeedback('success', `${duplicateCount} relaciones duplicadas eliminadas.`)
+    }
+  }, [edges, showFeedback, captureHistorySnapshot])
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedNodeId) {
@@ -514,12 +953,14 @@ export function useDiagramEditorController(): DiagramEditorController {
   }, [selectedNodeId, selectedEdgeId, handleDeleteNode, handleDeleteEdge])
 
   const updateNode = useCallback((nextNode: DiagramNodeDTO) => {
+    captureHistorySnapshot('Editar elemento')
     setNodes(nds => nds.map(node => node.id === nextNode.id ? { ...node, data: { ...nextNode, position: node.position } } : node))
-  }, [])
+  }, [captureHistorySnapshot])
 
   const updateEdge = useCallback((nextEdge: DiagramRelationDTO) => {
+    captureHistorySnapshot('Editar relación')
     setEdges(eds => eds.map(edge => edge.id === nextEdge.id ? { ...edge, data: nextEdge, label: nextEdge.data?.label || '' } : edge))
-  }, [])
+  }, [captureHistorySnapshot])
 
   useEffect(() => {
     setNodes(prev => {
@@ -580,6 +1021,7 @@ export function useDiagramEditorController(): DiagramEditorController {
 
   function handleApplyAiReplace() {
     if (!aiProposal) return
+    captureHistorySnapshot('Reemplazar con propuesta IA')
     setNodes(convertAiNodes(aiProposal))
     setEdges(convertAiEdges(aiProposal))
     setShowAiModal(false)
@@ -608,6 +1050,7 @@ export function useDiagramEditorController(): DiagramEditorController {
 
   function handleApplyAiMerge() {
     if (!aiProposal) return
+    captureHistorySnapshot('Fusionar propuesta IA')
     const currentSource = reactFlowToDiagramSource(nodes, edges, diagramType)
     const result = mergeDiagramSources(currentSource, aiProposal)
     const flow = diagramSourceToReactFlow({ ...currentSource, nodes: result.nodes, edges: result.edges })
@@ -669,6 +1112,14 @@ export function useDiagramEditorController(): DiagramEditorController {
     const source = reactFlowToDiagramSource(nodes, edges, diagramType)
 
     if (import.meta.env.DEV) {
+      console.log("[METHOD_BEFORE_MAIN_SAVE_FROM_NODES]", nodes
+        .filter(n => n.type === "classNode")
+        .map(n => ({
+          id: n.id,
+          name: n.data?.name,
+          methods: (n.data as any)?.methods
+        }))
+      )
       console.log("[CLASS_SAVE] before save", {
         nodes: nodes.length,
         edges: edges.length,
@@ -681,6 +1132,26 @@ export function useDiagramEditorController(): DiagramEditorController {
         }))
       })
       console.log("[CLASS_SAVE] payload source", source)
+      console.log("[METHOD_PARAMS_BEFORE_SAVE]", nodes
+        .filter((n: any) => n.type === 'classNode')
+        .map((n: any) => ({
+          id: n.id,
+          name: n.data?.name,
+          methodsCount: n.data?.methods?.length || 0,
+          methods: n.data?.methods?.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            parametersCount: Array.isArray(m.parameters) ? m.parameters.length : 0,
+            parameters: m.parameters,
+            returnType: m.returnType
+          }))
+        }))
+      )
+      source.nodes.forEach((n: any) => {
+        if (n.kind === 'class') {
+          console.log("[METHOD_SAVE] methods", n.methods)
+        }
+      })
     }
 
     const payload = {
@@ -707,6 +1178,22 @@ export function useDiagramEditorController(): DiagramEditorController {
           nodes: flowResponse.nodes.length,
           edges: flowResponse.edges.length
         })
+        console.log("[METHOD_PARAMS_IN_BACKEND_RESPONSE]", {
+          sourceJsonType: typeof data.sourceJson,
+          parsedNodes: parsedResponse.nodes
+            .filter((n: any) => n.kind === 'class')
+            .map((n: any) => ({
+              id: n.id,
+              name: n.name,
+              methodsCount: n.methods?.length || 0,
+              methods: n.methods?.map((m: any) => ({
+                id: m.id,
+                name: m.name,
+                parametersCount: Array.isArray(m.parameters) ? m.parameters.length : 0,
+                parameters: m.parameters
+              }))
+            }))
+        })
       }
       syncDiagramResponse(data, 'Diagrama guardado correctamente.')
       setShowValidationModal(false)
@@ -714,6 +1201,627 @@ export function useDiagramEditorController(): DiagramEditorController {
       showFeedback('error', 'Error del servidor al guardar.')
     }
   }
+
+  const handleAlignNodes = useCallback((direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => {
+    const selectedNodes = nodes.filter(n => n.selected)
+    if (selectedNodes.length < 2) return
+
+    const getWidth = (node: typeof nodes[0]) => {
+      if (node.width) return node.width
+      if (node.data.kind === 'class') return 260
+      if (node.data.kind === 'useCase') return 160
+      if (node.data.kind === 'actor') return 120
+      return 300
+    }
+
+    const getHeight = (node: typeof nodes[0]) => {
+      if (node.height) return node.height
+      if (node.data.kind === 'class') return 200
+      if (node.data.kind === 'useCase') return 80
+      if (node.data.kind === 'actor') return 120
+      return 200
+    }
+
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+    let sumCenterX = 0
+    let sumCenterY = 0
+
+    selectedNodes.forEach(node => {
+      const w = getWidth(node)
+      const h = getHeight(node)
+      const x = node.position.x
+      const y = node.position.y
+      if (x < minX) minX = x
+      if (x + w > maxX) maxX = x + w
+      if (y < minY) minY = y
+      if (y + h > maxY) maxY = y + h
+      sumCenterX += x + w / 2
+      sumCenterY += y + h / 2
+    })
+
+    const avgCenterX = sumCenterX / selectedNodes.length
+    const avgCenterY = sumCenterY / selectedNodes.length
+
+    captureHistorySnapshot('Alinear nodos')
+    setNodes(prevNodes => prevNodes.map(node => {
+      if (!node.selected) return node
+
+      const w = getWidth(node)
+      const h = getHeight(node)
+      let nextX = node.position.x
+      let nextY = node.position.y
+
+      switch (direction) {
+        case 'left':
+          nextX = minX
+          break
+        case 'center':
+          nextX = avgCenterX - w / 2
+          break
+        case 'right':
+          nextX = maxX - w
+          break
+        case 'top':
+          nextY = minY
+          break
+        case 'middle':
+          nextY = avgCenterY - h / 2
+          break
+        case 'bottom':
+          nextY = maxY - h
+          break
+      }
+
+      const updatedDTO = {
+        ...node.data,
+        position: { x: nextX, y: nextY }
+      }
+
+      return {
+        ...node,
+        position: { x: nextX, y: nextY },
+        data: updatedDTO
+      }
+    }))
+
+    showFeedback('success', `Alineados ${selectedNodes.length} nodos.`)
+  }, [nodes, setNodes, showFeedback, captureHistorySnapshot])
+
+  const handleDistributeNodes = useCallback((axis: 'horizontal' | 'vertical') => {
+    const selectedNodes = nodes.filter(n => n.selected)
+    if (selectedNodes.length < 3) {
+      showFeedback('info', 'Selecciona al menos 3 nodos para distribuir.')
+      return
+    }
+
+    const getWidth = (node: typeof nodes[0]) => {
+      if (node.width) return node.width
+      if (node.data.kind === 'class') return 260
+      if (node.data.kind === 'useCase') return 160
+      if (node.data.kind === 'actor') return 120
+      return 300
+    }
+
+    const getHeight = (node: typeof nodes[0]) => {
+      if (node.height) return node.height
+      if (node.data.kind === 'class') return 200
+      if (node.data.kind === 'useCase') return 80
+      if (node.data.kind === 'actor') return 120
+      return 200
+    }
+
+    captureHistorySnapshot('Distribuir nodos')
+    if (axis === 'horizontal') {
+      const sorted = [...selectedNodes].sort((a, b) => a.position.x - b.position.x)
+      const first = sorted[0]
+      const last = sorted[sorted.length - 1]
+      const startX = first.position.x
+      const endX = last.position.x
+      
+      const totalWidths = sorted.reduce((sum, n) => sum + getWidth(n), 0)
+      const span = endX + getWidth(last) - startX
+      const remainingSpace = span - totalWidths
+      const spacing = remainingSpace / (sorted.length - 1)
+
+      let currentX = startX
+      const positionMap = new Map<string, number>()
+      
+      sorted.forEach(node => {
+        positionMap.set(node.id, currentX)
+        currentX += getWidth(node) + spacing
+      })
+
+      setNodes(prev => prev.map(node => {
+        if (!node.selected) return node
+        const nextX = positionMap.get(node.id) ?? node.position.x
+        return {
+          ...node,
+          position: { x: nextX, y: node.position.y },
+          data: { ...node.data, position: { x: nextX, y: node.position.y } }
+        }
+      }))
+    } else {
+      const sorted = [...selectedNodes].sort((a, b) => a.position.y - b.position.y)
+      const first = sorted[0]
+      const last = sorted[sorted.length - 1]
+      const startY = first.position.y
+      const endY = last.position.y
+      
+      const totalHeights = sorted.reduce((sum, n) => sum + getHeight(n), 0)
+      const span = endY + getHeight(last) - startY
+      const remainingSpace = span - totalHeights
+      const spacing = remainingSpace / (sorted.length - 1)
+
+      let currentY = startY
+      const positionMap = new Map<string, number>()
+      
+      sorted.forEach(node => {
+        positionMap.set(node.id, currentY)
+        currentY += getHeight(node) + spacing
+      })
+
+      setNodes(prev => prev.map(node => {
+        if (!node.selected) return node
+        const nextY = positionMap.get(node.id) ?? node.position.y
+        return {
+          ...node,
+          position: { x: node.position.x, y: nextY },
+          data: { ...node.data, position: { x: node.position.x, y: nextY } }
+        }
+      }))
+    }
+
+    showFeedback('success', `Distribuidos ${selectedNodes.length} nodos.`)
+  }, [nodes, setNodes, showFeedback, captureHistorySnapshot])
+
+  const handleGroupIntoPackage = useCallback(() => {
+    const selectedNodes = nodes.filter(n => n.selected)
+    if (selectedNodes.length === 0) return
+
+    const getWidth = (node: typeof nodes[0]) => {
+      if (node.width) return node.width
+      if (node.data.kind === 'class') return 260
+      if (node.data.kind === 'useCase') return 160
+      if (node.data.kind === 'actor') return 120
+      return 300
+    }
+
+    const getHeight = (node: typeof nodes[0]) => {
+      if (node.height) return node.height
+      if (node.data.kind === 'class') return 200
+      if (node.data.kind === 'useCase') return 80
+      if (node.data.kind === 'actor') return 120
+      return 200
+    }
+
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+
+    selectedNodes.forEach(node => {
+      const w = getWidth(node)
+      const h = getHeight(node)
+      const x = node.position.x
+      const y = node.position.y
+      if (x < minX) minX = x
+      if (x + w > maxX) maxX = x + w
+      if (y < minY) minY = y
+      if (y + h > maxY) maxY = y + h
+    })
+
+    const pkgMinX = minX - 30
+    const pkgMinY = minY - 50
+    const pkgWidth = maxX - minX + 60
+    const pkgHeight = maxY - minY + 80
+
+    const newPkgId = `pkg-${generateSafeId()}`
+    const newPkgDTO: DiagramNodeDTO = {
+      id: newPkgId,
+      kind: 'package',
+      name: 'Paquete Agrupado',
+      description: 'Paquete creado automáticamente por agrupación.',
+      position: { x: pkgMinX, y: pkgMinY },
+      derivedFromRequirements: [],
+      style: {
+        width: pkgWidth,
+        height: pkgHeight,
+        color: '#3b82f6'
+      }
+    }
+
+    const newPkgNode: Node<DiagramNodeDTO> = {
+      id: newPkgId,
+      type: 'packageNode',
+      position: newPkgDTO.position,
+      data: newPkgDTO,
+      selected: false
+    }
+
+    const updatedNodes = nodes.map(node => {
+      if (node.selected && node.data.kind !== 'package') {
+        const nextDTO = {
+          ...node.data,
+          packageId: newPkgId
+        }
+        return {
+          ...node,
+          data: nextDTO
+        }
+      }
+      return node
+    })
+
+    setNodes([newPkgNode, ...updatedNodes])
+    showFeedback('success', `Creado paquete conteniendo ${selectedNodes.length} nodos.`)
+  }, [nodes, setNodes, showFeedback])
+
+  const handleDuplicateSelected = useCallback(() => {
+    const selectedNodes = nodes.filter(n => n.selected)
+    if (selectedNodes.length === 0) return
+
+    const nodeIdMap = new Map<string, string>()
+    const duplicatedNodes: Node<DiagramNodeDTO>[] = []
+
+    selectedNodes.forEach(oldNode => {
+      const newId = `node_${generateSafeId()}`
+      nodeIdMap.set(oldNode.id, newId)
+
+      const nextName = `${oldNode.data.name} copia`
+      
+      const newDTO: DiagramNodeDTO = {
+        ...oldNode.data,
+        id: newId,
+        name: nextName,
+        position: {
+          x: oldNode.position.x + 40,
+          y: oldNode.position.y + 40
+        }
+      }
+
+      duplicatedNodes.push({
+        id: newId,
+        type: oldNode.type,
+        position: newDTO.position,
+        data: newDTO,
+        selected: true
+      })
+    })
+
+    const unselectedNodes = nodes.map(n => n.selected ? { ...n, selected: false } : n)
+
+    const newEdges: Edge<DiagramRelationDTO>[] = []
+    edges.forEach(edge => {
+      const newSourceId = nodeIdMap.get(edge.source)
+      const newTargetId = nodeIdMap.get(edge.target)
+
+      if (newSourceId && newTargetId) {
+        const newEdgeId = `edge_${generateSafeId()}`
+        const newRelationData = {
+          ...edge.data?.data,
+          source: newSourceId,
+          target: newTargetId
+        }
+
+        newEdges.push({
+          id: newEdgeId,
+          source: newSourceId,
+          target: newTargetId,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          type: edge.type,
+          data: {
+            id: newEdgeId,
+            source: newSourceId,
+            target: newTargetId,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
+            type: edge.type,
+            data: newRelationData,
+            derivedFromRequirements: edge.data?.derivedFromRequirements || []
+          } as any,
+          selected: true
+        })
+      }
+    })
+
+    const unselectedEdges = edges.map(e => e.selected ? { ...e, selected: false } : e)
+
+    setNodes([...unselectedNodes, ...duplicatedNodes])
+    setEdges([...unselectedEdges, ...newEdges])
+
+    showFeedback('success', `Duplicados ${duplicatedNodes.length} elementos.`)
+  }, [nodes, edges, showFeedback])
+
+  const handleDuplicateNode = useCallback((nodeId: string) => {
+    const targetNode = nodes.find(n => n.id === nodeId)
+    if (!targetNode) return
+
+    const newId = `node_${generateSafeId()}`
+    const newDTO: DiagramNodeDTO = {
+      ...targetNode.data,
+      id: newId,
+      name: `${targetNode.data.name} copia`,
+      position: {
+        x: targetNode.position.x + 40,
+        y: targetNode.position.y + 40
+      }
+    }
+
+    const newNode: Node<DiagramNodeDTO> = {
+      id: newId,
+      type: targetNode.type,
+      position: newDTO.position,
+      data: newDTO,
+      selected: true
+    }
+
+    const unselectedNodes = nodes.map(n => ({ ...n, selected: false }))
+    setNodes([...unselectedNodes, newNode])
+    showFeedback('success', `Elemento '${targetNode.data.name}' duplicado.`)
+  }, [nodes, showFeedback])
+
+  const handleQuickAddAttribute = useCallback((id: string) => {
+    setSelectedNodeId(id)
+    setSelectedEdgeId(null)
+    setEditorTarget('node')
+    setIsSidebarOpen(true)
+    setSidebarTabPreference('attributes')
+    setSidebarSubViewPreference('ATTRIBUTE_FORM')
+  }, [])
+
+  const handleQuickAddMethod = useCallback((id: string) => {
+    setSelectedNodeId(id)
+    setSelectedEdgeId(null)
+    setEditorTarget('node')
+    setIsSidebarOpen(true)
+    setSidebarTabPreference('methods')
+    setSidebarSubViewPreference('METHOD_FORM')
+  }, [])
+
+  const handleQuickCreateRelation = useCallback((id: string) => {
+    const sourceNode = nodes.find(n => n.id === id)
+    if (!sourceNode) return
+
+    const newId = `node_${generateSafeId()}`
+    const isUml = sourceNode.type === 'classNode'
+    
+    const newDTO: DiagramNodeDTO = isUml ? {
+      id: newId,
+      kind: 'class',
+      umlType: 'CLASS',
+      name: `NuevaClaseRelacionada`,
+      attributes: [],
+      methods: [],
+      enumValues: [],
+      position: {
+        x: sourceNode.position.x + 280,
+        y: sourceNode.position.y + 40
+      },
+      packageId: (sourceNode.data as any).packageId
+    } : {
+      id: newId,
+      kind: sourceNode.data.kind === 'actor' ? 'actor' : 'useCase',
+      name: sourceNode.data.kind === 'actor' ? 'ActorRelacionado' : 'CasoDeUsoRelacionado',
+      description: '',
+      position: {
+        x: sourceNode.position.x + 240,
+        y: sourceNode.position.y + 40
+      },
+      packageId: (sourceNode.data as any).packageId
+    }
+
+    const newNode: Node<DiagramNodeDTO> = {
+      id: newId,
+      type: sourceNode.type,
+      position: newDTO.position,
+      data: newDTO,
+      selected: true
+    }
+
+    const unselectedNodes = nodes.map(n => ({ ...n, selected: false }))
+    
+    const newEdgeId = `edge_${generateSafeId()}`
+    const newEdge: Edge<DiagramRelationDTO> = {
+      id: newEdgeId,
+      source: id,
+      target: newId,
+      sourceHandle: 's-right',
+      targetHandle: 't-left',
+      type: isUml ? 'umlEdge' : 'useCaseEdge',
+      data: {
+        id: newEdgeId,
+        source: id,
+        target: newId,
+        sourceHandle: 's-right',
+        targetHandle: 't-left',
+        type: isUml ? 'umlEdge' : 'useCaseEdge',
+        data: {
+          relationshipType: 'ASSOCIATION',
+          label: '',
+          description: '',
+          sourceMultiplicity: '1',
+          targetMultiplicity: '1',
+          waypoints: []
+        },
+        derivedFromRequirements: []
+      }
+    }
+
+    setNodes([...unselectedNodes, newNode])
+    setEdges(prev => [...prev, newEdge])
+    showFeedback('success', 'Relación y clase creada con éxito.')
+  }, [nodes, setNodes, setEdges, showFeedback])
+
+  const handleQuickAddInclude = useCallback((id: string) => {
+    const sourceNode = nodes.find(n => n.id === id)
+    if (!sourceNode) return
+
+    const newId = `node_${generateSafeId()}`
+    const newDTO: DiagramNodeDTO = {
+      id: newId,
+      kind: 'useCase',
+      name: `CasoDeUsoIncluido`,
+      description: '',
+      position: {
+        x: sourceNode.position.x + 240,
+        y: sourceNode.position.y + 40
+      },
+      packageId: (sourceNode.data as any).packageId
+    }
+
+    const newNode: Node<DiagramNodeDTO> = {
+      id: newId,
+      type: 'useCaseNode',
+      position: newDTO.position,
+      data: newDTO,
+      selected: true
+    }
+
+    const unselectedNodes = nodes.map(n => ({ ...n, selected: false }))
+    
+    const newEdgeId = `edge_${generateSafeId()}`
+    const newEdge: Edge<DiagramRelationDTO> = {
+      id: newEdgeId,
+      source: id,
+      target: newId,
+      sourceHandle: 's-right',
+      targetHandle: 't-left',
+      type: 'useCaseEdge',
+      data: {
+        id: newEdgeId,
+        source: id,
+        target: newId,
+        sourceHandle: 's-right',
+        targetHandle: 't-left',
+        type: 'useCaseEdge',
+        data: {
+          relationshipType: 'INCLUDE',
+          label: '<<include>>',
+          description: '',
+          sourceMultiplicity: '1',
+          targetMultiplicity: '1',
+          waypoints: []
+        },
+        derivedFromRequirements: []
+      }
+    }
+
+    setNodes([...unselectedNodes, newNode])
+    setEdges(prev => [...prev, newEdge])
+    showFeedback('success', 'Caso de uso incluido creado y conectado.')
+  }, [nodes, setNodes, setEdges, showFeedback])
+
+  const handleQuickAddExtend = useCallback((id: string) => {
+    const sourceNode = nodes.find(n => n.id === id)
+    if (!sourceNode) return
+
+    const newId = `node_${generateSafeId()}`
+    const newDTO: DiagramNodeDTO = {
+      id: newId,
+      kind: 'useCase',
+      name: `CasoDeUsoExtendiendo`,
+      description: '',
+      position: {
+        x: sourceNode.position.x + 240,
+        y: sourceNode.position.y - 80
+      },
+      packageId: (sourceNode.data as any).packageId
+    }
+
+    const newNode: Node<DiagramNodeDTO> = {
+      id: newId,
+      type: 'useCaseNode',
+      position: newDTO.position,
+      data: newDTO,
+      selected: true
+    }
+
+    const unselectedNodes = nodes.map(n => ({ ...n, selected: false }))
+    
+    const newEdgeId = `edge_${generateSafeId()}`
+    const newEdge: Edge<DiagramRelationDTO> = {
+      id: newEdgeId,
+      source: newId,
+      target: id,
+      sourceHandle: 's-bottom',
+      targetHandle: 't-top',
+      type: 'useCaseEdge',
+      data: {
+        id: newEdgeId,
+        source: newId,
+        target: id,
+        sourceHandle: 's-bottom',
+        targetHandle: 't-top',
+        type: 'useCaseEdge',
+        data: {
+          relationshipType: 'EXTEND',
+          label: '<<extend>>',
+          description: '',
+          sourceMultiplicity: '1',
+          targetMultiplicity: '1',
+          waypoints: []
+        },
+        derivedFromRequirements: []
+      }
+    }
+
+    setNodes([...unselectedNodes, newNode])
+    setEdges(prev => [...prev, newEdge])
+    showFeedback('success', 'Caso de uso extendido creado y conectado.')
+  }, [nodes, setNodes, setEdges, showFeedback])
+
+  const handleQuickAddToPackage = useCallback((id: string, pkgId: string | null) => {
+    captureHistorySnapshot('Añadir a paquete')
+    setNodes(prev => prev.map(node => {
+      if (node.id === id) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            packageId: pkgId || undefined
+          }
+        }
+      }
+      return node
+    }))
+    showFeedback('success', pkgId ? 'Elemento añadido al paquete.' : 'Elemento removido del paquete.')
+  }, [showFeedback, captureHistorySnapshot])
+
+  const handleUndo = useCallback(() => {
+    const previous = popUndo(nodes, edges, selectedNodeId, selectedEdgeId)
+    if (previous) {
+      isRestoringHistoryRef.current = true
+      setNodes(previous.nodes)
+      setEdges(previous.edges)
+      setSelectedNodeId(previous.selectedNodeId)
+      setSelectedEdgeId(previous.selectedEdgeId)
+      setIsDirty(true)
+      showFeedback('info', `Deshecho: ${previous.reason}`)
+      setTimeout(() => {
+        isRestoringHistoryRef.current = false
+      }, 50)
+    }
+  }, [nodes, edges, selectedNodeId, selectedEdgeId, popUndo, showFeedback])
+
+  const handleRedo = useCallback(() => {
+    const next = popRedo(nodes, edges, selectedNodeId, selectedEdgeId)
+    if (next) {
+      isRestoringHistoryRef.current = true
+      setNodes(next.nodes)
+      setEdges(next.edges)
+      setSelectedNodeId(next.selectedNodeId)
+      setSelectedEdgeId(next.selectedEdgeId)
+      setIsDirty(true)
+      showFeedback('info', `Rehecho: ${next.reason}`)
+      setTimeout(() => {
+        isRestoringHistoryRef.current = false
+      }, 50)
+    }
+  }, [nodes, edges, selectedNodeId, selectedEdgeId, popRedo, showFeedback])
 
   return {
     state: editorState,
@@ -745,6 +1853,7 @@ export function useDiagramEditorController(): DiagramEditorController {
     handleEdgesChange,
     handleSelectionChange,
     handleConnect,
+    handleReconnect,
     handleAddElement,
     handleAddActor,
     handleAddUseCase,
@@ -752,11 +1861,15 @@ export function useDiagramEditorController(): DiagramEditorController {
     handleDeleteSelected,
     handleDeleteNode,
     handleDeleteEdge,
+    handleNodeDragStart,
+    handleNodeDrag,
     handleNodeDragStop,
     updateNode,
     updateEdge,
     handleSaveDiagram,
     handleGenerateAutoDiagram,
+    handleAutoLayout,
+    handleCleanDuplicateEdges,
     handleApplyAiReplace,
     handleApplyAiMerge,
     handleCloseAiModal,
@@ -765,6 +1878,33 @@ export function useDiagramEditorController(): DiagramEditorController {
     setIsSidebarOpen,
     setShowValidationModal,
     setShowAiModal,
+    sidebarTabPreference,
+    setSidebarTabPreference,
+    sidebarSubViewPreference,
+    setSidebarSubViewPreference,
+    handleAlignNodes,
+    handleDistributeNodes,
+    handleGroupIntoPackage,
+    handleDuplicateSelected,
+    handleDuplicateNode,
+    handleQuickAddAttribute,
+    handleQuickAddMethod,
+    handleQuickCreateRelation,
+    handleQuickAddInclude,
+    handleQuickAddExtend,
+    handleQuickAddToPackage,
+    setSelectedNodeId,
+    setEditorTarget,
     clearSelection,
+    // Safely exposed undo/redo/dirty/drafts
+    canUndo,
+    canRedo,
+    isDirty,
+    lastSavedTime,
+    showRecoveryModal,
+    handleRestoreDraft,
+    handleDiscardDraft,
+    handleUndo,
+    handleRedo,
   }
 }

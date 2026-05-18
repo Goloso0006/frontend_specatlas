@@ -86,6 +86,89 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   const [proceduralViolations, setProceduralViolations] = useState<Map<string, RuleViolation[]>>(new Map())
   const [traceabilityPreview, setTraceabilityPreview] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
 
+  // Duplicates risk and traceability link counts states
+  const [duplicateInfoMap, setDuplicateInfoMap] = useState<Map<string, { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }>>(new Map())
+  const [traceabilityCountMap, setTraceabilityCountMap] = useState<Map<string, number>>(new Map())
+
+  const getDuplicateStatus = (matches: any[]) => {
+    if (!matches || matches.length === 0) return { status: 'NONE' as const, matches: [] }
+    const topMatch = matches[0]
+    const similarity = topMatch.similarityPercentage || (topMatch.similarity ? topMatch.similarity * 100 : 0)
+    if (similarity >= 75) return { status: 'HIGH' as const, matches }
+    if (similarity >= 40) return { status: 'MEDIUM' as const, matches }
+    if (similarity >= 15) return { status: 'LOW' as const, matches }
+    return { status: 'NONE' as const, matches }
+  }
+
+  const runAnalysisForRow = async (localId: string, req: RequirementDTO) => {
+    // 1. Traceability links count
+    if (req.id) {
+      try {
+        const links = await requirementFacade.getRequirementTraceability(req.id)
+        setTraceabilityCountMap(prev => {
+          const next = new Map(prev)
+          next.set(localId, links.length)
+          return next
+        })
+      } catch (err) {
+        console.error("Error loading traceability for row", localId, err)
+      }
+    }
+
+    // 2. Rules check
+    try {
+      const response = await requirementFacade.evaluateRequirementAgainstRules(req, projectId)
+      setProceduralViolations(prev => {
+        const next = new Map(prev)
+        next.set(localId, response.violations)
+        return next
+      })
+    } catch (err) {
+      console.error("Error running rules check for row", localId, err)
+    }
+
+    // 3. Duplicates check
+    if (req.title.trim() || req.description.trim()) {
+      try {
+        const matches = await requirementFacade.checkDuplicates({
+          projectId,
+          title: req.title,
+          description: req.description
+        })
+        const filtered = matches.filter((m: any) => m.requirementId !== req.id)
+        const dupStatus = getDuplicateStatus(filtered)
+        setDuplicateInfoMap(prev => {
+          const next = new Map(prev)
+          next.set(localId, dupStatus)
+          return next
+        })
+      } catch (err) {
+        console.error("Error checking duplicates for row", localId, err)
+      }
+    }
+  }
+
+  const debounceTimersRef = React.useRef<Map<string, any>>(new Map())
+
+  const handleRowChangeDebounced = (localId: string, req: RequirementDTO) => {
+    if (debounceTimersRef.current.has(localId)) {
+      clearTimeout(debounceTimersRef.current.get(localId)!)
+    }
+    const timer = setTimeout(() => {
+      runAnalysisForRow(localId, req)
+    }, 1500)
+    debounceTimersRef.current.set(localId, timer)
+  }
+
+  // Trigger analysis for all rows when initialRequirements loads
+  useEffect(() => {
+    rows.forEach(row => {
+      if (row.requirement.id) {
+        runAnalysisForRow(row.localId, row.requirement)
+      }
+    })
+  }, [initialRequirements])
+
   // Filter options are derived from the FULL rows (including drafts) so that
   // dropdown options remain stable while filters are active.
   const filterOptions = useMemo(
@@ -136,12 +219,18 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const updateRow = (localId: string, updates: Partial<RequirementDTO>) =>
-    setRows(prev => prev.map(row =>
-      row.localId === localId
-        ? { ...row, requirement: { ...row.requirement, ...updates }, status: row.status === 'saved' ? 'draft' : row.status }
-        : row,
-    ))
+  const updateRow = (localId: string, updates: Partial<RequirementDTO>) => {
+    setRows(prev => prev.map(row => {
+      if (row.localId === localId) {
+        const updatedReq = { ...row.requirement, ...updates }
+        if ('title' in updates || 'description' in updates) {
+          handleRowChangeDebounced(localId, updatedReq)
+        }
+        return { ...row, requirement: updatedReq, status: row.status === 'saved' ? 'draft' : row.status }
+      }
+      return row
+    }))
+  }
 
   const setRowStatus = (localId: string, status: RowStatus, errorMessage?: string) =>
     setRows(prev => prev.map(row => row.localId === localId ? { ...row, status, errorMessage } : row))
@@ -463,9 +552,11 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
                         errorMessage={row.errorMessage}
                         isSelected={selectedLocalId === row.localId}
                         qualityIssues={qualityMap.get(row.localId)}
+                        duplicateInfo={duplicateInfoMap.get(row.localId)}
+                        traceabilityCount={traceabilityCountMap.get(row.localId) || 0}
                         onUpdate={updates => updateRow(row.localId, updates)}
                         onSave={() => handleSave(row.localId)}
-                        onImprove={() => setAiPreview({ current: row.requirement, suggested: row.requirement, localId: row.localId })}
+                        onImprove={() => handleImprove(row.localId)}
                         onCheckDuplicates={() => handleCheckDuplicates(row.localId)}
                         onViewMemory={() => handleViewMemory(row.localId)}
                         onEvaluateRules={() => handleEvaluateRules(row.localId)}
@@ -540,6 +631,7 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
       {traceabilityPreview && (
         <RequirementTraceabilityPanel
           requirement={traceabilityPreview.requirement}
+          allRequirements={rows.map(r => r.requirement)}
           onClose={() => setTraceabilityPreview(null)}
         />
       )}

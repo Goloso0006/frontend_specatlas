@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { DiagramCanvas } from '../components/diagram/DiagramCanvas'
 import { DiagramToolbar } from '../components/diagram/DiagramToolbar'
@@ -7,10 +8,12 @@ import { DiagramErrorBoundary } from '../components/diagram/DiagramErrorBoundary
 import { DiagramHeader } from '../components/diagram/DiagramHeader'
 import { DiagramPropertiesPanel } from '../components/diagram/DiagramPropertiesPanel'
 import { UnsupportedDiagramView } from '../components/diagram/UnsupportedDiagramView'
+import { DiagramQualityModal } from '../components/diagram/DiagramQualityModal'
 import { useDiagramEditorController } from '../hooks/useDiagramEditorController'
 
 export function DiagramEditorPage() {
   const controller = useDiagramEditorController()
+  const [showQualityModal, setShowQualityModal] = useState(false)
 
   const {
     state: editorState,
@@ -39,6 +42,7 @@ export function DiagramEditorPage() {
     handleEdgesChange,
     handleSelectionChange,
     handleConnect,
+    handleReconnect,
     handleAddElement,
     handleAddActor,
     handleAddUseCase,
@@ -46,11 +50,15 @@ export function DiagramEditorPage() {
     handleDeleteSelected,
     handleDeleteNode,
     handleDeleteEdge,
+    handleNodeDragStart,
+    handleNodeDrag,
     handleNodeDragStop,
     updateNode,
     updateEdge,
     handleSaveDiagram,
     handleGenerateAutoDiagram,
+    handleAutoLayout,
+    handleCleanDuplicateEdges,
     handleApplyAiReplace,
     handleApplyAiMerge,
     handleCloseAiModal,
@@ -58,7 +66,32 @@ export function DiagramEditorPage() {
     setDiagramName,
     setIsSidebarOpen,
     setShowValidationModal,
+    sidebarTabPreference,
+    setSidebarTabPreference,
+    handleAlignNodes,
+    handleDistributeNodes,
+    handleGroupIntoPackage,
+    handleDuplicateSelected,
+    handleDuplicateNode,
+    handleQuickAddAttribute,
+    handleQuickAddMethod,
+    handleQuickCreateRelation,
+    handleQuickAddInclude,
+    handleQuickAddExtend,
+    handleQuickAddToPackage,
+    setSelectedNodeId,
+    setEditorTarget,
     clearSelection,
+    // History, dirty checks & recovery drafts
+    canUndo,
+    canRedo,
+    isDirty,
+    lastSavedTime,
+    showRecoveryModal,
+    handleRestoreDraft,
+    handleDiscardDraft,
+    handleUndo,
+    handleRedo,
   } = controller
 
   /* ── Guards ── */
@@ -91,6 +124,13 @@ export function DiagramEditorPage() {
           onGenerateAutoDiagram={handleGenerateAutoDiagram}
           onSaveDiagram={handleSaveDiagram}
           onDeleteSelected={handleDeleteSelected}
+          isDirty={isDirty}
+          lastSavedTime={lastSavedTime}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          diagramType={diagramType}
         />
 
         <div className="flex-1 min-h-0 flex overflow-hidden relative">
@@ -105,6 +145,7 @@ export function DiagramEditorPage() {
               onAddActor={handleAddActor}
               onAddUseCase={handleAddUseCase}
               onAddPackage={handleAddPackage}
+              onAutoLayout={handleAutoLayout}
             />
           </div>
 
@@ -116,9 +157,31 @@ export function DiagramEditorPage() {
               onNodesChange={handleNodesChange}
               onEdgesChange={handleEdgesChange}
               onConnect={handleConnect}
+              onReconnect={handleReconnect}
               onSelectionChange={handleSelectionChange}
+              onNodeDragStart={handleNodeDragStart}
+              onNodeDrag={handleNodeDrag}
               onNodeDragStop={handleNodeDragStop}
               onPaneClick={clearSelection}
+              onOpenQualityPanel={() => setShowQualityModal(true)}
+              onAlignNodes={handleAlignNodes}
+              onDistributeNodes={handleDistributeNodes}
+              onGroupIntoPackage={handleGroupIntoPackage}
+              onDuplicateSelected={handleDuplicateSelected}
+              onDeleteSelected={handleDeleteSelected}
+              onEditNode={(id) => { setSelectedNodeId(id); setEditorTarget('node'); setIsSidebarOpen(true) }}
+              onDuplicateNode={handleDuplicateNode}
+              onAddAttribute={handleQuickAddAttribute}
+              onAddMethod={handleQuickAddMethod}
+              onCreateRelation={handleQuickCreateRelation}
+              onAddInclude={handleQuickAddInclude}
+              onAddExtend={handleQuickAddExtend}
+              onAddToPackage={handleQuickAddToPackage}
+              onDeleteNode={handleDeleteNode}
+              onUpdateEdge={updateEdge}
+              onSaveDiagram={handleSaveDiagram}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
             />
           </main>
 
@@ -135,6 +198,8 @@ export function DiagramEditorPage() {
             onDeleteNode={handleDeleteNode}
             onDeleteEdge={handleDeleteEdge}
             onClose={() => { setIsSidebarOpen(false); clearSelection() }}
+            sidebarTabPreference={sidebarTabPreference}
+            setSidebarTabPreference={setSidebarTabPreference}
           />
         </div>
 
@@ -164,6 +229,52 @@ export function DiagramEditorPage() {
             onApplyReplace={handleApplyAiReplace}
             onApplyMerge={handleApplyAiMerge}
           />
+        )}
+
+        {showQualityModal && (
+          <DiagramQualityModal
+            nodes={nodes.map(n => n.data)}
+            edges={edges.map(e => e.data as any)}
+            diagramType={diagramType}
+            isAutoGenerated={nodes.some(n => n.id.includes('actor') || n.id.includes('usecase') || n.id.includes('class') || n.id.includes('package'))}
+            lastSavedStatus={saveFeedback ? `${saveFeedback.type === 'success' ? '✓' : '⚠️'} ${saveFeedback.message}` : undefined}
+            onClose={() => setShowQualityModal(false)}
+            onSelectElement={(type, id) => {
+              handleSelectIssue(type, id)
+              setShowQualityModal(false)
+            }}
+            onAutoLayout={handleAutoLayout}
+            onCleanDuplicates={handleCleanDuplicateEdges}
+          />
+        )}
+        {showRecoveryModal && (
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 pointer-events-none">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4 pointer-events-auto">
+              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl animate-bounce">
+                ⚠️
+              </div>
+              <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+                ¿Restaurar borrador no guardado?
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Se encontró una versión local no guardada más reciente que la versión del servidor. ¿Deseas restaurar tus últimos cambios?
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleDiscardDraft}
+                  className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-xs font-bold"
+                >
+                  Descartar
+                </button>
+                <button
+                  onClick={handleRestoreDraft}
+                  className="flex-1 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all text-xs font-bold shadow-lg shadow-blue-600/25"
+                >
+                  Restaurar
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </DiagramErrorBoundary>

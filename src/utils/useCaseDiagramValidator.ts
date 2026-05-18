@@ -169,6 +169,23 @@ export function validateUseCaseDiagram(
     }
   })
 
+  // --- 4. DUPLICATE RELATIONS VALIDATIONS ---
+  const seenUcRelations = new Set<string>()
+  edges.forEach(edge => {
+    const relType = edge.data?.relationshipType || 'ASSOCIATION'
+    const key = `${edge.source}->${edge.target}:${relType}`
+    if (seenUcRelations.has(key)) {
+      issues.push({
+        id: crypto.randomUUID(),
+        severity: 'warning',
+        message: 'Relación duplicada entre los mismos elementos y con el mismo tipo.',
+        targetId: edge.id,
+        targetType: 'edge'
+      })
+    }
+    seenUcRelations.add(key)
+  })
+
   return {
     valid: issues.filter(i => i.severity === 'error').length === 0,
     issues,

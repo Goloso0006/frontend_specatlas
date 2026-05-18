@@ -170,3 +170,53 @@ body {
 .card-hover {
   @apply hover:-translate-y-[1px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-all duration-150;
 }
+
+/* ── React Flow Reconnection & Handle visibility overrides ────────────────── */
+.react-flow__connection-active .react-flow__handle {
+  opacity: 1 !important;
+  transform: scale(1.25) !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.react-flow__node.selected .react-flow__handle {
+  opacity: 1 !important;
+}
+
+/* ── Highlights for Selected Element Relationships Tool ──────────────────── */
+.node-dimmed {
+  opacity: 0.25 !important;
+  filter: grayscale(40%) blur(0.5px);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  pointer-events: auto !important;
+}
+
+.node-highlighted {
+  opacity: 1 !important;
+  z-index: 50 !important;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.node-highlighted-selected {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.4) !important;
+}
+
+.node-highlighted-connected {
+  outline: 1.5px dashed #10b981 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25) !important;
+}
+
+.edge-dimmed {
+  opacity: 0.15 !important;
+  transition: opacity 300ms ease !important;
+}
+
+.edge-highlighted {
+  opacity: 1 !important;
+  stroke: #3b82f6 !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5)) !important;
+  transition: all 300ms ease !important;
+}

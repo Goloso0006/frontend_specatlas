@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Handle, NodeResizer, Position, type NodeProps, type Node } from '@xyflow/react'
 import type { DiagramPackageNodeDTO } from '../../types/diagrams'
 
-export function PackageNode({ data, selected }: NodeProps<Node<DiagramPackageNodeDTO>>) {
+function PackageNodeComponent({ data, selected }: NodeProps<Node<DiagramPackageNodeDTO>>) {
   const palette: Record<string, string> = {
     neutral: 'rgba(255,255,255,0.03)',
     gris: 'rgba(148,163,184,0.05)',
@@ -15,23 +16,24 @@ export function PackageNode({ data, selected }: NodeProps<Node<DiagramPackageNod
   const rawColor = data.style?.color || 'neutral'
   const packageColor = palette[rawColor] || rawColor
 
+  const isDraggedOver = (data as any).isDraggedOver
+
   return (
     <div
-      className="relative w-full h-full rounded-lg"
+      className="relative w-full h-full rounded-lg transition-all duration-200"
       style={{
         background: packageColor,
-        // Border: dashed when idle, solid blue when selected — purely visual, no zIndex here.
-        // The actual z-order is controlled by the React Flow node-level zIndex (set to 0 in
-        // addNodeToCanvas / diagramSourceToReactFlow). Do NOT set zIndex inside this div
-        // because it would create a new stacking context and break the global ordering.
-        border: selected
-          ? '1.5px solid rgba(59,130,246,0.7)'
-          : '1.5px dashed var(--color-border)',
-        // Only the drag handle area (header) needs pointer events.
-        // The full interior uses pointer-events:none so that class nodes placed
-        // inside the package bounds remain clickable and selectable.
+        border: isDraggedOver
+          ? '2.5px solid #10b981'
+          : selected
+            ? '1.5px solid rgba(59,130,246,0.7)'
+            : '1.5px dashed var(--color-border)',
         pointerEvents: 'none',
-        boxShadow: selected ? '0 0 0 3px rgba(59,130,246,0.15)' : 'none',
+        boxShadow: isDraggedOver
+          ? '0 0 20px rgba(16,185,129,0.3)'
+          : selected 
+            ? '0 0 0 3px rgba(59,130,246,0.15)' 
+            : 'none',
       }}
     >
       {/* NodeResizer: always rendered so it responds immediately after creation.
@@ -118,3 +120,20 @@ export function PackageNode({ data, selected }: NodeProps<Node<DiagramPackageNod
     </div>
   )
 }
+
+export const PackageNode = memo(PackageNodeComponent, (prev, next) => {
+  if (!prev.data || !next.data) return false
+  return (
+    prev.selected === next.selected &&
+    prev.data.id === next.data.id &&
+    prev.data.name === next.data.name &&
+    prev.data.description === next.data.description &&
+    (prev.data as any).isDraggedOver === (next.data as any).isDraggedOver &&
+    prev.data.style?.color === next.data.style?.color &&
+    prev.data.style?.width === next.data.style?.width &&
+    prev.data.style?.height === next.data.style?.height &&
+    (prev.data as any).childCount === (next.data as any).childCount
+  )
+})
+
+PackageNode.displayName = 'PackageNode'

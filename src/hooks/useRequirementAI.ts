@@ -4,7 +4,6 @@ import { requirementFacade } from '../facades/requirement.facade'
 import { useLoadingError } from './useLoadingError'
 import type { RequirementDTO } from '../types/requirements'
 import { validateRequirementBeforeSave } from '../utils/requirementValidation'
-import { inferNonFunctionalDetail } from '../utils/nonFunctionalInference'
 import type { DuplicateCheckState } from '../components/requirements/DuplicateWarningPanel'
 
 export type RequirementType = 'FUNCTIONAL' | 'NON_FUNCTIONAL'
@@ -90,9 +89,26 @@ export function useRequirementAI(projectId: string, requirementType: Requirement
   }
 
   function handleRequirementChange(draftId: string, updatedRequirement: RequirementDTO) {
-    const validation = validateRequirementBeforeSave(updatedRequirement, requirementType)
+    const requirement = {
+      ...updatedRequirement,
+      nonFunctionalDetail:
+        (updatedRequirement.requirementType === 'NON_FUNCTIONAL' || requirementType === 'NON_FUNCTIONAL')
+          ? {
+              category: updatedRequirement.nonFunctionalDetail?.category ?? "",
+              metricName: updatedRequirement.nonFunctionalDetail?.metricName ?? "",
+              operator: updatedRequirement.nonFunctionalDetail?.operator ?? "",
+              targetValue: updatedRequirement.nonFunctionalDetail?.targetValue ?? "",
+              unit: updatedRequirement.nonFunctionalDetail?.unit ?? "",
+              context: updatedRequirement.nonFunctionalDetail?.context ?? "",
+              verificationMethod: updatedRequirement.nonFunctionalDetail?.verificationMethod ?? "",
+              rationale: updatedRequirement.nonFunctionalDetail?.rationale ?? "",
+            }
+          : null
+    }
+
+    const validation = validateRequirementBeforeSave(requirement, requirementType)
     updateDraft(draftId, { 
-      requirement: updatedRequirement, 
+      requirement, 
       duplicateState: { status: 'idle' }, 
       validationErrors: validation.errors,
       validationWarnings: validation.warnings,
@@ -125,22 +141,62 @@ export function useRequirementAI(projectId: string, requirementType: Requirement
       setSourceSummary(data.sourceSummary || '')
       setWarnings(data.warnings || [])
 
-      const newDrafts: RequirementDraft[] = data.requirements.map(req => {
+      if (data?.requirements) {
+        console.table(data.requirements.map((r: any) => ({ rawCode: r.code, title: r.title })));
+      }
+
+      const normalizedRequirements = data.requirements.map(req => {
         const requirement: RequirementDTO = {
-          ...req,
-          id: '',
-          projectId,
+          id: req.id || crypto.randomUUID(),
+          code: req.code ?? "",
+          title: req.title ?? "",
+          description: req.description ?? "",
+          actors: req.actors ?? [],
+          acceptanceCriteria: req.acceptanceCriteria ?? [],
+          isoClassification: req.isoClassification ?? "",
+          requirementType: req.requirementType ?? requirementType,
+          projectId: req.projectId ?? projectId,
+          relatedCodes: req.relatedCodes ?? [],
+          nonFunctionalDetail:
+            (req.requirementType === 'NON_FUNCTIONAL' || requirementType === 'NON_FUNCTIONAL')
+              ? {
+                  category: req.nonFunctionalDetail?.category ?? "",
+                  metricName: req.nonFunctionalDetail?.metricName ?? "",
+                  operator: req.nonFunctionalDetail?.operator ?? "",
+                  targetValue: req.nonFunctionalDetail?.targetValue ?? "",
+                  unit: req.nonFunctionalDetail?.unit ?? "",
+                  context: req.nonFunctionalDetail?.context ?? "",
+                  verificationMethod: req.nonFunctionalDetail?.verificationMethod ?? "",
+                  rationale: req.nonFunctionalDetail?.rationale ?? "",
+                }
+              : null,
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(requirement as any).requirementType = requirementType
 
-        if (requirementType === 'NON_FUNCTIONAL') {
-          requirement.nonFunctionalDetail = inferNonFunctionalDetail(requirement)
-          if (requirement.nonFunctionalDetail) {
-            requirement.nonFunctionalDetail.category = normalizeNonFunctionalCategory(requirement.nonFunctionalDetail.category)
-          }
+        if (requirement.requirementType === 'NON_FUNCTIONAL' && requirement.nonFunctionalDetail) {
+          requirement.nonFunctionalDetail.category = normalizeNonFunctionalCategory(requirement.nonFunctionalDetail.category)
         }
 
+        return requirement
+      })
+
+      console.table(normalizedRequirements.map((r: any) => ({ normalizedCode: r.code, title: r.title })));
+
+      console.log("[AI_GENERATED_REQUIREMENTS] total:", normalizedRequirements.length);
+      console.table(
+        normalizedRequirements.map((r) => ({
+          code: r.code,
+          type: r.requirementType,
+          hasNfrDetail: !!r.nonFunctionalDetail,
+          category: r.nonFunctionalDetail?.category,
+          metricName: r.nonFunctionalDetail?.metricName,
+          operator: r.nonFunctionalDetail?.operator,
+          targetValue: r.nonFunctionalDetail?.targetValue,
+          unit: r.nonFunctionalDetail?.unit,
+          verificationMethod: r.nonFunctionalDetail?.verificationMethod,
+        }))
+      );
+
+      const newDrafts: RequirementDraft[] = normalizedRequirements.map(requirement => {
         const validation = validateRequirementBeforeSave(requirement, requirementType)
 
         return {
@@ -224,21 +280,35 @@ export function useRequirementAI(projectId: string, requirementType: Requirement
       const draft = selectedDrafts[i]
       setSaveProgress(`Guardando ${i + 1} de ${selectedDrafts.length}...`)
       
-      const toSave: RequirementDTO = {
-        ...draft.requirement,
-        id: '',
+      const payload = {
         projectId,
+        code: draft.requirement.code ?? "",
         title: draft.requirement.title.trim(),
         description: draft.requirement.description.trim(),
-        requirementType: requirementType,
-        nonFunctionalDetail: requirementType === 'FUNCTIONAL' ? null : {
-          ...draft.requirement.nonFunctionalDetail!,
-          category: normalizeNonFunctionalCategory(draft.requirement.nonFunctionalDetail?.category || '')
-        }
-      } as RequirementDTO
+        actors: draft.requirement.actors ?? [],
+        acceptanceCriteria: draft.requirement.acceptanceCriteria ?? [],
+        isoClassification: draft.requirement.isoClassification,
+        requirementType: draft.requirement.requirementType ?? requirementType,
+        relatedCodes: draft.requirement.relatedCodes ?? [],
+        nonFunctionalDetail:
+          (draft.requirement.requirementType === 'NON_FUNCTIONAL' || requirementType === 'NON_FUNCTIONAL')
+            ? {
+                category: normalizeNonFunctionalCategory(draft.requirement.nonFunctionalDetail?.category ?? ""),
+                metricName: draft.requirement.nonFunctionalDetail?.metricName ?? "",
+                operator: draft.requirement.nonFunctionalDetail?.operator ?? "",
+                targetValue: draft.requirement.nonFunctionalDetail?.targetValue ?? "",
+                unit: draft.requirement.nonFunctionalDetail?.unit ?? "",
+                context: draft.requirement.nonFunctionalDetail?.context ?? "",
+                verificationMethod: draft.requirement.nonFunctionalDetail?.verificationMethod ?? "",
+                rationale: draft.requirement.nonFunctionalDetail?.rationale ?? "",
+              }
+            : null,
+      }
+
+      console.log("[REQUIREMENT_SAVE_PAYLOAD]", payload);
 
       try {
-        const saved = await requirementFacade.saveRequirement(toSave)
+        const saved = await requirementFacade.saveRequirement(payload as any)
         if (saved) {
           savedCount++
           updateDraft(draft.draftId, { selected: false, discarded: true, backendError: null })

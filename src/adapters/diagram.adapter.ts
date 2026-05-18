@@ -17,7 +17,7 @@ export function adaptDiagramResponse(response: Partial<DiagramResponse> | null |
     name: normalizeString(response?.name),
     diagramType: normalizeDiagramType(response?.diagramType),
     mode: normalizeDiagramMode(response?.mode),
-    sourceJson: parseDiagramSource(response?.sourceJson as DiagramResponse['sourceJson']),
+    sourceJson: parseDiagramSource(response),
     plantUmlCode: normalizeOptionalString(response?.plantUmlCode) ?? null,
     createdAt: normalizeOptionalString(response?.createdAt),
     updatedAt: normalizeOptionalString(response?.updatedAt),

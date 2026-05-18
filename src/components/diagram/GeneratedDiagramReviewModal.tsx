@@ -37,8 +37,8 @@ export function GeneratedDiagramReviewModal({
   const relationCount = edges.length
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-3xl border border-app-border shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 pointer-events-none">
+      <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-3xl border border-app-border shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 pointer-events-auto">
         
         {/* Header */}
         <div className="p-6 border-b bg-app-accent/5 dark:bg-app-accent/10 border-app-accent/20 flex items-center gap-4">

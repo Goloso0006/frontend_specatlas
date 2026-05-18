@@ -14,14 +14,22 @@ export interface DiagramClassAttributeDTO {
   type: string
   visibility: VisibilityType
   required?: boolean
+  static?: boolean
+  final?: boolean
 }
 
 export interface DiagramClassMethodDTO {
   id: string
   name: string
-  parameters: string
+  parameters: Array<{ id: string; name: string; type: string }>
   returnType: string
   visibility: VisibilityType
+  static?: boolean
+  isStatic?: boolean
+  abstract?: boolean
+  isAbstract?: boolean
+  explicitlyEmpty?: boolean
+  constructorKind?: 'ALL_FIELDS' | 'EMPTY'
 }
 
 export type DiagramUmlType = 'CLASS' | 'ABSTRACT_CLASS' | 'INTERFACE' | 'ENUM'
@@ -37,8 +45,13 @@ export type DiagramActorNodeDTO = {
   name: string
   description?: string
   position: DiagramPositionDTO
-  derivedFromRequirements: string[]
+  derivedFromRequirements?: string[]
   actorType?: string
+  packageId?: string
+  style?: {
+    color?: string
+  }
+  compactMode?: boolean
 }
 
 export type DiagramUseCaseNodeDTO = {
@@ -47,7 +60,12 @@ export type DiagramUseCaseNodeDTO = {
   name: string
   description?: string
   position: DiagramPositionDTO
-  derivedFromRequirements: string[]
+  derivedFromRequirements?: string[]
+  packageId?: string
+  style?: {
+    color?: string
+  }
+  compactMode?: boolean
 }
 
 export type DiagramClassNodeDTO = {
@@ -60,8 +78,11 @@ export type DiagramClassNodeDTO = {
   enumValues?: DiagramEnumValueDTO[]
   position: DiagramPositionDTO
   description?: string
-  derivedFromRequirements: string[]
+  derivedFromRequirements?: string[]
   packageId?: string
+  style?: {
+    color?: string
+  }
 }
 
 export type DiagramRelationshipType = 
@@ -91,8 +112,13 @@ export type DiagramRelationDTO = {
     description?: string
     sourceMultiplicity?: string
     targetMultiplicity?: string
+    waypoints?: { x: number; y: number }[]
+    sourceRole?: string
+    targetRole?: string
+    extensionPointRef?: string
+    navigability?: string
   }
-  derivedFromRequirements: string[]
+  derivedFromRequirements?: string[]
 }
 
 export type DiagramPackageNodeDTO = {
@@ -101,7 +127,7 @@ export type DiagramPackageNodeDTO = {
   name: string
   description?: string
   position: DiagramPositionDTO
-  derivedFromRequirements: string[]
+  derivedFromRequirements?: string[]
   style?: {
     width: number
     height: number

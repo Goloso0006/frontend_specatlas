@@ -88,12 +88,47 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
       segments.push({ label: 'Diagramas', path: `${base}/diagrams`, isCurrent: isDiagRoot })
 
       if (!isDiagRoot) {
-        if (path === `${base}/diagrams/new`) {
+        if (path.startsWith(`${base}/diagrams/class`)) {
+          const classBase = `${base}/diagrams/class`
+          const isClassRoot = path === classBase
+          segments.push({ label: 'Diagrama de clases', path: classBase, isCurrent: isClassRoot })
+
+          if (!isClassRoot) {
+            const isNew = path === `${classBase}/new`
+            const activeName = localStorage.getItem('active_diagram_name') || 'Nuevo diagrama'
+            segments.push({
+              label: isNew ? 'Nuevo diagrama' : activeName,
+              path: path,
+              isCurrent: true
+            })
+          }
+        } else if (path.startsWith(`${base}/diagrams/use-case`)) {
+          const ucBase = `${base}/diagrams/use-case`
+          const isUcRoot = path === ucBase
+          segments.push({ label: 'Diagrama de casos de uso', path: ucBase, isCurrent: isUcRoot })
+
+          if (!isUcRoot) {
+            const isNew = path === `${ucBase}/new`
+            const activeName = localStorage.getItem('active_diagram_name') || 'Nuevo diagrama'
+            segments.push({
+              label: isNew ? 'Nuevo diagrama' : activeName,
+              path: path,
+              isCurrent: true
+            })
+          }
+        } else if (path === `${base}/diagrams/new`) {
           segments.push({ label: 'Nuevo diagrama', path: `${base}/diagrams/new`, isCurrent: true })
+        } else if (path === `${base}/diagrams/sequence`) {
+          segments.push({ label: 'Diagrama de secuencia', path: `${base}/diagrams/sequence`, isCurrent: true })
+        } else if (path === `${base}/diagrams/activity`) {
+          segments.push({ label: 'Diagrama de actividades', path: `${base}/diagrams/activity`, isCurrent: true })
+        } else if (path === `${base}/diagrams/component`) {
+          segments.push({ label: 'Diagrama de componentes', path: `${base}/diagrams/component`, isCurrent: true })
+        } else if (path === `${base}/diagrams/er`) {
+          segments.push({ label: 'Diagrama entidad-relación', path: `${base}/diagrams/er`, isCurrent: true })
         } else {
-          // It's an existing diagram. We don't have the name here, but we can use "Editor"
-          // or try to get it from somewhere if needed. For now "Detalle" or "Editor"
-          segments.push({ label: 'Editor', path: path, isCurrent: true })
+          const activeName = localStorage.getItem('active_diagram_name') || 'Editor'
+          segments.push({ label: activeName, path: path, isCurrent: true })
         }
       }
     } else if (path === `${base}/validation-rules`) {

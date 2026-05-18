@@ -12,10 +12,12 @@ import { Button } from '../ui/Button'
 
 interface RequirementTraceabilityPanelProps {
   requirement: RequirementDTO
+  allRequirements?: RequirementDTO[]
   onClose: () => void
 }
 
 const TARGET_TYPES: { value: TraceabilityTargetType; label: string }[] = [
+  { value: 'REQUIREMENT', label: 'Requisito del proyecto' },
   { value: 'TEST_CASE', label: 'Caso de prueba' },
   { value: 'DIAGRAM', label: 'Diagrama' },
   { value: 'CLASS', label: 'Clase' },
@@ -25,16 +27,19 @@ const TARGET_TYPES: { value: TraceabilityTargetType; label: string }[] = [
 ]
 
 const RELATION_TYPES: { value: TraceabilityRelationType; label: string }[] = [
-  { value: 'VALIDATED_BY', label: 'Validado por' },
-  { value: 'REPRESENTED_IN', label: 'Representado en' },
-  { value: 'IMPLEMENTED_BY', label: 'Implementado por' },
-  { value: 'DEPENDS_ON', label: 'Depende de' },
-  { value: 'IMPACTS', label: 'Impacta' },
-  { value: 'REFINES', label: 'Refina' },
-  { value: 'RELATED_TO', label: 'Relacionado con' },
+  { value: 'DEPENDS_ON', label: 'Depende de (DEPENDS_ON)' },
+  { value: 'BLOCKS', label: 'Bloquea (BLOCKS)' },
+  { value: 'RELATED_TO', label: 'Relacionado con (RELATES_TO)' },
+  { value: 'DUPLICATES', label: 'Duplica a (DUPLICATES)' },
+  { value: 'REFINES', label: 'Refina (REFINES)' },
+  { value: 'IMPACTS', label: 'Impacta (IMPACTS)' },
+  { value: 'CONSTRAINS', label: 'Restringe (CONSTRAINS)' },
+  { value: 'VALIDATED_BY', label: 'Validado por (VALIDATED_BY)' },
+  { value: 'REPRESENTED_IN', label: 'Representado en (REPRESENTED_IN)' },
+  { value: 'IMPLEMENTED_BY', label: 'Implementado por (IMPLEMENTED_BY)' },
 ]
 
-export const RequirementTraceabilityPanel: React.FC<RequirementTraceabilityPanelProps> = ({ requirement, onClose }) => {
+export const RequirementTraceabilityPanel: React.FC<RequirementTraceabilityPanelProps> = ({ requirement, allRequirements, onClose }) => {
   const { run, isLoading } = useApiOperation()
   const [links, setLinks] = useState<TraceabilityLink[]>([])
   const [testCases, setTestCases] = useState<TestCase[]>([])
@@ -43,8 +48,8 @@ export const RequirementTraceabilityPanel: React.FC<RequirementTraceabilityPanel
   const [showTestCaseForm, setShowTestCaseForm] = useState(false)
   
   const [newLink, setNewLink] = useState<Partial<TraceabilityLink>>({
-    targetType: 'TEST_CASE',
-    relationType: 'VALIDATED_BY',
+    targetType: 'REQUIREMENT',
+    relationType: 'DEPENDS_ON',
   })
   
   const [newTestCase, setNewTestCase] = useState<Partial<TestCase>>({
@@ -210,8 +215,12 @@ export const RequirementTraceabilityPanel: React.FC<RequirementTraceabilityPanel
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-[var(--color-text-primary)]">Nuevo enlace de trazabilidad</h3>
                 <button onClick={() => setShowAddForm(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
+              </div>
+
+              <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl text-xs leading-relaxed font-medium">
+                Conecta este requisito con otros requisitos para analizar dependencias, impacto y trazabilidad del proyecto.
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -239,7 +248,20 @@ export const RequirementTraceabilityPanel: React.FC<RequirementTraceabilityPanel
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Destino</label>
-                {newLink.targetType === 'TEST_CASE' ? (
+                {newLink.targetType === 'REQUIREMENT' ? (
+                  <select 
+                    onChange={e => {
+                      const req = allRequirements?.find(r => r.id === e.target.value)
+                      setNewLink({ ...newLink, targetId: e.target.value, targetName: req ? `[${req.code}] ${req.title}` : '' })
+                    }}
+                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
+                  >
+                    <option value="">Selecciona un requisito...</option>
+                    {allRequirements?.filter(r => r.id !== requirement.id).map(r => (
+                      <option key={r.id} value={r.id}>[{r.code}] {r.title}</option>
+                    ))}
+                  </select>
+                ) : newLink.targetType === 'TEST_CASE' ? (
                   <div className="space-y-2">
                     <select 
                       onChange={e => {

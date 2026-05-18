@@ -229,6 +229,16 @@ export function validateClassDiagram(
     const sourceNode = nodes.find(n => n.id === edge.source)
     const targetNode = nodes.find(n => n.id === edge.target)
 
+    if (relType === 'INHERITANCE' && edge.source === edge.target) {
+      issues.push({
+        id: `rel-inh-self-${edge.id}`,
+        severity: 'warning',
+        message: 'Una clase no puede heredar de sí misma (herencia reflexiva).',
+        targetType: 'edge',
+        targetId: edge.id
+      })
+    }
+
     if (relType === 'IMPLEMENTATION' && targetNode && targetNode.umlType !== 'INTERFACE') {
       issues.push({
         id: `rel-impl-no-intf-${edge.id}`,
@@ -279,6 +289,23 @@ export function validateClassDiagram(
         targetId: edge.id
       })
     }
+  })
+
+  // 4. Duplicate Relations check
+  const seenClassRelations = new Set<string>()
+  edges.forEach(edge => {
+    const relType = edge.data?.relationshipType || 'ASSOCIATION'
+    const key = `${edge.source}->${edge.target}:${relType}`
+    if (seenClassRelations.has(key)) {
+      issues.push({
+        id: `rel-duplicate-${edge.id}`,
+        severity: 'warning',
+        message: 'Relación duplicada entre los mismos elementos y con el mismo tipo.',
+        targetType: 'edge',
+        targetId: edge.id
+      })
+    }
+    seenClassRelations.add(key)
   })
 
   return {

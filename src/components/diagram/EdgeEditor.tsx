@@ -65,7 +65,7 @@ export function EdgeEditor({ edge, onChange }: EdgeEditorProps) {
         <span>Derived from requirements</span>
         <input
           className="w-full rounded-md border app-border-strong app-surface px-3 py-2"
-          value={edge.derivedFromRequirements.join(', ')}
+          value={(edge.derivedFromRequirements || []).join(', ')}
           onChange={(event) => {
             const next = event.target.value
             onChange({

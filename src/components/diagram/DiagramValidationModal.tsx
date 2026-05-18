@@ -18,8 +18,8 @@ export function DiagramValidationModal({
   const hasWarnings = result.warnings.length > 0
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-3xl border border-app-border shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 pointer-events-none">
+      <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-3xl border border-app-border shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-200 pointer-events-auto">
         
         {/* Header */}
         <div className={`p-6 border-b flex items-center gap-4 ${hasErrors ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30' : 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/30'}`}>

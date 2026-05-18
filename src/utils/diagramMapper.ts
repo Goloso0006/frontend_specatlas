@@ -80,27 +80,46 @@ export function createDiagramRelation(source: string, target: string): DiagramRe
 }
 
 export function parseDiagramSource(input: any): DiagramSourceDTO {
+  if (import.meta.env.DEV) {
+    console.log("[METHOD_RELOAD_RAW_RESPONSE]", input)
+    console.log("[METHOD_RELOAD_SOURCEJSON_RAW]", {
+      sourceJson: input?.sourceJson ?? input?.data?.sourceJson,
+      content: input?.content ?? input?.data?.content
+    })
+  }
+
   if (!input) {
     return createEmptyDiagramSource()
   }
 
-  let parsed = input
+  let parsed: any = null
 
-  // Safely extract from wrapped formats
-  if (typeof parsed === 'object') {
-    if (parsed.data && typeof parsed.data === 'object') {
-      parsed = parsed.data
-    }
-    
-    // Check multiple possible properties in the object for serialized diagram data
-    if (typeof parsed.sourceJson === 'string' || (parsed.sourceJson && typeof parsed.sourceJson === 'object')) {
-      parsed = parsed.sourceJson
-    } else if (typeof parsed.content === 'string' || (parsed.content && typeof parsed.content === 'object')) {
-      parsed = parsed.content
-    }
+  // 1. response.data.sourceJson
+  if (input.data && (typeof input.data.sourceJson === 'string' || (input.data.sourceJson && typeof input.data.sourceJson === 'object'))) {
+    parsed = input.data.sourceJson
+  }
+  // 2. response.sourceJson
+  else if (typeof input.sourceJson === 'string' || (input.sourceJson && typeof input.sourceJson === 'object')) {
+    parsed = input.sourceJson
+  }
+  // 3. response.data.content
+  else if (input.data && (typeof input.data.content === 'string' || (input.data.content && typeof input.data.content === 'object'))) {
+    parsed = input.data.content
+  }
+  // 4. response.content
+  else if (typeof input.content === 'string' || (input.content && typeof input.content === 'object')) {
+    parsed = input.content
+  }
+  // 5. response.data
+  else if (input.data && typeof input.data === 'object') {
+    parsed = input.data
+  }
+  // 6. response
+  else {
+    parsed = input
   }
 
-  // If we have a string (either from input or extracted), safe-parse it (handles double-stringified too)
+  // Safe-parse if double-stringified or a string
   if (typeof parsed === 'string') {
     const safeParsed = safeParseJson(parsed)
     if (safeParsed) {
@@ -108,9 +127,12 @@ export function parseDiagramSource(input: any): DiagramSourceDTO {
     }
   }
 
-  // If after all extraction we still don't have a valid object, return empty
   if (!parsed || typeof parsed !== 'object') {
     return createEmptyDiagramSource()
+  }
+
+  if (import.meta.env.DEV) {
+    console.log("[METHOD_RELOAD_PARSED_SOURCE]", parsed)
   }
 
   // Accept "edges", "relationships" and "relations" as field names (AI/database backends differ)
@@ -121,6 +143,17 @@ export function parseDiagramSource(input: any): DiagramSourceDTO {
   const diagramType = parsed.diagramType === 'USE_CASE' ? 'USE_CASE' : 'CLASS'
   
   let finalNodes = Array.isArray(parsed.nodes) ? parsed.nodes.map(normalizeNode) : []
+
+  if (import.meta.env.DEV) {
+    console.log("[METHOD_RELOAD_NORMALIZED_NODES]", finalNodes
+      .filter((n: any) => n.type === "classNode" || n.kind === "class")
+      .map((n: any) => ({
+        id: n.id,
+        name: n.data?.name ?? n.name,
+        methods: n.data?.methods ?? n.methods
+      }))
+    )
+  }
 
   // Build nodeIds from parsed nodes to validate edge connectivity (Rule #6)
   const nodeIds = new Set(
@@ -286,7 +319,26 @@ export function parseDiagramSource(input: any): DiagramSourceDTO {
 }
 
 export function serializeDiagramSource(source: DiagramSourceDTO): string {
-  return JSON.stringify(source, null, 2)
+  const repairedSource = repairDiagramMethods(source)
+  if (import.meta.env.DEV) {
+    console.log("[SERIALIZE_DIAGRAM_SOURCE]", {
+      nodesCount: repairedSource.nodes.length,
+      classNodes: repairedSource.nodes
+        .filter((n: any) => n.kind === 'class')
+        .map((n: any) => ({
+          id: n.id,
+          name: n.name,
+          methodsCount: n.methods?.length || 0,
+          methods: n.methods?.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            parametersCount: Array.isArray(m.parameters) ? m.parameters.length : 0,
+            parameters: m.parameters
+          }))
+        }))
+    })
+  }
+  return JSON.stringify(repairedSource, null, 2)
 }
 
 export function validateDiagramSource(source: DiagramSourceDTO): DiagramValidationResult {
@@ -418,14 +470,31 @@ export function reactFlowToDiagramSource(
 
       return baseNode
     }),
-    edges: edges.map((edge) => ({
-      ...(edge.data ?? createDiagramRelation(edge.source, edge.target)),
-      source: edge.source,
-      target: edge.target,
-      sourceHandle: edge.sourceHandle || null,
-      targetHandle: edge.targetHandle || null,
-      type: edge.type || (diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
-    })),
+    edges: edges.map((edge) => {
+      const baseRelation = edge.data ?? createDiagramRelation(edge.source, edge.target)
+      const rawData = (baseRelation.data || {}) as any
+      const relType = rawData.relationshipType || (edge.data as any)?.relationshipType || 'ASSOCIATION'
+      return {
+        ...baseRelation,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle || null,
+        targetHandle: edge.targetHandle || null,
+        type: edge.type || (diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
+        data: {
+          relationshipType: relType,
+          label: rawData.label || '',
+          description: rawData.description || '',
+          sourceMultiplicity: rawData.sourceMultiplicity || '1',
+          targetMultiplicity: rawData.targetMultiplicity || '1',
+          waypoints: rawData.waypoints || (edge.data as any)?.waypoints || [],
+          sourceRole: rawData.sourceRole || (edge.data as any)?.sourceRole || '',
+          targetRole: rawData.targetRole || (edge.data as any)?.targetRole || '',
+          extensionPointRef: rawData.extensionPointRef || (edge.data as any)?.extensionPointRef || '',
+          navigability: rawData.navigability || (edge.data as any)?.navigability || 'BOTH',
+        }
+      }
+    }),
   }
 
   if (diagramType === 'USE_CASE') {
@@ -451,6 +520,8 @@ export function reactFlowToDiagramSource(
   // Always populate relations and relationships for all diagram types to satisfy backend DTO and Neo4j sync requirements
   const mappedRelations = edges.map(e => {
     const rawData = (e.data as any)?.data ?? e.data ?? {}
+    const waypoints = Array.isArray(rawData.waypoints) ? rawData.waypoints :
+                      Array.isArray((e.data as any)?.waypoints) ? (e.data as any).waypoints : []
     return {
       id: e.id,
       sourceId: e.source,
@@ -466,6 +537,11 @@ export function reactFlowToDiagramSource(
         description: rawData.description || '',
         sourceMultiplicity: rawData.sourceMultiplicity || '1',
         targetMultiplicity: rawData.targetMultiplicity || '1',
+        waypoints,
+        sourceRole: rawData.sourceRole || '',
+        targetRole: rawData.targetRole || '',
+        extensionPointRef: rawData.extensionPointRef || '',
+        navigability: rawData.navigability || 'BOTH',
       }
     }
   })
@@ -473,7 +549,7 @@ export function reactFlowToDiagramSource(
   source.relations = mappedRelations
   ;(source as any).relationships = mappedRelations
 
-  return source
+  return repairDiagramMethods(source)
 }
 
 function safeParseJson(value: string): DiagramSourceDTO | null {
@@ -489,10 +565,102 @@ function safeParseJson(value: string): DiagramSourceDTO | null {
   }
 }
 
+function repairClassMethods(
+  className: string,
+  attributes: DiagramClassAttributeDTO[],
+  methods: DiagramClassMethodDTO[]
+): DiagramClassMethodDTO[] {
+  return methods.map(method => {
+    // 1. Constructor
+    if (method.name === className && (!method.returnType || method.returnType === '')) {
+      const hasParameters = Array.isArray(method.parameters) && method.parameters.length > 0
+      
+      // If parameters exist, keep them.
+      if (hasParameters) {
+        return method
+      }
+      
+      // If parameters are empty and method was explicitly empty constructor, keep empty.
+      if (method.explicitlyEmpty || (method as any).constructorKind === 'EMPTY') {
+        return method
+      }
+      
+      // If there is no explicit empty-constructor flag and attributes exist, optionally repair parameters from attributes.
+      if (attributes.length > 0) {
+        const repairedParams = attributes.map(attr => ({
+          id: generateSafeId(),
+          name: attr.name,
+          type: attr.type || 'String'
+        }))
+        
+        if (import.meta.env.DEV) {
+          console.log("[METHOD_REPAIR_CONSTRUCTOR]", {
+            className,
+            repairedParams
+          })
+        }
+        
+        return {
+          ...method,
+          parameters: repairedParams
+        }
+      }
+    }
+    
+    // 2. Setter
+    if (method.name.startsWith('set') && method.returnType === 'void') {
+      const hasParameters = Array.isArray(method.parameters) && method.parameters.length > 0
+      
+      // If parameters exist, keep them.
+      if (hasParameters) {
+        return method
+      }
+      
+      // Derive attribute name from setter name
+      const setterSuffix = method.name.slice(3) // e.g. "UbicacionGPS"
+      
+      // Find matching attribute (case-insensitive)
+      const possibleName1 = setterSuffix.charAt(0).toLowerCase() + setterSuffix.slice(1) // "ubicacionGPS"
+      const matchingAttr = attributes.find(attr => 
+        attr.name.toLowerCase() === possibleName1.toLowerCase() ||
+        attr.name.toLowerCase() === setterSuffix.toLowerCase()
+      )
+      
+      if (matchingAttr) {
+        const repairedParam = {
+          id: generateSafeId(),
+          name: matchingAttr.name,
+          type: matchingAttr.type || 'String'
+        }
+        
+        if (import.meta.env.DEV) {
+          console.log("[METHOD_REPAIR_SETTER]", {
+            setterName: method.name,
+            repairedParam
+          })
+        }
+        
+        return {
+          ...method,
+          parameters: [repairedParam]
+        }
+      }
+    }
+    
+    return method
+  })
+}
+
 export function normalizeNode(node: any): DiagramNodeDTO {
-  // Determine if it's a class node or use case node
-  const isClass = node.kind === 'class' || Array.isArray(node.attributes) || Array.isArray(node.methods)
+  // Determine if it's a class node, package, or use case
   const isPackage = node.kind === 'package'
+  const isClass =
+    node.kind === 'class' ||
+    node.type === 'classNode' ||
+    Array.isArray(node.attributes) ||
+    Array.isArray(node.methods) ||
+    Array.isArray(node.data?.attributes) ||
+    Array.isArray(node.data?.methods)
   const isActor = node.kind?.toLowerCase() === 'actor'
 
   if (isPackage) {
@@ -516,18 +684,64 @@ export function normalizeNode(node: any): DiagramNodeDTO {
   }
 
   if (isClass) {
+    const rawData = node.data && typeof node.data === 'object' ? node.data : node
+
+    const name = typeof rawData.name === 'string' && rawData.name.trim().length > 0
+      ? rawData.name
+      : typeof node.name === 'string' && node.name.trim().length > 0
+        ? node.name
+        : 'NuevaClase'
+
+    const umlType = typeof rawData.umlType === 'string'
+      ? rawData.umlType
+      : typeof node.umlType === 'string'
+        ? node.umlType
+        : 'CLASS'
+
+    const attributes = Array.isArray(rawData.attributes)
+      ? rawData.attributes
+      : Array.isArray(node.attributes)
+        ? node.attributes
+        : []
+
+    const methods = Array.isArray(rawData.methods)
+      ? rawData.methods
+      : Array.isArray(node.methods)
+        ? node.methods
+        : []
+
+    const enumValues = Array.isArray(rawData.enumValues)
+      ? rawData.enumValues
+      : Array.isArray(node.enumValues)
+        ? node.enumValues
+        : []
+
+    const packageId = typeof node.packageId === 'string'
+      ? node.packageId
+      : typeof rawData.packageId === 'string'
+        ? rawData.packageId
+        : undefined
+
+    const normalizedAttrs = attributes.map(normalizeAttribute)
+    const normalizedMethods = methods.map(normalizeMethod)
+    const repairedMethods = repairClassMethods(name, normalizedAttrs, normalizedMethods)
+
     return {
       id: typeof node.id === 'string' ? node.id : createNodeId(),
       kind: 'class',
-      umlType: typeof node.umlType === 'string' ? node.umlType : 'CLASS',
-      name: typeof node.name === 'string' && node.name.trim().length > 0 ? node.name : 'NuevaClase',
-      attributes: Array.isArray(node.attributes) ? node.attributes.map(normalizeAttribute) : [],
-      methods: Array.isArray(node.methods) ? node.methods.map(normalizeMethod) : [],
-      enumValues: Array.isArray(node.enumValues) ? node.enumValues.map(normalizeEnumValue) : [],
+      umlType,
+      name,
+      attributes: normalizedAttrs,
+      methods: repairedMethods,
+      enumValues: enumValues.map(normalizeEnumValue),
       position: normalizePosition(node.position),
-      description: typeof node.description === 'string' ? node.description : '',
-      derivedFromRequirements: Array.isArray(node.derivedFromRequirements) ? node.derivedFromRequirements : [],
-      packageId: typeof node.packageId === 'string' ? node.packageId : typeof node.data?.packageId === 'string' ? node.data.packageId : undefined,
+      description: typeof rawData.description === 'string' ? rawData.description : typeof node.description === 'string' ? node.description : '',
+      derivedFromRequirements: Array.isArray(rawData.derivedFromRequirements)
+        ? rawData.derivedFromRequirements
+        : Array.isArray(node.derivedFromRequirements)
+          ? node.derivedFromRequirements
+          : [],
+      packageId,
     }
   }
 
@@ -596,8 +810,20 @@ export function normalizeEdge(edge: any, diagramType?: DiagramType): DiagramRela
       label,
       description: typeof edge.data?.description === 'string' ? edge.data.description :
                    typeof edge.description === 'string' ? edge.description : '',
-      sourceMultiplicity: typeof edge.data?.sourceMultiplicity === 'string' ? edge.data.sourceMultiplicity : '1',
-      targetMultiplicity: typeof edge.data?.targetMultiplicity === 'string' ? edge.data.targetMultiplicity : '1',
+      sourceMultiplicity: typeof edge.data?.sourceMultiplicity === 'string' ? edge.data.sourceMultiplicity :
+                          typeof edge.sourceMultiplicity === 'string' ? edge.sourceMultiplicity : '1',
+      targetMultiplicity: typeof edge.data?.targetMultiplicity === 'string' ? edge.data.targetMultiplicity :
+                          typeof edge.targetMultiplicity === 'string' ? edge.targetMultiplicity : '1',
+      waypoints: Array.isArray(edge.data?.waypoints) ? edge.data.waypoints :
+                 Array.isArray(edge.waypoints) ? edge.waypoints : [],
+      sourceRole: typeof edge.data?.sourceRole === 'string' ? edge.data.sourceRole :
+                  typeof edge.sourceRole === 'string' ? edge.sourceRole : '',
+      targetRole: typeof edge.data?.targetRole === 'string' ? edge.data.targetRole :
+                  typeof edge.targetRole === 'string' ? edge.targetRole : '',
+      extensionPointRef: typeof edge.data?.extensionPointRef === 'string' ? edge.data.extensionPointRef :
+                         typeof edge.extensionPointRef === 'string' ? edge.extensionPointRef : '',
+      navigability: typeof edge.data?.navigability === 'string' ? edge.data.navigability :
+                    typeof edge.navigability === 'string' ? edge.navigability : 'BOTH',
     },
     derivedFromRequirements: Array.isArray(edge.derivedFromRequirements) ? edge.derivedFromRequirements : [],
   }
@@ -619,13 +845,149 @@ function normalizeAttribute(attribute: DiagramClassAttributeDTO): DiagramClassAt
   }
 }
 
-function normalizeMethod(method: DiagramClassMethodDTO): DiagramClassMethodDTO {
+function normalizeMethod(method: any): DiagramClassMethodDTO {
+  const isStatic = method.static !== undefined ? Boolean(method.static) : Boolean(method.isStatic)
+  const isAbstract = method.abstract !== undefined ? Boolean(method.abstract) : Boolean(method.isAbstract)
+
+  let normalizedParams: any[] = []
+  const rawParams = method.parameters ?? method.params ?? method.arguments ?? method.methodParameters
+
+  if (import.meta.env.DEV) {
+    console.log("[NORMALIZE_METHOD]", {
+      methodName: method.name,
+      hasParameters: !!method.parameters,
+      hasParams: !!method.params,
+      hasArguments: !!method.arguments,
+      hasMethodParameters: !!method.methodParameters,
+      rawParams,
+      rawParamsType: typeof rawParams,
+      isArray: Array.isArray(rawParams)
+    })
+  }
+
+  if (Array.isArray(rawParams)) {
+    normalizedParams = rawParams.map((p: any) => ({
+      id: p.id || generateSafeId(),
+      name: p.name || '',
+      type: p.type || 'String'
+    }))
+  } else if (typeof rawParams === 'string' && rawParams.trim().length > 0) {
+    normalizedParams = rawParams.split(',').map((part: string) => {
+      const parts = part.trim().split(':')
+      const pName = parts[0]?.trim() || ''
+      const pType = parts[1]?.trim() || 'String'
+      return {
+        id: generateSafeId(),
+        name: pName,
+        type: pType
+      }
+    }).filter((p: any) => p.name.length > 0)
+  }
+
+  if (import.meta.env.DEV) {
+    console.log("[NORMALIZE_METHOD_RESULT]", {
+      methodName: method.name,
+      parametersCount: normalizedParams.length,
+      parameters: normalizedParams
+    })
+  }
+
   return {
     id: typeof method.id === 'string' ? method.id : generateSafeId(),
     name: typeof method.name === 'string' ? method.name : '',
-    parameters: typeof method.parameters === 'string' ? method.parameters : '',
+    parameters: normalizedParams,
     returnType: typeof method.returnType === 'string' ? method.returnType : '',
     visibility: normalizeVisibility(method.visibility),
+    static: isStatic,
+    isStatic: isStatic,
+    abstract: isAbstract,
+    isAbstract: isAbstract,
+    explicitlyEmpty: method.explicitlyEmpty !== undefined ? Boolean(method.explicitlyEmpty) : undefined,
+    constructorKind: method.constructorKind,
+  }
+}
+
+export function repairDiagramMethods(source: DiagramSourceDTO): DiagramSourceDTO {
+  if (!source || !Array.isArray(source.nodes)) return source
+
+  const repairedNodes = source.nodes.map(node => {
+    if (node.kind !== 'class') return node
+
+    const className = node.name
+    const attributes = Array.isArray(node.attributes) ? node.attributes : []
+    const methods = Array.isArray(node.methods) ? node.methods : []
+
+    if (import.meta.env.DEV) {
+      console.log("[METHOD_REPAIR_BEFORE]", className, methods)
+    }
+
+    const repairedMethods = methods.map(method => {
+      const isConstructor = method.name === className && (!method.returnType || method.returnType.trim() === '')
+      if (isConstructor) {
+        const params = Array.isArray(method.parameters) ? method.parameters : []
+        if (params.length === 0 && !method.explicitlyEmpty) {
+          const newParams = attributes.map(a => ({
+            id: generateSafeId(),
+            name: a.name,
+            type: a.type || 'String'
+          }))
+          return {
+            ...method,
+            parameters: newParams
+          }
+        }
+        return method
+      }
+
+      const isSetter = method.name.startsWith('set') && method.name.length > 3 && method.returnType === 'void'
+      if (isSetter) {
+        const params = Array.isArray(method.parameters) ? method.parameters : []
+        if (params.length === 0) {
+          const derivedName = method.name.slice(3)
+          const matchingAttr = attributes.find(a => a.name.toLowerCase() === derivedName.toLowerCase())
+          const paramName = matchingAttr ? matchingAttr.name : (derivedName.charAt(0).toLowerCase() + derivedName.slice(1))
+          const paramType = matchingAttr ? (matchingAttr.type || 'String') : 'String'
+          
+          return {
+            ...method,
+            parameters: [
+              {
+                id: generateSafeId(),
+                name: paramName,
+                type: paramType
+              }
+            ]
+          }
+        }
+      }
+
+      return method
+    })
+
+    if (import.meta.env.DEV) {
+      console.log("[METHOD_REPAIR_AFTER]", className, repairedMethods)
+    }
+
+    return {
+      ...node,
+      methods: repairedMethods
+    }
+  })
+
+  if (import.meta.env.DEV) {
+    const classNodes = repairedNodes.filter(n => n.kind === 'class')
+    console.log("[METHOD_PAYLOAD_PARAMETERS]", classNodes.map((n: any) => ({
+      className: n.name,
+      methods: n.methods.map((m: any) => ({
+        name: m.name,
+        parameters: m.parameters
+      }))
+    })))
+  }
+
+  return {
+    ...source,
+    nodes: repairedNodes
   }
 }
 
