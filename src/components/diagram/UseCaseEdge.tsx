@@ -29,7 +29,7 @@ export function UseCaseEdge({
   })
 
   const relData = data?.data
-  const relType = relData?.relationshipType || 'ASSOCIATION'
+  const relType = String(relData?.relationshipType || (relData as any)?.relationType || 'ASSOCIATION').toUpperCase()
   const isDashed = relType === 'INCLUDE' || relType === 'EXTEND'
   const isGeneralization = relType === 'GENERALIZATION'
   
@@ -52,7 +52,7 @@ export function UseCaseEdge({
         markerEnd={markerEnd} 
         style={{
           strokeWidth: selected ? 3 : 2,
-          stroke: selected ? 'var(--app-accent)' : 'var(--app-border-strong)',
+          stroke: selected ? 'var(--color-accent)' : 'var(--color-border-strong)',
           strokeDasharray: isDashed ? '5 5' : 'none',
           transition: 'all 0.3s'
         }}

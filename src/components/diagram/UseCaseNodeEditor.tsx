@@ -1,20 +1,17 @@
 
 import type { DiagramNodeDTO } from '../../types/diagrams'
-import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 
 interface UseCaseNodeEditorProps {
   node: DiagramNodeDTO
   type: 'actor' | 'useCase'
   onChange: (node: DiagramNodeDTO) => void
-  onDelete: (id: string) => void
 }
 
 export function UseCaseNodeEditor({
   node,
   type,
   onChange,
-  onDelete,
 }: UseCaseNodeEditorProps) {
   if (!node) return null
   const isActor = type === 'actor'
@@ -62,16 +59,6 @@ export function UseCaseNodeEditor({
             placeholder={isActor ? 'Describe quién es este actor...' : 'Describe qué hace este caso de uso...'}
           />
         </div>
-      </div>
-
-      <div className="pt-4 border-t border-app-border">
-        <Button
-          variant="secondary"
-          className="w-full border-rose-200 text-rose-600 hover:bg-rose-50"
-          onClick={() => onDelete(node.id)}
-        >
-          Eliminar {isActor ? 'Actor' : 'Caso de Uso'}
-        </Button>
       </div>
     </div>
   )

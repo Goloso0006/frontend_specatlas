@@ -8,16 +8,17 @@ export const ActorNode = memo(({ data, selected }: NodeProps<Node<DiagramActorNo
     <div className={`group relative transition-all duration-300 ${selected ? 'scale-105' : ''}`}>
       {/* Handles */}
       {/* Target Handles */}
-      <Handle type="target" position={Position.Top} id="t-top" className="opacity-0 group-hover:opacity-100 !bg-blue-500 !border-0" />
-      <Handle type="target" position={Position.Bottom} id="t-bottom" className="opacity-0 group-hover:opacity-100 !bg-blue-500 !border-0" />
-      <Handle type="target" position={Position.Left} id="t-left" className="opacity-0 group-hover:opacity-100 !bg-blue-500 !border-0" />
-      <Handle type="target" position={Position.Right} id="t-right" className="opacity-0 group-hover:opacity-100 !bg-blue-500 !border-0" />
+      {/* Target Handles */}
+      <Handle type="target" position={Position.Top} id="t-top" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
+      <Handle type="target" position={Position.Left} id="t-left" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
+      <Handle type="target" position={Position.Right} id="t-right" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
 
       {/* Source Handles */}
-      <Handle type="source" position={Position.Top} id="s-top" className="opacity-0 group-hover:opacity-100 !bg-emerald-500 !border-0" />
-      <Handle type="source" position={Position.Bottom} id="s-bottom" className="opacity-0 group-hover:opacity-100 !bg-emerald-500 !border-0" />
-      <Handle type="source" position={Position.Left} id="s-left" className="opacity-0 group-hover:opacity-100 !bg-emerald-500 !border-0" />
-      <Handle type="source" position={Position.Right} id="s-right" className="opacity-0 group-hover:opacity-100 !bg-emerald-500 !border-0" />
+      <Handle type="source" position={Position.Top} id="s-top" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
+      <Handle type="source" position={Position.Left} id="s-left" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
+      <Handle type="source" position={Position.Right} id="s-right" className="!w-2.5 !h-2.5 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
 
       {/* Actor Visual */}
       <div className="flex flex-col items-center gap-2">

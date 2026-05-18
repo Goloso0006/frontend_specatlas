@@ -21,6 +21,7 @@ export interface DiagramSidebarProps {
   onUpdateEdge: (edge: DiagramRelationDTO) => void
   onDeleteNode: (id: string) => void
   onDeleteEdge: (id: string) => void
+  onClose?: () => void
 }
 
 export function DiagramSidebar({
@@ -33,6 +34,7 @@ export function DiagramSidebar({
   onUpdateEdge,
   onDeleteNode,
   onDeleteEdge,
+  onClose,
 }: DiagramSidebarProps) {
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
@@ -41,11 +43,13 @@ export function DiagramSidebar({
   const [draftEdge, setDraftEdge] = useState<DiagramRelationDTO | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
+  const [isSubScreen, setIsSubScreen] = useState(false)
 
   useEffect(() => {
     setDraftNode(selectedNode)
     setHasChanges(false)
     setFeedbackMessage(null)
+    setIsSubScreen(false)
   }, [selectedNode?.id, selectedNode])
 
   useEffect(() => {
@@ -119,29 +123,43 @@ export function DiagramSidebar({
     const nodeIcon = isClass ? '📦' : (draftNode.kind === 'actor' ? '👤' : '⚙️')
 
     return (
-      <div className="flex flex-col h-full bg-app-surface rounded-xl border border-app-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-app-border bg-app-surface/50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-app-accent/10 flex items-center justify-center text-lg">
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Unified Header */}
+        <div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/50 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-950/30 flex items-center justify-center text-lg shrink-0 border border-blue-100/50 dark:border-blue-900/30">
               {nodeIcon}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-app-text-primary truncate">
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                 {nodeTitle}
               </h2>
-              <p className="text-xs text-app-text-tertiary">
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">
                 {isClass ? 'Clase' : draftNode.kind === 'actor' ? 'Actor' : 'Caso de uso'}
               </p>
             </div>
             {hasChanges && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 shrink-0">
                 Sin aplicar
               </span>
             )}
           </div>
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 ml-2 shrink-0"
+              title="Cerrar panel"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
           {draftNode.kind === 'package' ? (
             <div className="space-y-4">
               <Input
@@ -180,14 +198,13 @@ export function DiagramSidebar({
               node={draftNode as DiagramClassNodeDTO}
               nodes={nodes}
               onChange={handleDraftNodeChange}
-              onDelete={onDeleteNode}
+              onSubScreenChange={setIsSubScreen}
             />
           ) : isUseCase ? (
             <UseCaseNodeEditor
               node={draftNode}
               type={draftNode.kind === 'actor' ? 'actor' : 'useCase'}
               onChange={handleDraftNodeChange}
-              onDelete={onDeleteNode}
             />
           ) : (
             <NodeEditor
@@ -197,48 +214,51 @@ export function DiagramSidebar({
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-app-border bg-app-surface/30 space-y-3">
-          {feedbackMessage && (
-            <div className={`text-xs px-3 py-2 rounded-md text-center ${feedbackMessage.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-sky-50 text-sky-700'
-              }`}>
-              {feedbackMessage.text}
-            </div>
-          )}
+        {/* Unified Footer */}
+        {!isSubScreen && (
+          <div className="px-4 py-3.5 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/30 dark:bg-zinc-950/30 space-y-3 shrink-0">
+            {feedbackMessage && (
+              <div className={`text-xs px-3 py-2 rounded-md text-center ${feedbackMessage.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30'
+                  : 'bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30'
+                }`}>
+                {feedbackMessage.text}
+              </div>
+            )}
 
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50"
-              onClick={handleDeleteNode}
-            >
-              Eliminar
-            </Button>
-            {hasChanges && (
+            <div className="flex gap-2">
               <Button
                 variant="secondary"
-                className="flex-1"
-                onClick={discardNodeChanges}
+                className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                onClick={handleDeleteNode}
               >
-                Descartar
+                Eliminar
               </Button>
-            )}
-            <Button
-              className={`flex-1 ${!hasChanges ? 'opacity-70' : ''}`}
-              onClick={applyNodeChanges}
-              disabled={!hasChanges}
-            >
-              Aplicar cambios
-            </Button>
-          </div>
+              {hasChanges && (
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={discardNodeChanges}
+                >
+                  Descartar
+                </Button>
+              )}
+              <Button
+                className={`flex-1 ${!hasChanges ? 'opacity-70' : ''}`}
+                onClick={applyNodeChanges}
+                disabled={!hasChanges}
+              >
+                Aplicar cambios
+              </Button>
+            </div>
 
-          <p className="text-[11px] text-center text-app-text-tertiary">
-            {hasChanges
-              ? 'Tienes cambios pendientes. Aplica o descarta para continuar.'
-              : 'Modifica los campos para editar el elemento.'}
-          </p>
-        </div>
+            <p className="text-[11px] text-center text-zinc-400 dark:text-zinc-500">
+              {hasChanges
+                ? 'Tienes cambios pendientes. Aplica o descarta para continuar.'
+                : 'Modifica los campos para editar el elemento.'}
+            </p>
+          </div>
+        )}
       </div>
     )
   }
@@ -253,29 +273,43 @@ export function DiagramSidebar({
     const edgeIcon = isClass ? '🔗' : (isUseCase ? '➡️' : '⚡')
 
     return (
-      <div className="flex flex-col h-full bg-app-surface rounded-xl border border-app-border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-app-border bg-app-surface/50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-app-accent/10 flex items-center justify-center text-lg">
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Unified Header */}
+        <div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/50 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-950/30 flex items-center justify-center text-lg shrink-0 border border-blue-100/50 dark:border-blue-900/30">
               {edgeIcon}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-app-text-primary truncate">
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                 {sourceName} → {targetName}
               </h2>
-              <p className="text-xs text-app-text-tertiary">
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">
                 Relación entre elementos
               </p>
             </div>
             {hasChanges && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 shrink-0">
                 Sin aplicar
               </span>
             )}
           </div>
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 ml-2 shrink-0"
+              title="Cerrar panel"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
           {isClass && (
             <UmlEdgeEditor
               edge={draftEdge}
@@ -299,11 +333,12 @@ export function DiagramSidebar({
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-app-border bg-app-surface/30 space-y-3">
+        {/* Unified Footer */}
+        <div className="px-4 py-3.5 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/30 dark:bg-zinc-950/30 space-y-3 shrink-0">
           {feedbackMessage && (
             <div className={`text-xs px-3 py-2 rounded-md text-center ${feedbackMessage.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-sky-50 text-sky-700'
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30'
+                : 'bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30'
               }`}>
               {feedbackMessage.text}
             </div>
@@ -312,7 +347,7 @@ export function DiagramSidebar({
           <div className="flex gap-2">
             <Button
               variant="secondary"
-              className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50"
+              className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30"
               onClick={handleDeleteEdge}
             >
               Eliminar relación

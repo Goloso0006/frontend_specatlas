@@ -38,6 +38,7 @@ export type DiagramActorNodeDTO = {
   description?: string
   position: DiagramPositionDTO
   derivedFromRequirements: string[]
+  actorType?: string
 }
 
 export type DiagramUseCaseNodeDTO = {
@@ -115,6 +116,10 @@ export interface DiagramSourceDTO {
   diagramType: DiagramType
   nodes: DiagramNodeDTO[]
   edges: DiagramRelationDTO[]
+  actors?: any[]
+  useCases?: any[]
+  relations?: any[]
+  systemName?: string
 }
 
 export interface DiagramRequest {

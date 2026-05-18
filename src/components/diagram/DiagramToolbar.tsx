@@ -17,7 +17,6 @@ export interface DiagramToolbarProps {
   onAddActor: () => void
   onAddUseCase: () => void
   onAddPackage: () => void
-  onAddPackageWithOptions?: (opts: { width: number; height: number; color?: string }) => void
 }
 
 export function DiagramToolbar({
@@ -26,16 +25,11 @@ export function DiagramToolbar({
   onAddActor,
   onAddUseCase,
   onAddPackage,
-  onAddPackageWithOptions,
 }: DiagramToolbarProps) {
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
-  const [showPackageConfig, setShowPackageConfig] = useState(false)
-  const [pkgWidth, setPkgWidth] = useState(400)
-  const [pkgHeight, setPkgHeight] = useState(300)
-  const [pkgColor, setPkgColor] = useState('#ffffff')
 
   const classElements = [
     { type: 'CLASS' as DiagramUmlType, label: 'Clase', icon: 'C' },
@@ -103,7 +97,10 @@ export function DiagramToolbar({
                 <div className="flex items-center gap-2">
                   <button
                     className="flex-1 p-2 flex items-center gap-3 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
-                    onClick={() => { setShowPackageConfig(true) }}
+                    onClick={() => {
+                      onAddPackage()
+                      setIsAddMenuOpen(false)
+                    }}
                   >
                     <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-100 dark:border-slate-800">
                       <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,32 +112,6 @@ export function DiagramToolbar({
                 </div>
               </div>
             </div>
-
-            {/* Package config popover */}
-            {showPackageConfig && (
-              <div className="px-3 mt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="text-xs text-slate-400 mb-2">Configurar paquete</div>
-                <div className="flex gap-2 items-center mb-2">
-                  <input className="w-1/2 p-2 rounded border border-[var(--color-border)]" type="number" value={pkgWidth} onChange={e => setPkgWidth(Number(e.target.value) || 0)} />
-                  <input className="w-1/2 p-2 rounded border border-[var(--color-border)]" type="number" value={pkgHeight} onChange={e => setPkgHeight(Number(e.target.value) || 0)} />
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <input className="w-full p-2 rounded border border-[var(--color-border)]" type="color" value={pkgColor} onChange={e => setPkgColor(e.target.value)} />
-                </div>
-                <div className="flex gap-2">
-                  <button className="flex-1 p-2 rounded bg-blue-600 text-white" onClick={() => {
-                    if (typeof onAddPackageWithOptions === 'function') {
-                      onAddPackageWithOptions({ width: pkgWidth, height: pkgHeight, color: pkgColor })
-                    } else {
-                      onAddPackage()
-                    }
-                    setShowPackageConfig(false)
-                    setIsAddMenuOpen(false)
-                  }}>Crear</button>
-                  <button className="flex-1 p-2 rounded border" onClick={() => setShowPackageConfig(false)}>Cancelar</button>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

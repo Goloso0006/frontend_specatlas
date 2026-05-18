@@ -43,7 +43,6 @@ export function DiagramEditorPage() {
     handleAddActor,
     handleAddUseCase,
     handleAddPackage,
-    handleAddPackageWithOptions,
     handleDeleteSelected,
     handleDeleteNode,
     handleDeleteEdge,
@@ -106,7 +105,6 @@ export function DiagramEditorPage() {
               onAddActor={handleAddActor}
               onAddUseCase={handleAddUseCase}
               onAddPackage={handleAddPackage}
-              onAddPackageWithOptions={handleAddPackageWithOptions}
             />
           </div>
 

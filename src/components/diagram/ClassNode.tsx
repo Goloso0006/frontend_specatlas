@@ -15,7 +15,7 @@ export function ClassNode({ data, selected }: NodeProps<Node<DiagramClassNodeDTO
 
   return (
     <article
-      className={`min-w-52 bg-white dark:bg-slate-900 rounded-xl border-2 transition-all duration-300 shadow-sm ${
+      className={`group relative min-w-52 bg-white dark:bg-slate-900 rounded-xl border-2 transition-all duration-300 shadow-sm ${
         selected 
           ? 'border-blue-500 shadow-[0_10px_25px_-5px_rgba(59,130,246,0.3)] z-10 scale-[1.02]' 
           : 'border-slate-800 dark:border-slate-700'
@@ -23,16 +23,16 @@ export function ClassNode({ data, selected }: NodeProps<Node<DiagramClassNodeDTO
       style={{ zIndex: 10 }}
     >
       {/* Target Handles */}
-      <Handle type="target" position={Position.Top} id="t-top" className="!w-2 !h-2 !bg-blue-500 !border-0 opacity-0 group-hover:opacity-100" />
-      <Handle type="target" position={Position.Bottom} id="t-bottom" className="!w-2 !h-2 !bg-blue-500 !border-0 opacity-0 group-hover:opacity-100" />
-      <Handle type="target" position={Position.Left} id="t-left" className="!w-2 !h-2 !bg-blue-500 !border-0 opacity-0 group-hover:opacity-100" />
-      <Handle type="target" position={Position.Right} id="t-right" className="!w-2 !h-2 !bg-blue-500 !border-0 opacity-0 group-hover:opacity-100" />
+      <Handle type="target" position={Position.Top} id="t-top" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
+      <Handle type="target" position={Position.Left} id="t-left" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
+      <Handle type="target" position={Position.Right} id="t-right" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200" />
 
       {/* Source Handles */}
-      <Handle type="source" position={Position.Top} id="s-top" className="!w-2 !h-2 !bg-emerald-500 !border-0 opacity-0 group-hover:opacity-100" />
-      <Handle type="source" position={Position.Bottom} id="s-bottom" className="!w-2 !h-2 !bg-emerald-500 !border-0 opacity-0 group-hover:opacity-100" />
-      <Handle type="source" position={Position.Left} id="s-left" className="!w-2 !h-2 !bg-emerald-500 !border-0 opacity-0 group-hover:opacity-100" />
-      <Handle type="source" position={Position.Right} id="s-right" className="!w-2 !h-2 !bg-emerald-500 !border-0 opacity-0 group-hover:opacity-100" />
+      <Handle type="source" position={Position.Top} id="s-top" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
+      <Handle type="source" position={Position.Left} id="s-left" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
+      <Handle type="source" position={Position.Right} id="s-right" className="!w-2 !h-2 opacity-0 group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200" />
       
       {/* Header: Stereotype & Name */}
       <header className={`border-b-2 border-slate-800 dark:border-slate-700 px-4 py-3 text-center rounded-t-xl ${
@@ -73,13 +73,13 @@ export function ClassNode({ data, selected }: NodeProps<Node<DiagramClassNodeDTO
       {isEnum && (
         <section className="border-b-2 border-slate-800 dark:border-slate-700 px-3 py-2.5 min-h-[32px]">
           {enumValues.length > 0 ? (
-            <div className="flex flex-wrap gap-1 justify-center">
+            <ul className="space-y-1 text-center">
               {enumValues.map((val) => (
-                <span key={val.id} className="text-[9px] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-200 uppercase">
+                <li key={val.id} className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-200 uppercase">
                   {val.name}
-                </span>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <p className="text-[9px] italic text-slate-400 text-center opacity-60">Sin valores</p>
           )}

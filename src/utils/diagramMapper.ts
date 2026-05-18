@@ -79,25 +79,209 @@ export function createDiagramRelation(source: string, target: string): DiagramRe
       }
 }
 
-export function parseDiagramSource(input: DiagramSourceDTO | string | null | undefined): DiagramSourceDTO {
+export function parseDiagramSource(input: any): DiagramSourceDTO {
   if (!input) {
     return createEmptyDiagramSource()
   }
 
-  const parsed = typeof input === 'string' ? safeParseJson(input) : input
+  let parsed = input
+
+  // Safely extract from wrapped formats
+  if (typeof parsed === 'object') {
+    if (parsed.data && typeof parsed.data === 'object') {
+      parsed = parsed.data
+    }
+    
+    // Check multiple possible properties in the object for serialized diagram data
+    if (typeof parsed.sourceJson === 'string' || (parsed.sourceJson && typeof parsed.sourceJson === 'object')) {
+      parsed = parsed.sourceJson
+    } else if (typeof parsed.content === 'string' || (parsed.content && typeof parsed.content === 'object')) {
+      parsed = parsed.content
+    }
+  }
+
+  // If we have a string (either from input or extracted), safe-parse it (handles double-stringified too)
+  if (typeof parsed === 'string') {
+    const safeParsed = safeParseJson(parsed)
+    if (safeParsed) {
+      parsed = safeParsed
+    }
+  }
+
+  // If after all extraction we still don't have a valid object, return empty
   if (!parsed || typeof parsed !== 'object') {
     return createEmptyDiagramSource()
   }
 
-  // Accept both "edges" and "relationships" as field names (AI backends differ)
-  const rawEdges = Array.isArray(parsed.edges) ? parsed.edges
-    : Array.isArray((parsed as any).relationships) ? (parsed as any).relationships
-    : []
+  // Accept "edges", "relationships" and "relations" as field names (AI/database backends differ)
+  const edgesList = Array.isArray(parsed.edges) ? parsed.edges : []
+  const relationsList = Array.isArray(parsed.relations) ? parsed.relations : []
+  const relationshipsList = Array.isArray((parsed as any).relationships) ? (parsed as any).relationships : []
+
+  const diagramType = parsed.diagramType === 'USE_CASE' ? 'USE_CASE' : 'CLASS'
+  
+  let finalNodes = Array.isArray(parsed.nodes) ? parsed.nodes.map(normalizeNode) : []
+
+  // Build nodeIds from parsed nodes to validate edge connectivity (Rule #6)
+  const nodeIds = new Set(
+    finalNodes.map((n: any) => n.id || n.data?.id).filter(Boolean)
+  )
+
+  // Merge and deduplicate edges/relations/relationships (Rule #4 & #5)
+  const combinedEdges: any[] = []
+  const seenIds = new Set<string>()
+  const seenKeys = new Set<string>()
+
+  const addEdge = (e: any) => {
+    if (!e || typeof e !== 'object') return
+    
+    // Determine unique identifiers
+    const id = typeof e.id === 'string' && e.id ? e.id : ''
+    const source = typeof e.source === 'string' && e.source
+      ? e.source
+      : typeof e.from === 'string' && e.from
+        ? e.from
+        : typeof e.sourceId === 'string' && e.sourceId
+          ? e.sourceId
+          : ''
+    const target = typeof e.target === 'string' && e.target
+      ? e.target
+      : typeof e.to === 'string' && e.to
+        ? e.to
+        : typeof e.targetId === 'string' && e.targetId
+          ? e.targetId
+          : ''
+
+    const rawType =
+      e.data?.relationshipType ??
+      e.data?.relationType ??
+      e.data?.type ??
+      e.relationshipType ??
+      e.relationType ??
+      (typeof e.type === 'string' && e.type !== 'umlEdge' && e.type !== 'useCaseEdge'
+        ? e.type
+        : undefined) ??
+      'ASSOCIATION'
+    const relationshipType = String(rawType).toUpperCase()
+
+    if (!source || !target) return // Don't add invalid relations
+
+    if (id && seenIds.has(id)) return // Already saw this ID
+
+    const dedupeKey = `${source}_${target}_${relationshipType}`
+    if (seenKeys.has(dedupeKey)) return // Already saw this combination
+
+    if (id) seenIds.add(id)
+    seenKeys.add(dedupeKey)
+    combinedEdges.push(e)
+  }
+
+  edgesList.forEach(addEdge)
+  relationsList.forEach(addEdge)
+  relationshipsList.forEach(addEdge)
+
+  let finalEdges = combinedEdges
+    .map((e: any) => normalizeEdge(e, diagramType))
+    .filter((edge: any) => {
+      // Validate node IDs but only discard if source or target is truly missing (Rule #6)
+      const hasSource = edge.source && (nodeIds.size === 0 || nodeIds.has(edge.source))
+      const hasTarget = edge.target && (nodeIds.size === 0 || nodeIds.has(edge.target))
+      return hasSource && hasTarget
+    })
+
+  // Backup mapping for USE_CASE diagrams when nodes/edges are empty/absent
+  if (diagramType === 'USE_CASE' && finalNodes.length === 0) {
+    const rawActors = Array.isArray(parsed.actors) ? parsed.actors : []
+    const rawUseCases = Array.isArray(parsed.useCases) ? parsed.useCases : []
+    const rawRelations = Array.isArray(parsed.relations) ? parsed.relations
+      : Array.isArray((parsed as any).relationships) ? (parsed as any).relationships
+      : []
+
+    const ACTOR_X = 50
+    const SPACING_Y = 180
+    const UC_START_X = 420
+    const UC_COLS = 2
+    const UC_SPACING_X = 360
+    const UC_SPACING_Y = 160
+
+    const actorNodes = rawActors.map((actor: any, index: number) => {
+      const defaultPos = {
+        x: ACTOR_X,
+        y: index * SPACING_Y + 50
+      }
+      return normalizeNode({
+        id: actor.id || `actor_${generateSafeId()}`,
+        kind: 'actor',
+        name: actor.name || `Actor ${index + 1}`,
+        description: actor.description || '',
+        position: actor.position || defaultPos,
+        derivedFromRequirements: actor.derivedFromRequirements || [],
+        actorType: actor.kind ?? "primary"
+      })
+    })
+
+    const ucNodes = rawUseCases.map((uc: any, index: number) => {
+      const col = index % UC_COLS
+      const row = Math.floor(index / UC_COLS)
+      const defaultPos = {
+        x: UC_START_X + col * UC_SPACING_X,
+        y: row * UC_SPACING_Y + 50
+      }
+      return normalizeNode({
+        id: uc.id || `uc_${generateSafeId()}`,
+        kind: 'useCase',
+        name: uc.name || `UseCase ${index + 1}`,
+        description: uc.description || '',
+        position: uc.position || defaultPos,
+        derivedFromRequirements: uc.derivedFromRequirements || []
+      })
+    })
+
+    finalNodes = [...actorNodes, ...ucNodes]
+    const nodeIds = new Set(finalNodes.map((n: any) => n.id))
+
+    const mappedEdges = rawRelations.map((rel: any) => {
+      const source = rel.source ?? rel.sourceId ?? ''
+      const target = rel.target ?? rel.targetId ?? ''
+      const rawType = String(rel.type ?? rel.relationType ?? rel.relationshipType ?? 'ASSOCIATION').toUpperCase()
+      
+      let normalizedType = 'ASSOCIATION'
+      if (rawType.includes('INCLUDE')) normalizedType = 'INCLUDE'
+      else if (rawType.includes('EXTEND')) normalizedType = 'EXTEND'
+      else if (rawType.includes('GENERALIZATION')) normalizedType = 'GENERALIZATION'
+
+      return {
+        id: rel.id || `rel_${generateSafeId()}`,
+        source,
+        target,
+        type: 'useCaseEdge',
+        data: {
+          relationType: normalizedType,
+          relationshipType: normalizedType,
+          label: rel.label ?? '',
+          extensionPointRef: rel.extensionPointRef ?? ''
+        },
+        derivedFromRequirements: rel.derivedFromRequirements || []
+      }
+    })
+
+    finalEdges = mappedEdges
+      .map((edge: any) => {
+        const normalizedEdge = normalizeEdge(edge, 'USE_CASE')
+        normalizedEdge.type = 'useCaseEdge'
+        return normalizedEdge
+      })
+      .filter((edge: any) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+  }
 
   return {
-    diagramType: parsed.diagramType === 'USE_CASE' ? 'USE_CASE' : 'CLASS',
-    nodes: Array.isArray(parsed.nodes) ? parsed.nodes.map(normalizeNode) : [],
-    edges: rawEdges.map(normalizeEdge),
+    diagramType,
+    nodes: finalNodes,
+    edges: finalEdges,
+    actors: parsed.actors,
+    useCases: parsed.useCases,
+    relations: parsed.relations,
+    systemName: parsed.systemName,
   }
 }
 
@@ -212,7 +396,7 @@ export function reactFlowToDiagramSource(
   edges: Edge<DiagramRelationDTO>[],
   diagramType: DiagramType
 ): DiagramSourceDTO {
-  return {
+  const source: DiagramSourceDTO = {
     diagramType,
     nodes: nodes.map((node) => {
       const baseNode = {
@@ -243,6 +427,53 @@ export function reactFlowToDiagramSource(
       type: edge.type || (diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
     })),
   }
+
+  if (diagramType === 'USE_CASE') {
+    source.actors = nodes
+      .filter(n => n.type === 'actorNode' || n.data.kind === 'actor')
+      .map(n => ({
+        id: n.id,
+        name: n.data.name,
+        kind: (n.data as any).actorType ?? (n.data as any).kind ?? 'primary',
+        position: n.position
+      }))
+
+    source.useCases = nodes
+      .filter(n => n.type === 'useCaseNode' || n.data.kind === 'useCase')
+      .map(n => ({
+        id: n.id,
+        name: n.data.name,
+        description: n.data.description || '',
+        position: n.position
+      }))
+  }
+
+  // Always populate relations and relationships for all diagram types to satisfy backend DTO and Neo4j sync requirements
+  const mappedRelations = edges.map(e => {
+    const rawData = (e.data as any)?.data ?? e.data ?? {}
+    return {
+      id: e.id,
+      sourceId: e.source,
+      targetId: e.target,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle || null,
+      targetHandle: e.targetHandle || null,
+      type: String((e.data as any)?.relationshipType ?? rawData.relationshipType ?? (e.data as any)?.relationType ?? 'ASSOCIATION').toUpperCase(),
+      data: {
+        relationshipType: String((e.data as any)?.relationshipType ?? rawData.relationshipType ?? (e.data as any)?.relationType ?? 'ASSOCIATION').toUpperCase(),
+        label: rawData.label || '',
+        description: rawData.description || '',
+        sourceMultiplicity: rawData.sourceMultiplicity || '1',
+        targetMultiplicity: rawData.targetMultiplicity || '1',
+      }
+    }
+  })
+
+  source.relations = mappedRelations
+  ;(source as any).relationships = mappedRelations
+
+  return source
 }
 
 function safeParseJson(value: string): DiagramSourceDTO | null {
@@ -308,10 +539,11 @@ export function normalizeNode(node: any): DiagramNodeDTO {
     description: typeof node.description === 'string' ? node.description : '',
     position: normalizePosition(node.position),
     derivedFromRequirements: Array.isArray(node.derivedFromRequirements) ? node.derivedFromRequirements : [],
+    actorType: isActor ? (node.actorType ?? node.kind ?? 'primary') : undefined,
   }
 }
 
-export function normalizeEdge(edge: any): DiagramRelationDTO {
+export function normalizeEdge(edge: any, diagramType?: DiagramType): DiagramRelationDTO {
   // The AI backend returns edges with "from"/"to" and top-level "label"/"type".
   // Internally we use "source"/"target" and nested "data.relationshipType".
   // This function accepts BOTH formats.
@@ -319,19 +551,25 @@ export function normalizeEdge(edge: any): DiagramRelationDTO {
     ? edge.source
     : typeof edge.from === 'string' && edge.from
       ? edge.from
-      : ''
+      : typeof edge.sourceId === 'string' && edge.sourceId
+        ? edge.sourceId
+        : ''
 
   const target = typeof edge.target === 'string' && edge.target
     ? edge.target
     : typeof edge.to === 'string' && edge.to
       ? edge.to
-      : ''
+      : typeof edge.targetId === 'string' && edge.targetId
+        ? edge.targetId
+        : ''
 
-  // Relationship type: accept top-level "type"/"relationshipType" or nested data.relationshipType
-  // (the AI emits {"type": "association"} at the edge root, not inside "data")
+  // Relationship type: accept top-level or nested "type"/"relationshipType"/"relationType"
   const rawRelType =
     edge.data?.relationshipType ??
+    edge.data?.relationType ??
+    edge.data?.type ??
     edge.relationshipType ??
+    edge.relationType ??
     (typeof edge.type === 'string' && edge.type !== 'umlEdge' && edge.type !== 'useCaseEdge'
       ? edge.type
       : undefined) ??
@@ -344,16 +582,14 @@ export function normalizeEdge(edge: any): DiagramRelationDTO {
     ''
 
   // Edge renderer type: umlEdge for class diagrams, useCaseEdge for use case diagrams
-  // If AI sent a semantic type ("association"), keep "umlEdge" as the renderer
-  const semanticTypes = ['association','aggregation','composition','inheritance','implementation','dependency','include','extend','generalization','ASSOCIATION','AGGREGATION','COMPOSITION','INHERITANCE','IMPLEMENTATION','DEPENDENCY','INCLUDE','EXTEND','GENERALIZATION']
-  const rendererType = typeof edge.type === 'string' && !semanticTypes.includes(edge.type)
-    ? edge.type
-    : 'umlEdge'
+  const rendererType = diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'
 
   return {
     id: typeof edge.id === 'string' && edge.id ? edge.id : createEdgeId(),
     source,
     target,
+    sourceHandle: edge.sourceHandle || null,
+    targetHandle: edge.targetHandle || null,
     type: rendererType,
     data: {
       relationshipType: normalizeRelationshipType(rawRelType),

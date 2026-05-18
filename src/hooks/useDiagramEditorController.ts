@@ -79,7 +79,6 @@ export interface DiagramEditorController {
   handleAddActor: () => void
   handleAddUseCase: () => void
   handleAddPackage: () => void
-  handleAddPackageWithOptions: (opts: { width: number; height: number; color?: string }) => void
   handleDeleteSelected: () => void
   handleDeleteNode: (id: string) => void
   handleDeleteEdge: (id: string) => void
@@ -140,6 +139,7 @@ export function useDiagramEditorController(): DiagramEditorController {
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [aiProposal, setAiProposal] = useState<GeneratedCanvas | null>(null)
   const [showAiModal, setShowAiModal] = useState(false)
+  const [aiResponse, setAiResponse] = useState<DiagramResponse | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
   const [nodes, setNodes] = useState<Node<DiagramNodeDTO>[]>([])
@@ -175,10 +175,45 @@ export function useDiagramEditorController(): DiagramEditorController {
       setDiagramName(response.name)
       setDiagramType(response.diagramType)
 
-      const source = parseDiagramSource(response.sourceJson)
+      if (import.meta.env.DEV) {
+        console.log("[CLASS_LOAD] raw diagram response", response)
+        console.log("[CLASS_LOAD] raw sourceJson/content", {
+          sourceJson: (response as any).sourceJson ?? (response as any).data?.sourceJson,
+          content: (response as any).content ?? (response as any).data?.content
+        })
+      }
+
+      const source = parseDiagramSource(response.sourceJson || response)
       const flow = diagramSourceToReactFlow(source)
+
+      if (import.meta.env.DEV) {
+        console.log("[CLASS_LOAD] parsed source", source)
+        console.log("[CLASS_LOAD] mapped", {
+          nodes: flow.nodes.length,
+          edges: flow.edges.length,
+          edgePreview: flow.edges.map(e => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            type: e.type,
+            relationshipType: (e.data as any)?.relationshipType ?? (e.data as any)?.data?.relationshipType
+          }))
+        })
+      }
+
       setNodes(flow.nodes)
-      setEdges(flow.edges)
+
+      // Prevent disappearing edges if the backend response didn't include them, but they existed before saving (Rule #3)
+      setEdges(prevEdges => {
+        if (prevEdges.length > 0 && flow.edges.length === 0) {
+          if (import.meta.env.DEV) {
+            console.log("[CLASS_SAVE] backend response returned 0 edges but current state had edges. Keeping current edges.", prevEdges)
+          }
+          return prevEdges
+        }
+        return flow.edges
+      })
+
       clearSelection()
       editorActions.editing(message)
       showFeedback('success', message)
@@ -203,7 +238,9 @@ export function useDiagramEditorController(): DiagramEditorController {
 
   useEffect(() => {
     if (routeDiagramId) {
-      handleLoadDiagram(routeDiagramId)
+      if (routeDiagramId !== diagramId || nodes.length === 0) {
+        handleLoadDiagram(routeDiagramId)
+      }
     } else if (newType) {
       setDiagramType(newType)
       setDiagramName(`Nuevo Diagrama de ${newType === 'CLASS' ? 'Clases' : 'Casos de Uso'}`)
@@ -213,7 +250,7 @@ export function useDiagramEditorController(): DiagramEditorController {
         }, 300)
       }
     }
-  }, [routeDiagramId, newType, actionParam, routeProjectId, handleLoadDiagram])
+  }, [routeDiagramId, diagramId, nodes.length, newType, actionParam, routeProjectId, handleLoadDiagram])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -384,20 +421,6 @@ export function useDiagramEditorController(): DiagramEditorController {
     addNodeToCanvas(nodeDTO, 'packageNode')
   }, [getNextNodeName, getNextNodePosition, addNodeToCanvas])
 
-  const handleAddPackageWithOptions = useCallback((opts: { width: number; height: number; color?: string }) => {
-    const name = getNextNodeName('Paquete')
-    const position = getNextNodePosition()
-    const nodeDTO: any = {
-      id: `pkg-${crypto.randomUUID()}`,
-      kind: 'package',
-      name,
-      description: '',
-      position,
-      derivedFromRequirements: [],
-      style: { width: opts.width, height: opts.height, color: opts.color || '#ffffff' },
-    }
-    addNodeToCanvas(nodeDTO, 'packageNode')
-  }, [getNextNodeName, getNextNodePosition, addNodeToCanvas])
 
   const handleDeleteNode = useCallback((id: string) => {
     setNodes(nds => nds.filter(n => n.id !== id))
@@ -421,15 +444,26 @@ export function useDiagramEditorController(): DiagramEditorController {
         setNodes(prevNodes => {
           const prev = prevNodes.find(n => n.id === node.id)
           if (!prev) return prevNodes
-          const dx = node.position.x - (prev.position?.x || 0)
-          const dy = node.position.y - (prev.position?.y || 0)
-          if (dx === 0 && dy === 0) return prevNodes
+          const originalX = (prev.data as any)?.position?.x ?? prev.position.x
+          const originalY = (prev.data as any)?.position?.y ?? prev.position.y
+          const dx = node.position.x - originalX
+          const dy = node.position.y - originalY
+          
           return prevNodes.map(n => {
             if ((n.data as any)?.packageId === node.id) {
-              return { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+              const nextPos = { x: n.position.x + dx, y: n.position.y + dy }
+              return { 
+                ...n, 
+                position: nextPos, 
+                data: { ...n.data, position: nextPos } 
+              }
             }
             if (n.id === node.id) {
-              return { ...n, position: node.position }
+              return { 
+                ...n, 
+                position: node.position, 
+                data: { ...n.data, position: node.position } 
+              }
             }
             return n
           })
@@ -444,14 +478,26 @@ export function useDiagramEditorController(): DiagramEditorController {
           const centerY = node.position.y + nodeHeight / 2
           let containing: { id: string } | null = null
           for (const p of pkgNodes) {
-            const w = (p.data as any)?.style?.width || 520
-            const h = (p.data as any)?.style?.height || 360
+            const w = (p.data as any)?.style?.width || 640
+            const h = (p.data as any)?.style?.height || 420
             if (centerX >= p.position.x && centerX <= p.position.x + w && centerY >= p.position.y && centerY <= p.position.y + h) {
               containing = p
               break
             }
           }
-          return prevNodes.map(n => n.id === node.id ? { ...n, position: node.position, data: { ...n.data, packageId: containing ? containing.id : undefined } } : n)
+          return prevNodes.map(n => 
+            n.id === node.id 
+              ? { 
+                  ...n, 
+                  position: node.position, 
+                  data: { 
+                    ...n.data, 
+                    position: node.position, 
+                    packageId: containing ? containing.id : undefined 
+                  } 
+                } 
+              : n
+          )
         })
       }
     } catch (err) {
@@ -518,13 +564,17 @@ export function useDiagramEditorController(): DiagramEditorController {
 
     const data = await run(generator)
     if (data) {
+      setAiResponse(data)
       const source = parseDiagramSource(data.sourceJson)
       const proposal = isClass
         ? mapGeneratedClassDiagramToCanvas(source)
-        : mapGeneratedUseCaseDiagramToCanvas(source)
+        : mapGeneratedUseCaseDiagramToCanvas(data)
       setAiProposal(proposal)
       setShowAiModal(true)
       editorActions.editing('Propuesta de IA recibida.')
+      if (isUseCase) {
+        showFeedback('success', 'Diagrama de casos de uso generado correctamente.')
+      }
     }
   }
 
@@ -534,6 +584,24 @@ export function useDiagramEditorController(): DiagramEditorController {
     setEdges(convertAiEdges(aiProposal))
     setShowAiModal(false)
     setAiProposal(null)
+
+    if (aiResponse) {
+      const savedId = aiResponse.id
+      const savedName = aiResponse.name
+      const savedType = aiResponse.diagramType
+
+      setDiagramName(savedName)
+      if (savedType) {
+        setDiagramType(savedType)
+      }
+
+      if (!diagramId || diagramId === 'new') {
+        setDiagramId(savedId)
+        navigate(`/app/projects/${projectId}/diagrams/${savedId}`, { replace: true })
+      }
+      setAiResponse(null)
+    }
+
     editorActions.editing('Propuesta de IA aplicada.')
     showFeedback('success', 'Diagrama reemplazado con propuesta IA.')
   }
@@ -547,6 +615,24 @@ export function useDiagramEditorController(): DiagramEditorController {
     setEdges(flow.edges)
     setShowAiModal(false)
     setAiProposal(null)
+
+    if (aiResponse) {
+      const savedId = aiResponse.id
+      const savedName = aiResponse.name
+      const savedType = aiResponse.diagramType
+
+      setDiagramName(savedName)
+      if (savedType) {
+        setDiagramType(savedType)
+      }
+
+      if (!diagramId || diagramId === 'new') {
+        setDiagramId(savedId)
+        navigate(`/app/projects/${projectId}/diagrams/${savedId}`, { replace: true })
+      }
+      setAiResponse(null)
+    }
+
     editorActions.editing(`Fusionado: +${result.addedNodesCount} elementos, +${result.addedEdgesCount} relaciones.`)
     showFeedback('success', `Fusionado: +${result.addedNodesCount} / +${result.addedEdgesCount}`)
   }
@@ -554,6 +640,7 @@ export function useDiagramEditorController(): DiagramEditorController {
   function handleCloseAiModal() {
     setShowAiModal(false)
     setAiProposal(null)
+    setAiResponse(null)
   }
 
   async function handleSaveDiagram(force = false): Promise<void> {
@@ -580,6 +667,22 @@ export function useDiagramEditorController(): DiagramEditorController {
     }
 
     const source = reactFlowToDiagramSource(nodes, edges, diagramType)
+
+    if (import.meta.env.DEV) {
+      console.log("[CLASS_SAVE] before save", {
+        nodes: nodes.length,
+        edges: edges.length,
+        edgesPreview: edges.map(e => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          type: e.type,
+          relationshipType: (e.data as any)?.relationshipType ?? (e.data as any)?.data?.relationshipType
+        }))
+      })
+      console.log("[CLASS_SAVE] payload source", source)
+    }
+
     const payload = {
       projectId: projectId.trim(),
       name: diagramName.trim(),
@@ -592,7 +695,19 @@ export function useDiagramEditorController(): DiagramEditorController {
       { errorMessage: 'Error al guardar el diagrama en el servidor.' },
     )
 
+    if (import.meta.env.DEV) {
+      console.log("[CLASS_SAVE] response", data)
+    }
+
     if (data) {
+      if (import.meta.env.DEV) {
+        const parsedResponse = parseDiagramSource(data.sourceJson)
+        const flowResponse = diagramSourceToReactFlow(parsedResponse)
+        console.log("[CLASS_SAVE] after response mapping", {
+          nodes: flowResponse.nodes.length,
+          edges: flowResponse.edges.length
+        })
+      }
       syncDiagramResponse(data, 'Diagrama guardado correctamente.')
       setShowValidationModal(false)
     } else {
@@ -634,7 +749,6 @@ export function useDiagramEditorController(): DiagramEditorController {
     handleAddActor,
     handleAddUseCase,
     handleAddPackage,
-    handleAddPackageWithOptions,
     handleDeleteSelected,
     handleDeleteNode,
     handleDeleteEdge,
