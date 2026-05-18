@@ -24,6 +24,7 @@ import { FunctionalRequirementManualPage } from './pages/FunctionalRequirementMa
 import { NonFunctionalRequirementModePage } from './pages/NonFunctionalRequirementModePage'
 import { NonFunctionalRequirementManualPage } from './pages/NonFunctionalRequirementManualPage'
 import { ProjectDiagramsPage } from './pages/ProjectDiagramsPage'
+import { DiagramTypeDetailPage } from './pages/DiagramTypeDetailPage'
 import { ProjectMapPage } from './pages/ProjectMapPage'
 
 function App() {
@@ -114,20 +115,43 @@ function App() {
         <Route path="/app/projects/:projectId/diagrams" element={
           <AppShell hideSidebar><ProjectDiagramsPage /></AppShell>
         } />
+        <Route path="/app/projects/:projectId/diagrams/class" element={
+          <AppShell hideSidebar><DiagramTypeDetailPage type="CLASS" /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/use-case" element={
+          <AppShell hideSidebar><DiagramTypeDetailPage type="USE_CASE" /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/sequence" element={
+          <AppShell hideSidebar><DiagramTypeDetailPage type="SEQUENCE" /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/activity" element={
+          <AppShell hideSidebar><DiagramTypeDetailPage type="ACTIVITY" /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/component" element={
+          <AppShell hideSidebar><DiagramTypeDetailPage type="COMPONENT" /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/er" element={
+          <AppShell hideSidebar><DiagramTypeDetailPage type="ER" /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/:diagramTypePath/new" element={
+          <AppShell hideSidebar><DiagramEditorPage /></AppShell>
+        } />
+        <Route path="/app/projects/:projectId/diagrams/:diagramTypePath/:diagramId" element={
+          <AppShell hideSidebar><DiagramEditorPage /></AppShell>
+        } />
         <Route path="/app/projects/:projectId/diagrams/:diagramId" element={
           <AppShell hideSidebar><DiagramEditorPage /></AppShell>
         } />
         <Route path="/app/projects/:projectId/diagrams/new" element={
           <AppShell hideSidebar><DiagramEditorPage /></AppShell>
         } />
-        
-        <Route path="/app/projects/:projectId/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
+        <Route path="/app/projects/:projectId/validation-rules" element={<AppShell hideSidebar><ValidationRulesPage /></AppShell>} />
 
         {/* Legacy / Direct access */}
         <Route path="/app/projects" element={<Navigate to="/app" replace />} />
         <Route path="/app/requirements" element={<AppShell><RequirementsPage /></AppShell>} />
         <Route path="/app/diagrams" element={<AppShell><DiagramEditorPage /></AppShell>} />
-        <Route path="/app/validation-rules" element={<AppShell><ValidationRulesPage /></AppShell>} />
+        <Route path="/app/validation-rules" element={<AppShell hideSidebar><ValidationRulesPage /></AppShell>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/app" replace />} />
