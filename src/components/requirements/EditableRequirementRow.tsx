@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { RequirementQualityBadge } from './RequirementQualityBadge'
-import type { RequirementQualityIssue } from '../../utils/requirementQualityAnalyzer'
-import type { RequirementDTO } from '../../types/requirements'
+import React, { useState, useEffect, useRef } from 'react'
+import { RequirementQualityStatusBadge } from './RequirementQualityStatusBadge'
+import type { RequirementDTO, RequirementQualityAnalysisDTO } from '../../types/requirements'
+import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
 
 export type RowStatus = 'draft' | 'saved' | 'incomplete' | 'ai_improved' | 'error' | 'saving' | 'checking'
 
@@ -12,14 +12,14 @@ export interface EditableRequirementRowProps {
   errorMessage?: string
   isSelected?: boolean
   /** Live quality issues from the local analyzer. Displayed as a badge — never blocks save. */
-  qualityIssues?: RequirementQualityIssue[]
+  qualityAnalysis?: RequirementQualityAnalysisDTO | null
   duplicateInfo?: { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }
   traceabilityCount?: number
   onUpdate: (updates: Partial<RequirementDTO>) => void
   onSave: () => void
   onImprove: () => void
   onCheckDuplicates?: () => void
-  onViewMemory?: () => void
+  onOpenQualityAnalysis?: () => void
   onEvaluateRules?: () => void
   onManageTraceability?: () => void
   onDelete: () => void
@@ -31,20 +31,68 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
   status,
   errorMessage,
   isSelected,
-  qualityIssues,
+  qualityAnalysis,
   duplicateInfo,
   traceabilityCount,
   onUpdate,
   onSave,
   onImprove,
   onCheckDuplicates,
-  onViewMemory,
+  onOpenQualityAnalysis,
   onEvaluateRules,
   onManageTraceability,
   onDelete,
   onSelect
 }) => {
   const [actorsInput, setActorsInput] = useState((requirement.actors || []).join(', '))
+
+  const titleRef = useRef<HTMLTextAreaElement | null>(null)
+  const descRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.style.height = 'auto'
+      titleRef.current.style.height = titleRef.current.scrollHeight + 'px'
+    }
+  }, [requirement.title])
+
+  useEffect(() => {
+    if (descRef.current) {
+      descRef.current.style.height = 'auto'
+      descRef.current.style.height = descRef.current.scrollHeight + 'px'
+    }
+  }, [requirement.description])
+
+  const localIssues = analyzeRequirementText({
+    title: requirement.title,
+    description: requirement.description,
+    acceptanceCriteria: requirement.acceptanceCriteria,
+    requirementType: requirement.requirementType ?? 'FUNCTIONAL',
+  })
+
+  const localAnalysis: RequirementQualityAnalysisDTO = {
+    id: `local-${requirement.id || 'draft'}`,
+    requirementId: requirement.id || 'draft',
+    requirementCode: requirement.code || 'REQ',
+    requirementType: requirement.requirementType ?? 'FUNCTIONAL',
+    qualityStatus: localIssues.some(i => i.severity === 'error') ? 'ERROR' : localIssues.length > 0 ? 'WARNING' : 'OK',
+    totalViolations: localIssues.length,
+    errorCount: localIssues.filter(i => i.severity === 'error').length,
+    warningCount: localIssues.filter(i => i.severity === 'warning').length,
+    infoCount: 0,
+    analyzedAt: new Date().toISOString(),
+    analysisSource: 'RULES',
+    violations: localIssues.map(issue => ({
+      id: issue.id,
+      field: issue.field === 'procedural' ? 'description' : issue.field,
+      severity: issue.severity.toUpperCase() as 'WARNING' | 'ERROR' | 'INFO',
+      fragment: issue.term || '',
+      message: issue.message,
+      suggestion: issue.suggestion || null,
+      ruleCode: issue.ruleId || 'AMBIGUOUS_TERM',
+      ruleName: 'Regla de calidad / Claridad'
+    }))
+  }
   const [showMenu, setShowMenu] = useState(false)
 
   // Sync actors input if requirement changes
@@ -88,6 +136,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
             target.style.height = target.scrollHeight + 'px'
           }}
           ref={(el) => {
+            titleRef.current = el
             if (el) {
               el.style.height = 'auto'
               el.style.height = el.scrollHeight + 'px'
@@ -97,31 +146,6 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
 
         {/* Horizontal Badges */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2 px-2">
-          {/* Calidad Badge */}
-          {qualityIssues && (
-            <span
-              onClick={(e) => {
-                e.stopPropagation()
-                onEvaluateRules?.()
-              }}
-              title="Click para revalidar reglas"
-              className={`cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
-                qualityIssues.length === 0
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
-                  : qualityIssues.some(q => q.severity === 'error')
-                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20'
-                  : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
-              }`}
-            >
-              <span className="w-1 h-1 rounded-full bg-current shrink-0" />
-              {qualityIssues.length === 0
-                ? 'Calidad: OK'
-                : qualityIssues.some(q => q.severity === 'error')
-                ? `Reglas: ${qualityIssues.filter(q => q.severity === 'error').length} err`
-                : `Reglas: ${qualityIssues.filter(q => q.severity === 'warning').length} adv`
-              }
-            </span>
-          )}
 
           {/* Duplicados Badge */}
           {duplicateInfo && (
@@ -144,7 +168,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
               <span className="w-1 h-1 rounded-full bg-current shrink-0" />
               {duplicateInfo.status === 'NONE' && 'Dups: Sin riesgo'}
               {duplicateInfo.status === 'LOW' && `Dups: Bajo (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
-              {duplicateInfo.status === 'MEDIUM' && `Dups: Revisar (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
+              {duplicateInfo.status === 'MEDIUM' && `Dups: Relacionado (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
               {duplicateInfo.status === 'HIGH' && `Dups: Alto (${duplicateInfo.matches[0] ? Math.round(duplicateInfo.matches[0].similarityPercentage || duplicateInfo.matches[0].similarity * 100) : 0}%)`}
             </span>
           )}
@@ -183,6 +207,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
             target.style.height = target.scrollHeight + 'px'
           }}
           ref={(el) => {
+            descRef.current = el
             if (el) {
               el.style.height = 'auto'
               el.style.height = el.scrollHeight + 'px'
@@ -236,10 +261,11 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
               {errorMessage}
             </span>
           )}
-          {/* Quality badge — purely informational, never blocks save */}
-          {qualityIssues && qualityIssues.length > 0 && (
-            <RequirementQualityBadge issues={qualityIssues} />
-          )}
+          {/* Quality badge — live client-side ambiguity/quality analysis */}
+          <RequirementQualityStatusBadge 
+            analysis={(status === 'saved' && qualityAnalysis && localAnalysis.totalViolations === 0) ? qualityAnalysis : localAnalysis} 
+            onClick={onOpenQualityAnalysis}
+          />
         </div>
       </td>
 
@@ -343,17 +369,17 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
                   </button>
                 )}
 
-                {/* Semantic Memory */}
+                {/* Requirement Quality Analysis / Observaciones */}
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); onViewMemory?.(); }}
-                  disabled={status === 'saving' || !requirement.id}
-                  title={!requirement.id ? "Guarda el requisito antes de consultar su memoria" : "Ver análisis semántico"}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-indigo-400 hover:bg-indigo-500/10 disabled:opacity-40 ${!requirement.id ? 'cursor-not-allowed' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
+                  disabled={true}
+                  title="El detalle de análisis estará disponible próximamente."
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors text-indigo-400/40 cursor-not-allowed"
                 >
                   <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>Análisis semántico</span>
+                  <span>Análisis de calidad</span>
                 </button>
 
                 {/* Separator */}

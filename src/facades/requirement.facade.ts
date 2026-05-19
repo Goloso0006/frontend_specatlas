@@ -167,6 +167,9 @@ export class RequirementFacade {
       projectId: request.projectId.trim(),
       title: request.title.trim(),
       description: request.description.trim(),
+      requirementId: request.requirementId,
+      code: request.code,
+      requirementType: request.requirementType,
     })
   }
 

@@ -23,6 +23,9 @@ export const endpoints = {
     impact: (id: string) => `/api/requirements/${id}/impact`,
     dependency: '/api/requirements/dependency',
     conflicts: (id: string) => `/api/requirements/${id}/conflicts`,
+    projectQuality: (projectId: string) => `/api/projects/${projectId}/requirements/quality`,
+    quality: (id: string) => `/api/requirements/${id}/quality`,
+    reanalyze: (id: string) => `/api/requirements/${id}/quality/reanalyze`,
   },
   validationRules: {
     base: '/api/validation-rules',

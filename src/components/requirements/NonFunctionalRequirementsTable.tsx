@@ -9,9 +9,10 @@ import { RequirementSimilarityPanel } from './RequirementSimilarityPanel'
 import { RequirementMemoryPanel } from './RequirementMemoryPanel'
 import { RequirementFiltersBar } from './RequirementFiltersBar'
 import { RequirementTraceabilityPanel } from './RequirementTraceabilityPanel'
-import { RequirementQualityBadge } from './RequirementQualityBadge'
+import { RequirementQualityStatusBadge } from './RequirementQualityStatusBadge'
+import { RequirementQualityDetailModal } from './RequirementQualityDetailModal'
 import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
-import { validateNonFunctionalDetail } from '../../utils/nonFunctionalRequirementValidator'
+import { qualityAnalysisApi } from '../../api/services/qualityAnalysisApi'
 import {
   EMPTY_FILTERS,
   buildFilterOptions,
@@ -19,7 +20,7 @@ import {
   hasActiveFilters,
   type RequirementFilters,
 } from '../../utils/requirementFilterUtils'
-import type { RequirementDTO, NonFunctionalDetailDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse } from '../../types/requirements'
+import type { RequirementDTO, NonFunctionalDetailDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse, RequirementQualityAnalysisDTO } from '../../types/requirements'
 
 type RowStatus = 'draft' | 'saved' | 'saving' | 'error' | 'incomplete' | 'ai_improved' | 'checking'
 
@@ -117,21 +118,44 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
 
   const [traceabilityPreview, setTraceabilityPreview] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
 
+  // Persisted database Quality Analysis states
+  const [qualityAnalyses, setQualityAnalyses] = useState<Map<string, RequirementQualityAnalysisDTO>>(new Map())
+  const [activeQualityModal, setActiveQualityModal] = useState<{ localId: string; requirement: RequirementDTO; analysis: RequirementQualityAnalysisDTO | null } | null>(null)
+
   // Duplicates risk and traceability link counts states
   const [duplicateInfoMap, setDuplicateInfoMap] = useState<Map<string, { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }>>(new Map())
   const [traceabilityCountMap, setTraceabilityCountMap] = useState<Map<string, number>>(new Map())
 
   const getDuplicateStatus = (matches: any[]) => {
-    if (!matches || matches.length === 0) return { status: 'NONE' as const, matches: [] }
-    const topMatch = matches[0]
-    const similarity = topMatch.similarityPercentage || (topMatch.similarity ? topMatch.similarity * 100 : 0)
-    if (similarity >= 75) return { status: 'HIGH' as const, matches }
-    if (similarity >= 40) return { status: 'MEDIUM' as const, matches }
-    if (similarity >= 15) return { status: 'LOW' as const, matches }
-    return { status: 'NONE' as const, matches }
+    // Filter matches to only keep relevant ones (e.g., level !== 'LOW' and similarity >= 15%)
+    const relevantMatches = matches.filter(m => {
+      const pct = m.similarityPercentage || (m.similarity ? m.similarity * 100 : 0)
+      return m.level !== 'LOW' && pct >= 15
+    })
+
+    if (!relevantMatches || relevantMatches.length === 0) return { status: 'NONE' as const, matches: [] }
+    
+    // Sort matches so that DUPLICATE and VERY_SIMILAR matches come before RELATED/LOW, then sort by similarity
+    const sorted = [...relevantMatches].sort((a, b) => {
+      const aIsDup = a.level === 'DUPLICATE' || a.level === 'VERY_SIMILAR' ? 1 : 0
+      const bIsDup = b.level === 'DUPLICATE' || b.level === 'VERY_SIMILAR' ? 1 : 0
+      if (aIsDup !== bIsDup) return bIsDup - aIsDup // Put DUPLICATE first
+      
+      const pctA = a.similarityPercentage || (a.similarity ? a.similarity * 100 : 0)
+      const pctB = b.similarityPercentage || (b.similarity ? b.similarity * 100 : 0)
+      return pctB - pctA // Put highest similarity first
+    })
+
+    const hasDuplicate = sorted.some(m => m.level === 'DUPLICATE' || m.level === 'VERY_SIMILAR')
+    const hasRelated = sorted.some(m => m.level === 'RELATED')
+    
+    if (hasDuplicate) return { status: 'HIGH' as const, matches: sorted }
+    if (hasRelated) return { status: 'MEDIUM' as const, matches: sorted }
+    return { status: 'NONE' as const, matches: sorted }
   }
 
-  const runAnalysisForRow = async (localId: string, req: RequirementDTO) => {
+  /*
+  const _runAnalysisForRow = async (localId: string, req: RequirementDTO) => {
     // 1. Traceability links count
     if (req.id) {
       try {
@@ -167,26 +191,37 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
     }
   }
 
-  const debounceTimersRef = React.useRef<Map<string, any>>(new Map())
+  const _debounceTimersRef = React.useRef<Map<string, any>>(new Map())
+  */
 
-  const handleRowChangeDebounced = (localId: string, req: RequirementDTO) => {
-    if (debounceTimersRef.current.has(localId)) {
-      clearTimeout(debounceTimersRef.current.get(localId)!)
+  const handleRowChangeDebounced = (_localId: string, _req: RequirementDTO) => {
+    // Disabled automatic analysis on typing to avoid rate limits and duplicate executions.
+    console.log("[RNF_TABLE] auto runAnalysisForRow disabled");
+  }
+
+  const loadQualityAnalyses = async () => {
+    if (!projectId) return
+    try {
+      const analyses = await qualityAnalysisApi.getProjectQualityAnalyses(projectId)
+      const nextMap = new Map<string, RequirementQualityAnalysisDTO>()
+      analyses.forEach(a => {
+        if (a.requirementId) {
+          nextMap.set(a.requirementId, a)
+        }
+      })
+      setQualityAnalyses(nextMap)
+    } catch (err) {
+      console.warn("[QUALITY_UI] Fallback to empty quality map due to API error:", err)
+      setQualityAnalyses(new Map())
     }
-    const timer = setTimeout(() => {
-      runAnalysisForRow(localId, req)
-    }, 1500)
-    debounceTimersRef.current.set(localId, timer)
   }
 
   // Trigger analysis for all rows when initialRequirements loads
   useEffect(() => {
-    rows.forEach(row => {
-      if (row.requirement.id) {
-        runAnalysisForRow(row.localId, row.requirement)
-      }
-    })
-  }, [initialRequirements])
+    loadQualityAnalyses()
+    console.log("[RNF_TABLE] initialRequirements changed, rows updated without auto analysis");
+    console.log("[RNF_TABLE] auto runAnalysisForRow disabled");
+  }, [initialRequirements, projectId])
 
   // Fix: sync rows when parent refetches (re-entering the screen)
   // Merge all rows (drafts + saved) sorted by code, preserving unsaved drafts
@@ -226,24 +261,6 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
 
   const isFiltering = hasActiveFilters(filters)
 
-  // ── Live quality analysis ──────────────────────────────────────────────────
-  // Pure local analysis, no backend calls, no AI. keyed by localId.
-  const qualityMap = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof analyzeRequirementText>>()
-    for (const row of rows) {
-      const localIssues = analyzeRequirementText({
-        title: row.requirement.title,
-        description: row.requirement.description,
-        acceptanceCriteria: row.requirement.acceptanceCriteria,
-        requirementType: row.requirement.requirementType ?? 'NON_FUNCTIONAL',
-      })
-      
-      const detailIssues = validateNonFunctionalDetail(row.requirement)
-
-      map.set(row.localId, [...localIssues, ...detailIssues])
-    }
-    return map
-  }, [rows])
 
   const updateRow = (localId: string, updates: Partial<RequirementDTO>) => {
     setRows(prev => prev.map(row => {
@@ -305,6 +322,8 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
     try {
       const saved = await requirementFacade.saveRequirement({ ...row.requirement, id: row.requirement.id || '' })
       if (saved) {
+        console.log("[SAVE_REQUIREMENT] saved requirement", saved.id);
+        console.log("[SAVE_REQUIREMENT] updating local row only");
         setRows(prev => {
           const updated = prev.map(r => r.localId === localId ? { ...r, requirement: saved, status: 'saved' as RowStatus, errorMessage: undefined } : r)
           // Re-sort ALL rows together (drafts + saved) so newly saved items land in correct position
@@ -374,24 +393,61 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
     }
     setStatus(localId, 'checking')
     try {
+      console.log("[RNF_TABLE] manual duplicate analysis for", requirement.id);
       const matches = await requirementFacade.checkDuplicates({
         projectId,
         title: requirement.title,
-        description: requirement.description
+        description: requirement.description,
+        requirementId: requirement.id,
+        code: requirement.code,
+        requirementType: 'NON_FUNCTIONAL'
+      })
+      const filtered = matches.filter((m: any) => m.requirementId !== requirement.id)
+      const dupStatus = getDuplicateStatus(filtered)
+      setDuplicateInfoMap(prev => {
+        const next = new Map(prev)
+        next.set(localId, dupStatus)
+        return next
       })
       setStatus(localId, row.status === 'checking' ? 'draft' : row.status)
-      setDuplicatePreview({ localId, matches })
+      setDuplicatePreview({ localId, matches: dupStatus.matches })
     } catch {
       setStatus(localId, 'error', 'Error al verificar duplicados')
     }
   }
 
 
-  const handleManageTraceability = (localId: string) => {
+  const handleManageTraceability = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
-    if (row) {
-      setTraceabilityPreview({ localId, requirement: row.requirement })
+    if (!row || !row.requirement.id) return
+    
+    console.log("[RNF_TABLE] manual traceability load for", row.requirement.id);
+    
+    try {
+      const links = await requirementFacade.getRequirementTraceability(row.requirement.id)
+      setTraceabilityCountMap(prev => {
+        const next = new Map(prev)
+        next.set(localId, links.length)
+        return next
+      })
+    } catch (err) {
+      console.error("Error loading traceability", err)
     }
+    
+    setTraceabilityPreview({ localId, requirement: row.requirement })
+  }
+
+  const handleOpenQualityAnalysis = async (localId: string, req: RequirementDTO) => {
+    const row = rows.find(r => r.localId === localId)
+    const localIssues = analyzeRequirementText({
+      title: req.title,
+      description: req.description,
+      acceptanceCriteria: req.acceptanceCriteria,
+      requirementType: req.requirementType ?? 'NON_FUNCTIONAL',
+    })
+    const isSaved = row ? row.status === 'saved' : false
+    const analysis = (isSaved && req.id && localIssues.length === 0) ? (qualityAnalyses.get(req.id) || null) : null
+    setActiveQualityModal({ localId, requirement: req, analysis })
   }
 
 
@@ -518,6 +574,38 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                 const isExpanded = expandedId === row.localId
                 const metricLabel = d?.metricName && d?.targetValue ? `${d.metricName} ${d.operator} ${d.targetValue} ${d.unit}`.trim() : '—'
                 const isInvalid = row.status === 'incomplete' || row.status === 'error'
+
+                const localIssues = analyzeRequirementText({
+                  title: row.requirement.title,
+                  description: row.requirement.description,
+                  acceptanceCriteria: row.requirement.acceptanceCriteria,
+                  requirementType: 'NON_FUNCTIONAL',
+                })
+
+                const localAnalysis: RequirementQualityAnalysisDTO = {
+                  id: `local-${row.requirement.id || 'draft'}`,
+                  requirementId: row.requirement.id || 'draft',
+                  requirementCode: row.requirement.code || 'REQ',
+                  requirementType: 'NON_FUNCTIONAL' as const,
+                  qualityStatus: (localIssues.some(i => i.severity === 'error') ? 'ERROR' : localIssues.length > 0 ? 'WARNING' : 'OK') as any,
+                  totalViolations: localIssues.length,
+                  errorCount: localIssues.filter(i => i.severity === 'error').length,
+                  warningCount: localIssues.filter(i => i.severity === 'warning').length,
+                  infoCount: 0,
+                  analyzedAt: new Date().toISOString(),
+                  analysisSource: 'RULES' as const,
+                  violations: localIssues.map(issue => ({
+                    id: issue.id,
+                    field: issue.field === 'procedural' ? 'description' : issue.field,
+                    severity: issue.severity.toUpperCase() as 'WARNING' | 'ERROR' | 'INFO',
+                    fragment: issue.term || '',
+                    message: issue.message,
+                    suggestion: issue.suggestion || null,
+                    ruleCode: issue.ruleId || 'AMBIGUOUS_TERM',
+                    ruleName: 'Regla de calidad / Claridad'
+                  }))
+                }
+
                 return (
                   <React.Fragment key={row.localId}>
                     <tr onClick={() => setExpandedId(isExpanded ? null : row.localId)}
@@ -541,31 +629,12 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                         )}
 
                         {/* Horizontal Badges for RNF */}
-                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                          {/* Calidad Badge */}
-                          {(() => {
-                            const qi = qualityMap.get(row.localId) || []
-                            return (
-                              <span
-                                title="Análisis de calidad del RNF"
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
-                                  qi.length === 0
-                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
-                                    : qi.some(q => q.severity === 'error')
-                                    ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20'
-                                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
-                                }`}
-                              >
-                                <span className="w-1 h-1 rounded-full bg-current shrink-0" />
-                                {qi.length === 0
-                                  ? 'Calidad: OK'
-                                  : qi.some(q => q.severity === 'error')
-                                  ? `Reglas: ${qi.filter(q => q.severity === 'error').length} err`
-                                  : `Reglas: ${qi.filter(q => q.severity === 'warning').length} adv`
-                                }
-                              </span>
-                            )
-                          })()}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2" onClick={e => e.stopPropagation()}>
+                          {/* Calidad Badge — live client-side ambiguity/quality analysis */}
+                          <RequirementQualityStatusBadge 
+                            analysis={(row.requirement.id ? (qualityAnalyses.get(row.requirement.id) || null) : null) || localAnalysis}
+                            onClick={() => handleOpenQualityAnalysis(row.localId, row.requirement)}
+                          />
 
                           {/* Duplicados Badge */}
                           {(() => {
@@ -618,11 +687,6 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                         <div className="flex flex-col gap-1">
                           {statusBadge(row.status)}
                           {row.errorMessage && <p className="text-[9px] text-rose-500 mt-0.5">{row.errorMessage}</p>}
-                          {/* Quality badge — purely informational, never blocks save */}
-                          {(() => {
-                            const qi = qualityMap.get(row.localId)
-                            return qi && qi.length > 0 ? <RequirementQualityBadge issues={qi} /> : null
-                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -866,6 +930,16 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                   </button>
 
                   <button
+                    onClick={() => { setExpandedId(null); handleOpenQualityAnalysis(row.localId, row.requirement); }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Análisis de calidad</span>
+                  </button>
+
+                  <button
                     onClick={() => handleImprove(row.localId)}
                     disabled={row.status === 'saving' || row.status === 'checking'}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all disabled:opacity-40"
@@ -892,6 +966,36 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
 
             </div>
           </div>
+        )
+      })()}
+
+      {activeQualityModal && (() => {
+        const liveRow = rows.find(r => r.localId === activeQualityModal.localId)
+        const liveReq = liveRow ? liveRow.requirement : activeQualityModal.requirement
+        const localIssues = analyzeRequirementText({
+          title: liveReq.title,
+          description: liveReq.description,
+          acceptanceCriteria: liveReq.acceptanceCriteria,
+          requirementType: liveReq.requirementType ?? 'NON_FUNCTIONAL',
+        })
+        const isSaved = liveRow ? liveRow.status === 'saved' : false
+        const analysis = (isSaved && liveReq.id && localIssues.length === 0) ? (qualityAnalyses.get(liveReq.id) || null) : null
+        return (
+          <RequirementQualityDetailModal
+            requirement={liveReq}
+            analysis={analysis}
+            isOpen={activeQualityModal !== null}
+            status={liveRow ? liveRow.status : 'draft'}
+            onClose={() => setActiveQualityModal(null)}
+            onReanalized={(updated) => {
+              setQualityAnalyses(prev => {
+                const next = new Map(prev)
+                next.set(updated.requirementId, updated)
+                return next
+              })
+              setActiveQualityModal(prev => prev ? { ...prev, analysis: updated } : null)
+            }}
+          />
         )
       })()}
     </div>

@@ -35,7 +35,7 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
   }
 
   return (
-    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl flex flex-col h-full shadow-lg overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+    <div className="backdrop-blur-md bg-[var(--color-bg-card)]/90 border border-[var(--color-border)] rounded-2xl flex flex-col h-full shadow-2xl overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
       {/* Header */}
       <div className="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -64,18 +64,28 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
         {/* Title Section */}
         <section>
           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-2 block">Título Completo</label>
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)] leading-relaxed">
-            {requirement.title || <span className="italic opacity-30">Sin título</span>}
-          </h2>
+          <div className="focus-within:ring-1 focus-within:ring-[var(--color-accent)]/20 rounded-xl transition-all">
+            <input
+              type="text"
+              value={requirement.title || ''}
+              onChange={(e) => onUpdate({ title: e.target.value })}
+              placeholder="Escribe el título del requisito..."
+              className="w-full px-3 py-2 text-sm font-semibold bg-[var(--color-surface)]/20 border border-[var(--color-border)] focus:border-[var(--color-accent)]/50 focus:ring-0 rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/30 transition-all"
+            />
+          </div>
         </section>
 
         {/* Description Section */}
         <section>
           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-3 block">Descripción Detallada</label>
-          <div className="p-4 rounded-xl bg-[var(--color-surface)]/30 border border-[var(--color-border)]">
-            <p className="text-[14px] text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-wrap">
-              {requirement.description || <span className="italic opacity-30">Sin descripción</span>}
-            </p>
+          <div className="rounded-xl bg-[var(--color-surface)]/20 border border-[var(--color-border)] focus-within:border-[var(--color-accent)]/50 focus-within:ring-1 focus-within:ring-[var(--color-accent)]/20 overflow-hidden transition-all p-3">
+            <textarea
+              value={requirement.description || ''}
+              onChange={(e) => onUpdate({ description: e.target.value })}
+              placeholder="Describe detalladamente la funcionalidad del requisito..."
+              rows={5}
+              className="w-full text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 focus:ring-0 resize-y leading-relaxed placeholder:text-[var(--color-text-muted)]/30"
+            />
           </div>
         </section>
 

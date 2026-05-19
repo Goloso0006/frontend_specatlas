@@ -8,7 +8,9 @@ import { DeleteConfirmationModal } from './DeleteConfirmationModal'
 import { RequirementDeleteImpactModal } from './RequirementDeleteImpactModal'
 import { RequirementFiltersBar } from './RequirementFiltersBar'
 import { RequirementTraceabilityPanel } from './RequirementTraceabilityPanel'
+import { RequirementQualityDetailModal } from './RequirementQualityDetailModal'
 import { requirementFacade } from '../../facades/requirement.facade'
+import { qualityAnalysisApi } from '../../api/services/qualityAnalysisApi'
 import { generateNextCode } from '../../utils/requirementCodeUtils'
 import { sortRequirements } from '../../utils/requirementSortUtils'
 import {
@@ -19,7 +21,7 @@ import {
   type RequirementFilters,
 } from '../../utils/requirementFilterUtils'
 import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
-import type { RequirementDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse, RuleViolation } from '../../types/requirements'
+import type { RequirementDTO, RequirementMemoryResponse, RequirementDeleteImpactResponse, RuleViolation, RequirementQualityAnalysisDTO } from '../../types/requirements'
 
 interface FunctionalRequirementsTableProps {
   projectId: string
@@ -85,22 +87,45 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   const [deleteConfirm, setDeleteConfirm] = useState<{ localId: string; requirement: RequirementDTO; impact?: RequirementDeleteImpactResponse } | null>(null)
   const [proceduralViolations, setProceduralViolations] = useState<Map<string, RuleViolation[]>>(new Map())
   const [traceabilityPreview, setTraceabilityPreview] = useState<{ localId: string; requirement: RequirementDTO } | null>(null)
+  
+  // Persisted database Quality Analysis states
+  const [qualityAnalyses, setQualityAnalyses] = useState<Map<string, RequirementQualityAnalysisDTO>>(new Map())
+  const [activeQualityModal, setActiveQualityModal] = useState<{ localId: string; requirement: RequirementDTO; analysis: RequirementQualityAnalysisDTO | null } | null>(null)
 
   // Duplicates risk and traceability link counts states
   const [duplicateInfoMap, setDuplicateInfoMap] = useState<Map<string, { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }>>(new Map())
   const [traceabilityCountMap, setTraceabilityCountMap] = useState<Map<string, number>>(new Map())
 
   const getDuplicateStatus = (matches: any[]) => {
-    if (!matches || matches.length === 0) return { status: 'NONE' as const, matches: [] }
-    const topMatch = matches[0]
-    const similarity = topMatch.similarityPercentage || (topMatch.similarity ? topMatch.similarity * 100 : 0)
-    if (similarity >= 75) return { status: 'HIGH' as const, matches }
-    if (similarity >= 40) return { status: 'MEDIUM' as const, matches }
-    if (similarity >= 15) return { status: 'LOW' as const, matches }
-    return { status: 'NONE' as const, matches }
+    // Filter matches to only keep relevant ones (e.g., level !== 'LOW' and similarity >= 15%)
+    const relevantMatches = matches.filter(m => {
+      const pct = m.similarityPercentage || (m.similarity ? m.similarity * 100 : 0)
+      return m.level !== 'LOW' && pct >= 15
+    })
+
+    if (!relevantMatches || relevantMatches.length === 0) return { status: 'NONE' as const, matches: [] }
+    
+    // Sort matches so that DUPLICATE and VERY_SIMILAR matches come before RELATED/LOW, then sort by similarity
+    const sorted = [...relevantMatches].sort((a, b) => {
+      const aIsDup = a.level === 'DUPLICATE' || a.level === 'VERY_SIMILAR' ? 1 : 0
+      const bIsDup = b.level === 'DUPLICATE' || b.level === 'VERY_SIMILAR' ? 1 : 0
+      if (aIsDup !== bIsDup) return bIsDup - aIsDup // Put DUPLICATE first
+      
+      const pctA = a.similarityPercentage || (a.similarity ? a.similarity * 100 : 0)
+      const pctB = b.similarityPercentage || (b.similarity ? b.similarity * 100 : 0)
+      return pctB - pctA // Put highest similarity first
+    })
+
+    const hasDuplicate = sorted.some(m => m.level === 'DUPLICATE' || m.level === 'VERY_SIMILAR')
+    const hasRelated = sorted.some(m => m.level === 'RELATED')
+    
+    if (hasDuplicate) return { status: 'HIGH' as const, matches: sorted }
+    if (hasRelated) return { status: 'MEDIUM' as const, matches: sorted }
+    return { status: 'NONE' as const, matches: sorted }
   }
 
-  const runAnalysisForRow = async (localId: string, req: RequirementDTO) => {
+  /*
+  const _runAnalysisForRow = async (localId: string, req: RequirementDTO) => {
     // 1. Traceability links count
     if (req.id) {
       try {
@@ -148,26 +173,37 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     }
   }
 
-  const debounceTimersRef = React.useRef<Map<string, any>>(new Map())
+  const _debounceTimersRef = React.useRef<Map<string, any>>(new Map())
+  */
 
-  const handleRowChangeDebounced = (localId: string, req: RequirementDTO) => {
-    if (debounceTimersRef.current.has(localId)) {
-      clearTimeout(debounceTimersRef.current.get(localId)!)
+  const handleRowChangeDebounced = (_localId: string, _req: RequirementDTO) => {
+    // Disabled automatic analysis on typing to avoid rate limits and duplicate executions.
+    console.log("[RF_TABLE] auto runAnalysisForRow disabled");
+  }
+
+  const loadQualityAnalyses = async () => {
+    if (!projectId) return
+    try {
+      const analyses = await qualityAnalysisApi.getProjectQualityAnalyses(projectId)
+      const nextMap = new Map<string, RequirementQualityAnalysisDTO>()
+      analyses.forEach(a => {
+        if (a.requirementId) {
+          nextMap.set(a.requirementId, a)
+        }
+      })
+      setQualityAnalyses(nextMap)
+    } catch (err) {
+      console.warn("[QUALITY_UI] Fallback to empty quality map due to API error:", err)
+      setQualityAnalyses(new Map())
     }
-    const timer = setTimeout(() => {
-      runAnalysisForRow(localId, req)
-    }, 1500)
-    debounceTimersRef.current.set(localId, timer)
   }
 
   // Trigger analysis for all rows when initialRequirements loads
   useEffect(() => {
-    rows.forEach(row => {
-      if (row.requirement.id) {
-        runAnalysisForRow(row.localId, row.requirement)
-      }
-    })
-  }, [initialRequirements])
+    loadQualityAnalyses()
+    console.log("[RF_TABLE] initialRequirements changed, rows updated without auto analysis");
+    console.log("[RF_TABLE] auto runAnalysisForRow disabled");
+  }, [initialRequirements, projectId])
 
   // Filter options are derived from the FULL rows (including drafts) so that
   // dropdown options remain stable while filters are active.
@@ -209,7 +245,7 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
         severity: v.severity.toLowerCase() as any,
         field: 'procedural' as any,
         message: v.message,
-        suggestion: `Regla: ${v.ruleName}`
+        suggestion: `Regla: ${v.ruleName || 'Regla del proyecto'}`
       }))
 
       map.set(row.localId, [...localIssues, ...proceduralIssues])
@@ -276,6 +312,8 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     try {
       const saved = await requirementFacade.saveRequirement({ ...requirement, id: requirement.id || '' })
       if (saved) {
+        console.log("[SAVE_REQUIREMENT] saved requirement", saved.id);
+        console.log("[SAVE_REQUIREMENT] updating local row only");
         setRows(prev => {
           const updated = prev.map(r =>
             r.localId === localId ? { ...r, requirement: saved, status: 'saved' as RowStatus, errorMessage: undefined } : r,
@@ -359,13 +397,24 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     }
     setRowStatus(localId, 'checking')
     try {
+      console.log("[RF_TABLE] manual duplicate analysis for", requirement.id);
       const matches = await requirementFacade.checkDuplicates({
         projectId,
         title: requirement.title,
-        description: requirement.description
+        description: requirement.description,
+        requirementId: requirement.id,
+        code: requirement.code,
+        requirementType: 'FUNCTIONAL'
+      })
+      const filtered = matches.filter((m: any) => m.requirementId !== requirement.id)
+      const dupStatus = getDuplicateStatus(filtered)
+      setDuplicateInfoMap(prev => {
+        const next = new Map(prev)
+        next.set(localId, dupStatus)
+        return next
       })
       setRowStatus(localId, row.status === 'checking' ? 'draft' : row.status)
-      setDuplicatePreview({ localId, matches })
+      setDuplicatePreview({ localId, matches: dupStatus.matches })
     } catch {
       setRowStatus(localId, 'error', 'Error al verificar duplicados')
     }
@@ -376,6 +425,7 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     if (!row) return
     setRowStatus(localId, 'checking')
     try {
+      console.log("[RF_TABLE] manual rules evaluation for", row.requirement.id);
       const response = await requirementFacade.evaluateRequirementAgainstRules(row.requirement, projectId)
       setProceduralViolations(prev => {
         const next = new Map(prev)
@@ -388,24 +438,24 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     }
   }
 
-  // ── Memory ───────────────────────────────────────────────────────────────
 
-  const handleViewMemory = async (localId: string) => {
+  const handleManageTraceability = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
     if (!row || !row.requirement.id) return
-    setRowStatus(localId, 'checking')
+    
+    console.log("[RF_TABLE] manual traceability load for", row.requirement.id);
+    
     try {
-      const memory = await requirementFacade.getRequirementMemory(row.requirement.id)
-      setRowStatus(localId, row.status === 'checking' ? 'saved' : row.status)
-      setMemoryPreview({ localId, memory })
-    } catch {
-      setRowStatus(localId, 'error', 'Error al cargar memoria')
+      const links = await requirementFacade.getRequirementTraceability(row.requirement.id)
+      setTraceabilityCountMap(prev => {
+        const next = new Map(prev)
+        next.set(localId, links.length)
+        return next
+      })
+    } catch (err) {
+      console.error("Error loading traceability", err)
     }
-  }
-
-  const handleManageTraceability = (localId: string) => {
-    const row = rows.find(r => r.localId === localId)
-    if (!row || !row.requirement.id) return
+    
     setTraceabilityPreview({ localId, requirement: row.requirement })
   }
 
@@ -439,6 +489,19 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
       setRows(prev => prev.filter(r => r.localId !== localId))
       if (selectedLocalId === localId) setSelectedLocalId(null)
     }
+  }
+
+  const handleOpenQualityAnalysis = async (localId: string, req: RequirementDTO) => {
+    const row = rows.find(r => r.localId === localId)
+    const localIssues = analyzeRequirementText({
+      title: req.title,
+      description: req.description,
+      acceptanceCriteria: req.acceptanceCriteria,
+      requirementType: req.requirementType ?? 'FUNCTIONAL',
+    })
+    const isSaved = row ? row.status === 'saved' : false
+    const analysis = (isSaved && req.id && localIssues.length === 0) ? (qualityAnalyses.get(req.id) || null) : null
+    setActiveQualityModal({ localId, requirement: req, analysis })
   }
 
   const confirmDelete = async () => {
@@ -551,14 +614,14 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
                         status={row.status}
                         errorMessage={row.errorMessage}
                         isSelected={selectedLocalId === row.localId}
-                        qualityIssues={qualityMap.get(row.localId)}
                         duplicateInfo={duplicateInfoMap.get(row.localId)}
                         traceabilityCount={traceabilityCountMap.get(row.localId) || 0}
                         onUpdate={updates => updateRow(row.localId, updates)}
                         onSave={() => handleSave(row.localId)}
                         onImprove={() => handleImprove(row.localId)}
                         onCheckDuplicates={() => handleCheckDuplicates(row.localId)}
-                        onViewMemory={() => handleViewMemory(row.localId)}
+                        onOpenQualityAnalysis={() => handleOpenQualityAnalysis(row.localId, row.requirement)}
+                        qualityAnalysis={row.requirement.id ? qualityAnalyses.get(row.requirement.id) : null}
                         onEvaluateRules={() => handleEvaluateRules(row.localId)}
                         onManageTraceability={() => handleManageTraceability(row.localId)}
                         onDelete={() => handleDeleteRequest(row.localId)}
@@ -652,6 +715,36 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
           onCancel={() => setDeleteConfirm(null)}
         />
       )}
+
+      {activeQualityModal && (() => {
+        const liveRow = rows.find(r => r.localId === activeQualityModal.localId)
+        const liveReq = liveRow ? liveRow.requirement : activeQualityModal.requirement
+        const localIssues = analyzeRequirementText({
+          title: liveReq.title,
+          description: liveReq.description,
+          acceptanceCriteria: liveReq.acceptanceCriteria,
+          requirementType: liveReq.requirementType ?? 'FUNCTIONAL',
+        })
+        const isSaved = liveRow ? liveRow.status === 'saved' : false
+        const analysis = (isSaved && liveReq.id && localIssues.length === 0) ? (qualityAnalyses.get(liveReq.id) || null) : null
+        return (
+          <RequirementQualityDetailModal
+            requirement={liveReq}
+            analysis={analysis}
+            isOpen={activeQualityModal !== null}
+            status={liveRow ? liveRow.status : 'draft'}
+            onClose={() => setActiveQualityModal(null)}
+            onReanalized={(updated) => {
+              setQualityAnalyses(prev => {
+                const next = new Map(prev)
+                next.set(updated.requirementId, updated)
+                return next
+              })
+              setActiveQualityModal(prev => prev ? { ...prev, analysis: updated } : null)
+            }}
+          />
+        )
+      })()}
     </div>
   )
 }

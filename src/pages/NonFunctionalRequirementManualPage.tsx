@@ -66,7 +66,7 @@ export function NonFunctionalRequirementManualPage() {
     let cancelled = false
 
     async function load() {
-      setIsLoading(true)
+      console.log("[SAVE_REQUIREMENT] refetch triggered from reloadRequirements (silent background fetch)");
       setLoadError(null)
       try {
         const data = await requirementFacade.getRequirementsByProject(projectId, 'NON_FUNCTIONAL')
@@ -75,11 +75,7 @@ export function NonFunctionalRequirementManualPage() {
         }
       } catch {
         if (!cancelled) {
-          setLoadError('No fue posible recargar los requisitos.')
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
+          setLoadError('No fue posible recargar los requisitos en segundo plano.')
         }
       }
     }

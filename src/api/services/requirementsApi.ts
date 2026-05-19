@@ -106,13 +106,16 @@ export const requirementsApi = {
   },
 
   async checkDuplicates(payload: DuplicateCheckRequest): Promise<DuplicateMatchResponse[]> {
-    const data = await httpProxy.post<
-      DuplicateMatchResponse[] | ApiResponse<DuplicateMatchResponse[]>
-    >(
+    const response = await httpProxy.post<any>(
       endpoints.requirements.duplicates,
       payload,
     )
-    return adaptDuplicateMatchResponseList(unwrapData(data))
+    const unwrapped = unwrapData(response)
+    const result = unwrapped?.data ?? unwrapped ?? response
+    const matchesArray = Array.isArray(result)
+      ? result
+      : (result?.matches ?? [])
+    return adaptDuplicateMatchResponseList(matchesArray)
   },
 
   async getImpact(requirementId: string): Promise<RequirementNode[]> {

@@ -59,6 +59,9 @@ export interface DuplicateCheckRequest {
   projectId: string
   title: string
   description: string
+  requirementId?: string
+  code?: string
+  requirementType?: 'FUNCTIONAL' | 'NON_FUNCTIONAL'
 }
 
 export interface DuplicateMatchResponse {
@@ -238,3 +241,37 @@ export interface ImproveRequirementResponse {
   warnings?: string[]
   improvementSummary?: string
 }
+
+export type QualityStatus = 'OK' | 'WARNING' | 'ERROR' | 'FAILED'
+export type AnalysisSource = 'RULES' | 'AI' | 'HYBRID'
+
+export interface QualityViolationDTO {
+  id: string
+  severity: 'INFO' | 'WARNING' | 'ERROR'
+  field: string
+  fragment?: string | null
+  message: string
+  suggestion?: string | null
+  startIndex?: number | null
+  endIndex?: number | null
+  ruleCode?: string | null
+  ruleName?: string | null
+}
+
+export interface RequirementQualityAnalysisDTO {
+  id: string
+  requirementId: string
+  requirementCode: string
+  requirementType: 'FUNCTIONAL' | 'NON_FUNCTIONAL'
+  qualityStatus: QualityStatus
+  totalViolations: number
+  errorCount: number
+  warningCount: number
+  infoCount: number
+  improvedSuggestion?: string | null
+  analyzedAt: string
+  analysisSource: AnalysisSource
+  modelUsed?: string | null
+  violations: QualityViolationDTO[]
+}
+
