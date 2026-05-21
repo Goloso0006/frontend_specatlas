@@ -264,11 +264,4 @@ export function FunctionalRequirementAIPage() {
   )
 }
 
-export default FunctionalRequirementAIPagee>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export default FunctionalRequirementAIPage

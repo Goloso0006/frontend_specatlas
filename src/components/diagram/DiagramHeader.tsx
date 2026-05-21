@@ -199,6 +199,3 @@ export function DiagramHeader({
     </header>
   )
 }
-header>
-  )
-}
