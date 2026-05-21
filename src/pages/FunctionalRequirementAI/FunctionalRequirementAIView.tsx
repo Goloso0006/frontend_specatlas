@@ -142,18 +142,18 @@ export function FunctionalRequirementAIPage() {
   const canGenerate = inputText.trim().length > 0 && !isLoading
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)]">
+    <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <div className="max-w-3xl mx-auto w-full px-6 md:px-8 pt-12 pb-20">
         <div className="mb-8">
-          <span className="text-[11px] font-mono font-medium uppercase tracking-[0.16em] text-[var(--color-accent)]">
+          <span className="inline-flex rounded-full border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
             // ia · requisitos funcionales (batch)
           </span>
           <h1 className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-tight">
-            Crear con IA
+            Crear requerimientos funcionales con AI
           </h1>
           <p className="mt-2.5 text-base text-[var(--color-text-secondary)] leading-relaxed max-w-xl">
-            Pega notas de reunión, correos, conversaciones con el cliente u otro texto libre.
-            SpecAtlas generará y presentará todos los requisitos detectados de forma independiente.
+            Convierte notas de reunión, correos o conversaciones en requisitos revisables,
+            con actores, criterios BDD y trazabilidad antes de guardar.
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export function FunctionalRequirementAIPage() {
               onChange={(event) => setInputText(event.target.value)}
               placeholder="Ejemplo: El cliente mencionó que necesita que el sistema envíe una notificación por email cuando un pedido cambia de estado. Esto aplica para todos los usuarios registrados. También es importante que llegue en menos de 5 minutos…"
               rows={10}
-              className={`${AI_INPUT_CLASSNAME} resize-y min-h-[180px]`}
+              className={`${AI_INPUT_CLASSNAME} resize-y min-h-[220px]`}
             />
             <p className="mt-2 text-[11.5px] text-[var(--color-text-muted)] leading-relaxed">
               Acepta notas de reunión, correos, conversaciones de chat, descripciones informales u otro texto libre. No es necesario que el texto esté estructurado.
@@ -258,6 +258,13 @@ export function FunctionalRequirementAIPage() {
               />
             ))}
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default FunctionalRequirementAIPagee>
         )}
       </div>
     </div>

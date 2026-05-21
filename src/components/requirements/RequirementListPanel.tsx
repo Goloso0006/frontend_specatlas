@@ -62,12 +62,12 @@ const RequirementListItem: React.FC<RequirementListItemProps> = ({
       onKeyDown={e => e.key === 'Enter' && onSelect()}
       aria-selected={isSelected}
       className={[
-        'group relative mx-3 my-2 p-4 rounded-xl',
-        'border cursor-pointer',
+        'group relative mx-3 my-2.5 p-4 rounded-2xl',
+        'border cursor-pointer shadow-sm',
         'transition-all duration-150',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-1',
         isSelected
-          ? 'border-[var(--color-accent)] bg-[var(--color-surface)] shadow-sm'
+          ? 'border-[var(--color-accent)] bg-[var(--color-surface)] shadow-[0_12px_34px_rgba(114,87,53,0.12)]'
           : 'border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-border-strong)] hover:shadow-sm',
       ].join(' ')}
     >
@@ -84,7 +84,7 @@ const RequirementListItem: React.FC<RequirementListItemProps> = ({
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {requirement.code && (
             <span className={[
-              'inline-flex items-center flex-shrink-0 h-5 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider',
+              'inline-flex items-center flex-shrink-0 h-6 px-2.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
               isSelected
                 ? 'bg-[var(--color-accent)] text-[var(--color-accent-foreground)]'
                 : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)]',

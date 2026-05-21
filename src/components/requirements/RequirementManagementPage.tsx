@@ -281,7 +281,7 @@ export function RequirementManagementPage({ requirementType }: RequirementManage
   }
 
   return (
-    <div className="flex flex-col h-full bg-(--color-bg) text-(--color-text-primary)">
+    <div className="flex flex-col h-full bg-[radial-gradient(circle_at_top_left,var(--color-accent-subtle),transparent_32%),var(--color-bg)] text-(--color-text-primary)">
       <div className="shrink-0 flex items-start justify-between px-6 pt-5 pb-4 border-b border-(--color-border)">
         <div>
           <h1 className="text-[20px] font-bold tracking-tight text-(--color-text-primary) leading-tight">
@@ -307,7 +307,7 @@ export function RequirementManagementPage({ requirementType }: RequirementManage
 
       <div className="flex-1 flex overflow-hidden min-h-0">
         <div
-          className="shrink-0 flex flex-col border-r border-(--color-border)"
+          className="shrink-0 flex flex-col rounded-[1.5rem] border border-(--color-border-strong) bg-(--color-bg-card) shadow-[0_18px_60px_rgba(43,43,43,0.07)] overflow-hidden"
           style={{ width: 'clamp(300px, 38%, 480px)' }}
         >
           <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-(--color-border)">
@@ -364,7 +364,7 @@ export function RequirementManagementPage({ requirementType }: RequirementManage
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden rounded-[1.5rem] border border-(--color-border-strong) bg-(--color-bg-card) shadow-[0_18px_60px_rgba(43,43,43,0.07)]">
           <RequirementDetailPanel
             requirements={projectRequirements}
             requirement={selectedRequirement}

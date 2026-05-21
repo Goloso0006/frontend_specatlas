@@ -73,7 +73,7 @@ export function DiagramHeader({
             const typePath = diagramType === 'CLASS' ? 'class' : 'use-case'
             navigate(`/app/projects/${projectId}/diagrams/${typePath}`)
           }}
-          className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all duration-200"
+          className="h-8 w-8 rounded-xl border border-(--color-border-strong) bg-(--color-surface) text-(--color-text-muted) hover:bg-(--color-accent-subtle) hover:text-(--color-accent) flex items-center justify-center transition-all duration-200"
           title="Volver"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ export function DiagramHeader({
         <div className="flex items-center gap-2">
           {status === 'saving' ? (
             <span className="text-[10px] text-blue-500 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-medium animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+              <span className="w-1.5 h-1.5 rounded-full bg-(--color-accent) animate-ping" />
               Guardando...
             </span>
           ) : status === 'error' ? (
@@ -197,5 +197,8 @@ export function DiagramHeader({
         </button>
       </div>
     </header>
+  )
+}
+header>
   )
 }

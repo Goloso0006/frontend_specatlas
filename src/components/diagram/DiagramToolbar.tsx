@@ -41,7 +41,7 @@ export function DiagramToolbar({
   ]
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full h-full relative">
+    <div className="flex flex-col items-center gap-4 w-full h-full relative rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-bg-card)]/95 p-2 shadow-[0_16px_44px_rgba(43,43,43,0.10)] backdrop-blur">
       
       {/* ── Add Elements Group ── */}
       <div className="relative group">
@@ -69,7 +69,7 @@ export function DiagramToolbar({
         {isAddMenuOpen && (
           <div className="absolute left-14 top-0 w-60 bg-[var(--color-bg-card)] dark:bg-[#0b0f12] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden py-3 z-50 animate-in fade-in duration-200">
             <div className="px-3">
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Crear elemento</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Crear elemento</div>
               <div className="grid grid-cols-1 gap-2">
                 {isClass && classElements.map(item => (
                   <button key={item.type} className="w-full p-2 flex items-center gap-3 rounded-lg hover:bg-[var(--color-surface)] transition-colors" onClick={() => { onAddElement(item.type); setIsAddMenuOpen(false) }}>

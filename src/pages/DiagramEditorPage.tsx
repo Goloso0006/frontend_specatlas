@@ -133,7 +133,7 @@ export function DiagramEditorPage() {
           diagramType={diagramType}
         />
 
-        <div className="flex-1 min-h-0 flex overflow-hidden relative">
+        <div className="flex-1 min-h-0 flex overflow-hidden relative rounded-[1.75rem] border border-(--color-border-strong) bg-(--color-bg-card) shadow-[0_24px_80px_rgba(43,43,43,0.08)]">
           <div className="absolute left-4 top-6 z-30">
             <DiagramToolbar
               isSaved={Boolean(diagramId.trim())}
