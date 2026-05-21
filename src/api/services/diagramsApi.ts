@@ -8,6 +8,7 @@ import type {
   DiagramResponse,
   DiagramSummaryResponse,
   UseCaseDiagramRequest,
+  ModelingAsset,
 } from '../../types/diagrams'
 
 export const diagramsApi = {
@@ -86,5 +87,16 @@ export const diagramsApi = {
       responseType: 'blob',
     })
     return data
+  },
+
+  async getModelingAssets(projectId: string): Promise<ModelingAsset[]> {
+    const data = await httpProxy.get<ModelingAsset[] | ApiResponse<ModelingAsset[]>>(
+      `/api/projects/${projectId}/modeling-assets`,
+    )
+    return unwrapData(data)
+  },
+
+  async saveRelations(diagramId: string, relations: Array<{ actorName: string; requirementCode: string }>): Promise<void> {
+    await httpProxy.post(endpoints.diagrams.saveRelations(diagramId), relations)
   },
 }

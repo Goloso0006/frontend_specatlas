@@ -227,6 +227,8 @@ export interface RequirementDeleteImpactResponse {
   relatedArchitecture: Array<{ name: string; type: string; relation: string }>
   relatedCodes: string[]
   warnings: string[]
+  affectedDiagrams?: string[]
+  affectedActors?: string[]
 }
 
 export interface ImproveRequirementRequest {

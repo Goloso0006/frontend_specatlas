@@ -13,6 +13,7 @@ import {
   type OnSelectionChangeFunc,
 } from '@xyflow/react'
 import { diagramFacade } from '../facades/diagram.facade'
+import { diagramsApi } from '../api/services/diagramsApi'
 import { useApiOperation } from './useLoadingError'
 import { isValidProjectId } from '../context/ProjectContext'
 import { useDiagramEditorStore } from '../state/diagramEditor.store'
@@ -80,7 +81,7 @@ export interface DiagramEditorController {
   handleConnect: (connection: Connection) => void
   handleReconnect: (oldEdge: Edge<DiagramRelationDTO>, newConnection: Connection) => void
   handleAddElement: (umlType: DiagramUmlType) => void
-  handleAddActor: () => void
+  handleAddActor: (name?: string, position?: { x: number; y: number }) => void
   handleAddUseCase: () => void
   handleAddPackage: () => void
   handleDeleteSelected: () => void
@@ -711,9 +712,9 @@ export function useDiagramEditorController(): DiagramEditorController {
     addNodeToCanvas(nodeDTO, 'classNode')
   }, [getNextNodeName, getNextNodePosition, addNodeToCanvas])
 
-  const handleAddActor = useCallback(() => {
-    const name = getNextNodeName('Actor')
-    const position = getNextNodePosition()
+  const handleAddActor = useCallback((customName?: string, customPosition?: { x: number; y: number }) => {
+    const name = customName || getNextNodeName('Actor')
+    const position = customPosition || getNextNodePosition()
     const nodeDTO = createActorNode(name)
     nodeDTO.position = position
     addNodeToCanvas(nodeDTO, 'actorNode')
@@ -1195,6 +1196,47 @@ export function useDiagramEditorController(): DiagramEditorController {
             }))
         })
       }
+
+      if (diagramType === 'USE_CASE') {
+        try {
+          const relations = edges
+            .map(edge => {
+              const sourceNode = nodes.find(n => n.id === edge.source)
+              const targetNode = nodes.find(n => n.id === edge.target)
+              if (!sourceNode || !targetNode) return null
+
+              let actorNode = null
+              let useCaseNode = null
+
+              if (sourceNode.data?.kind === 'actor') {
+                actorNode = sourceNode
+              } else if (targetNode.data?.kind === 'actor') {
+                actorNode = targetNode
+              }
+
+              if (sourceNode.data?.kind === 'useCase') {
+                useCaseNode = sourceNode
+              } else if (targetNode.data?.kind === 'useCase') {
+                useCaseNode = targetNode
+              }
+
+              if (actorNode && useCaseNode) {
+                const actorName = actorNode.data?.name || ''
+                const requirementCode = useCaseNode.data?.derivedFromRequirements?.[0] || ''
+                if (actorName && requirementCode) {
+                  return { actorName, requirementCode }
+                }
+              }
+              return null
+            })
+            .filter((r): r is { actorName: string; requirementCode: string } => r !== null)
+
+          await diagramsApi.saveRelations(data.id, relations)
+        } catch (err) {
+          console.error('Error saving diagram relations:', err)
+        }
+      }
+
       syncDiagramResponse(data, 'Diagrama guardado correctamente.')
       setShowValidationModal(false)
     } else {

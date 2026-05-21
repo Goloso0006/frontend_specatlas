@@ -26,6 +26,7 @@ import { NonFunctionalRequirementManualPage } from './pages/NonFunctionalRequire
 import { ProjectDiagramsPage } from './pages/ProjectDiagramsPage'
 import { DiagramTypeDetailPage } from './pages/DiagramTypeDetailPage'
 import { ProjectMapPage } from './pages/ProjectMapPage'
+import ProjectReportsPage from './pages/ProjectReportsPage'
 
 function App() {
   useTheme()
@@ -146,6 +147,7 @@ function App() {
           <AppShell hideSidebar><DiagramEditorPage /></AppShell>
         } />
         <Route path="/app/projects/:projectId/validation-rules" element={<AppShell hideSidebar><ValidationRulesPage /></AppShell>} />
+        <Route path="/app/projects/:projectId/reports" element={<AppShell><ProjectReportsPage /></AppShell>} />
 
         {/* Legacy / Direct access */}
         <Route path="/app/projects" element={<Navigate to="/app" replace />} />

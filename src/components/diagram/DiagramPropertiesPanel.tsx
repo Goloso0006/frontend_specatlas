@@ -17,6 +17,7 @@ interface DiagramPropertiesPanelProps {
   onClose?: () => void
   sidebarTabPreference?: string | null
   setSidebarTabPreference?: (val: string | null) => void
+  projectId?: string
 }
 
 export function DiagramPropertiesPanel({
@@ -34,6 +35,7 @@ export function DiagramPropertiesPanel({
   onClose,
   sidebarTabPreference,
   setSidebarTabPreference,
+  projectId,
 }: DiagramPropertiesPanelProps) {
 
   const handleClose = () => {
@@ -44,8 +46,8 @@ export function DiagramPropertiesPanel({
     }
   }
 
-  // Si no hay un elemento seleccionado, no tiene sentido renderizar la estructura
-  if (!editorTarget) {
+  // Si no hay un elemento seleccionado y no es de tipo USE_CASE, no tiene sentido renderizar la estructura
+  if (!editorTarget && diagramType !== 'USE_CASE') {
     return null
   }
 
@@ -71,6 +73,7 @@ export function DiagramPropertiesPanel({
             onClose={handleClose}
             sidebarTabPreference={sidebarTabPreference}
             setSidebarTabPreference={setSidebarTabPreference}
+            projectId={projectId}
           />
         </div>
       </aside>

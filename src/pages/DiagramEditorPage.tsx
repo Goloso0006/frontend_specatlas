@@ -182,6 +182,7 @@ export function DiagramEditorPage() {
               onSaveDiagram={handleSaveDiagram}
               onUndo={handleUndo}
               onRedo={handleRedo}
+              onAddActor={handleAddActor}
             />
           </main>
 
@@ -200,6 +201,7 @@ export function DiagramEditorPage() {
             onClose={() => { setIsSidebarOpen(false); clearSelection() }}
             sidebarTabPreference={sidebarTabPreference}
             setSidebarTabPreference={setSidebarTabPreference}
+            projectId={projectId}
           />
         </div>
 

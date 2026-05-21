@@ -197,3 +197,10 @@ export interface DiagramSummaryResponse {
   createdAt?: string
   updatedAt?: string
 }
+
+export interface ModelingAsset {
+  id: string
+  name: string
+  type: 'ACTOR' | 'ENTITY'
+}
+

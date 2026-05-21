@@ -45,6 +45,7 @@ export const endpoints = {
     plantUml: (diagramId: string) => `/api/diagrams/${diagramId}/plantuml`,
     exportPlantUml: (diagramId: string) => `/api/diagrams/${diagramId}/export/puml`,
     exportText: (diagramId: string) => `/api/diagrams/${diagramId}/export/txt`,
+    saveRelations: (diagramId: string) => `/api/diagrams/${diagramId}/save-relations`,
   },
   graph: {
     base: '/api/graph',

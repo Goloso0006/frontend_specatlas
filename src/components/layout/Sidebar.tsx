@@ -24,6 +24,7 @@ export const Sidebar: React.FC = () => {
     { name: 'Requisitos', path: `/app/projects/${currentProjectId}/requirements` },
     { name: 'Diagramas', path: `/app/projects/${currentProjectId}/diagrams` },
     { name: 'Reglas', path: `/app/projects/${currentProjectId}/validation-rules` },
+    { name: 'Documentación', path: `/app/projects/${currentProjectId}/reports` },
   ] : [];
 
   // Legacy fallback links when NOT inside a project (shows "select a project" state on click)

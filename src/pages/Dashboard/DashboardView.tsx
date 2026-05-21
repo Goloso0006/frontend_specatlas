@@ -89,7 +89,7 @@ export function DashboardPage() {
             <div className="dashboard-actions-bar dashboard-actions-bar--search-only">
               <ProjectSearchBar value={query} onChange={setQuery} />
               <p className="dashboard-actions-hint">
-                Filtra el tablero por nombre, módulo o alcance técnico.
+                Busca por nombre de proyecto o palabra clave.
               </p>
             </div>
 
@@ -109,7 +109,7 @@ export function DashboardPage() {
             ) : filtered.length === 0 && query.trim() ? (
               <div className="rounded-[var(--ocd-tweak-dashboard-card-radius,1.35rem)] border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] px-6 py-14 text-center">
                 <p className="text-sm font-semibold text-[var(--color-text-primary)]">No encontramos proyectos con “{query}”.</p>
-                <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Prueba con otro nombre o crea un nuevo espacio de trabajo.</p>
+                <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Probá con otro término o revisá la ortografía.</p>
               </div>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

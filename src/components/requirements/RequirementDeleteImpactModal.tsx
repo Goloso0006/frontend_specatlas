@@ -15,8 +15,22 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
   isDeleting
 }) => {
   const [understood, setUnderstood] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+
+  const hasCriticalImpact = 
+    (impact.affectedDiagrams && impact.affectedDiagrams.length > 0) || 
+    (impact.affectedActors && impact.affectedActors.length > 0)
 
   const getRiskStyles = (level: RiskLevel) => {
+    if (hasCriticalImpact) {
+      return { 
+        bg: 'bg-rose-500/10', 
+        text: 'text-rose-600', 
+        border: 'border-rose-300 dark:border-rose-800', 
+        badge: 'bg-rose-600 text-white animate-pulse',
+        label: 'IMPACTO CRÍTICO' 
+      }
+    }
     switch (level) {
       case 'HIGH':
         return { 
@@ -55,22 +69,26 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
   }
 
   const styles = getRiskStyles(impact.riskLevel)
-  const isHighRisk = impact.riskLevel === 'HIGH' || impact.riskLevel === 'MEDIUM'
+  const isHighRisk = impact.riskLevel === 'HIGH' || impact.riskLevel === 'MEDIUM' || hasCriticalImpact
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+      <div className={`bg-[var(--color-bg-card)] border ${hasCriticalImpact ? 'border-rose-500 shadow-rose-500/10' : 'border-[var(--color-border)]'} w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200`}>
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[var(--color-border)] flex items-center justify-between bg-rose-500/5">
+        <div className={`px-6 py-5 border-b border-[var(--color-border)] flex items-center justify-between ${hasCriticalImpact ? 'bg-rose-500/10' : 'bg-rose-500/5'}`}>
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${styles.bg} ${styles.text}`}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Confirmar eliminación</h2>
-              <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Esta acción no se puede deshacer.</p>
+              <h2 className={`text-xl font-black ${hasCriticalImpact ? 'text-rose-600 dark:text-rose-500' : 'text-[var(--color-text-primary)]'}`}>
+                {hasCriticalImpact ? '¡ADVERTENCIA DE IMPACTO CRÍTICO!' : 'Confirmar eliminación'}
+              </h2>
+              <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+                {hasCriticalImpact ? 'Esta eliminación romperá elementos del modelado vivo.' : 'Esta acción no se puede deshacer.'}
+              </p>
             </div>
           </div>
           <button onClick={onCancel} className="p-2 rounded-lg hover:bg-[var(--color-surface)] transition-colors text-[var(--color-text-muted)]">
@@ -89,7 +107,7 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
                 </span>
                 <span className="font-bold text-sm text-[var(--color-text-primary)]">{impact.title}</span>
               </div>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${styles.badge}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${styles.badge}`}>
                 {styles.label}
               </span>
             </div>
@@ -97,6 +115,48 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
               {impact.summary || "Se eliminará el requisito del sistema permanentemente."}
             </p>
           </div>
+
+          {/* CRITICAL IMPACT LIVE ASSETS (VIBRANT RED LIST) */}
+          {hasCriticalImpact && (
+            <div className="p-5 rounded-xl border border-rose-500/30 bg-rose-500/5 space-y-4">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-500">
+                <svg className="w-5 h-5 flex-shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 className="text-xs font-black uppercase tracking-wider">Elementos Vivos que Quedarán Huérfanos/Rotos:</h3>
+              </div>
+              
+              <div className="space-y-3.5">
+                {impact.affectedActors && impact.affectedActors.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">Actores en Lienzos de Casos de Uso</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {impact.affectedActors.map((actor, idx) => (
+                        <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 rounded-lg text-xs font-bold">
+                          <span>👤</span>
+                          <span className="truncate">{actor}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {impact.affectedDiagrams && impact.affectedDiagrams.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">Diagramas de Casos de Uso Afectados</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {impact.affectedDiagrams.map((diag, idx) => (
+                        <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 rounded-lg text-xs font-bold">
+                          <span>📊</span>
+                          <span className="truncate">{diag}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Impact Sections */}
           <div className="grid gap-6">
@@ -136,7 +196,21 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
 
         {/* Footer */}
         <div className="px-6 py-5 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30 flex flex-col gap-4">
-          {isHighRisk && (
+          {/* Explicit ELIMINAR Confirmation Input for Critical Impact */}
+          {hasCriticalImpact ? (
+            <div className="p-4 bg-rose-500/5 rounded-xl border border-rose-500/20 space-y-2">
+              <label className="block text-xs font-bold text-[var(--color-text-primary)]">
+                Para autorizar la eliminación de este requisito y romper sus vínculos en el modelo, escribe <span className="text-rose-500 font-mono font-black select-all">ELIMINAR</span> a continuación:
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={e => setConfirmText(e.target.value)}
+                placeholder="Escribe ELIMINAR para habilitar"
+                className="w-full bg-white dark:bg-zinc-950 border border-rose-500/30 rounded-xl px-3 py-2 text-xs text-rose-600 dark:text-rose-400 font-mono font-bold uppercase focus:border-rose-500 outline-none placeholder:text-rose-500/30"
+              />
+            </div>
+          ) : isHighRisk ? (
             <label className="flex items-start gap-3 cursor-pointer group">
               <input 
                 type="checkbox" 
@@ -148,7 +222,7 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
                 Entiendo que este requisito tiene relaciones asociadas en el grafo o trazabilidad (pruebas, diagramas, arquitectura) y su eliminación puede afectar la integridad de otros componentes.
               </span>
             </label>
-          )}
+          ) : null}
 
           <div className="flex items-center justify-end gap-3">
             <button 
@@ -160,7 +234,7 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
             </button>
             <button 
               onClick={onConfirm}
-              disabled={isDeleting || (isHighRisk && !understood)}
+              disabled={isDeleting || (hasCriticalImpact ? confirmText !== 'ELIMINAR' : (isHighRisk && !understood))}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed
                 ${isHighRisk ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-[var(--color-text-primary)] text-[var(--color-bg-card)] hover:opacity-90'}
               `}
@@ -173,7 +247,7 @@ export const RequirementDeleteImpactModal: React.FC<RequirementDeleteImpactModal
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  Eliminar de todas formas
+                  {hasCriticalImpact ? 'Destruir y Eliminar' : 'Eliminar de todas formas'}
                 </>
               )}
             </button>

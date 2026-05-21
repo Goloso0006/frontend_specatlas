@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import type { DiagramNodeDTO, DiagramClassNodeDTO, DiagramRelationDTO, DiagramType } from '../../types/diagrams'
+import type { DiagramNodeDTO, DiagramClassNodeDTO, DiagramRelationDTO, DiagramType, ModelingAsset } from '../../types/diagrams'
 import { NodeEditor } from './NodeEditor'
 import { EdgeEditor } from './EdgeEditor'
 import { ClassNodeEditor } from './ClassNodeEditor'
@@ -8,6 +8,7 @@ import { UseCaseNodeEditor } from './UseCaseNodeEditor'
 import { UseCaseEdgeEditor } from './UseCaseEdgeEditor'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { diagramsApi } from '../../api/services/diagramsApi'
 
 export type EditorTarget = 'node' | 'edge' | null
 
@@ -24,6 +25,7 @@ export interface DiagramSidebarProps {
   onClose?: () => void
   sidebarTabPreference?: string | null
   setSidebarTabPreference?: (val: string | null) => void
+  projectId?: string
 }
 
 export function DiagramSidebar({
@@ -39,6 +41,7 @@ export function DiagramSidebar({
   onClose,
   sidebarTabPreference,
   setSidebarTabPreference,
+  projectId,
 }: DiagramSidebarProps) {
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
@@ -48,6 +51,38 @@ export function DiagramSidebar({
   const [hasChanges, setHasChanges] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
   const [isSubScreen, setIsSubScreen] = useState(false)
+
+  const [assets, setAssets] = useState<ModelingAsset[]>([])
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false)
+  const [assetsError, setAssetsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isUseCase && editorTarget === null && projectId) {
+      let isMounted = true
+      setIsLoadingAssets(true)
+      setAssetsError(null)
+      diagramsApi.getModelingAssets(projectId)
+        .then(res => {
+          if (isMounted) {
+            setAssets(res || [])
+          }
+        })
+        .catch(err => {
+          console.error("Error loading modeling assets:", err)
+          if (isMounted) {
+            setAssetsError("Error al cargar recursos del proyecto.")
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoadingAssets(false)
+          }
+        })
+      return () => {
+        isMounted = false
+      }
+    }
+  }, [isUseCase, editorTarget, projectId])
 
   const prevSelectedNodeIdRef = useRef<string | null>(null)
 
@@ -143,6 +178,99 @@ export function DiagramSidebar({
       onDeleteEdge(draftEdge.id)
       showTemporaryFeedback('success', 'Relación eliminada')
     }
+  }
+
+  // Recursos del proyecto para diagramas de casos de uso (si no hay elemento seleccionado)
+  if (isUseCase && editorTarget === null) {
+    const actors = assets.filter(a => a.type === 'ACTOR')
+
+    return (
+      <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-zinc-950">
+        {/* Header */}
+        <div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/50 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 dark:bg-purple-950/30 flex items-center justify-center text-lg shrink-0 border border-purple-100/50 dark:border-purple-900/30">
+              👤
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Recursos del Proyecto
+              </h2>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                Arrastra actores al lienzo
+              </p>
+            </div>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 ml-2"
+              title="Cerrar panel"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Content list */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+          {isLoadingAssets ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3 text-center">
+              <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">Cargando recursos...</p>
+            </div>
+          ) : assetsError ? (
+            <div className="text-center py-8 text-xs text-red-500">{assetsError}</div>
+          ) : actors.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-400 dark:text-zinc-500 space-y-2">
+              <span className="text-3xl opacity-30">👤</span>
+              <p className="text-xs font-medium">No se encontraron actores en este proyecto.</p>
+              <p className="text-[10px] opacity-75 max-w-[200px]">Crea requisitos que involucren actores para que la IA los detecte automáticamente.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2.5">
+              {actors.map(asset => (
+                <div
+                  key={asset.id}
+                  draggable={true}
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData("application/reactflow", JSON.stringify({ type: 'actorNode', name: asset.name }));
+                    event.dataTransfer.effectAllowed = 'move';
+                  }}
+                  className="group relative flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl cursor-grab active:cursor-grabbing hover:border-purple-500/50 hover:shadow-[0_0_12px_rgba(139,92,246,0.15)] transition-all duration-300"
+                >
+                  <div className="w-7 h-7 rounded-md bg-purple-500/10 dark:bg-purple-950/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 border border-purple-200/20">
+                     👤
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-350 truncate">
+                      {asset.name}
+                    </p>
+                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                      Actor del proyecto
+                    </p>
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-purple-500 dark:text-purple-400 font-medium shrink-0 flex items-center gap-1">
+                    <span>Arrastrar</span>
+                    <svg className="w-3 h-3 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Footer helper */}
+        <div className="p-4 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/30 dark:bg-zinc-950/30 text-center shrink-0">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            💡 Consejo: Arrastra y suelta un actor sobre el lienzo de diagramas para agregarlo instantáneamente.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   // Editor de nodos

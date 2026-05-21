@@ -73,29 +73,24 @@ export interface DiagramCanvasProps {
   canUndo?: boolean
   canRedo?: boolean
   onSaveDiagram?: () => void
+  onAddActor?: (name?: string, position?: { x: number; y: number }) => void
 }
 
 export function DiagramCanvas(props: DiagramCanvasProps) {
   const isEmpty = props.nodes.length === 0
-  if (isEmpty) {
-    return (
-      <div className="w-full h-full min-h-[400px] relative flex-1 flex items-center justify-center">
-        <DiagramEditorEmptyState type={props.diagramType} />
-        {props.onOpenQualityPanel && (
-          <button
-            onClick={props.onOpenQualityPanel}
-            className="absolute bottom-4 left-4 z-30 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 hover:bg-slate-50 text-slate-700 dark:text-slate-200"
-          >
-            📊 Calidad del Diagrama
-          </button>
-        )}
-      </div>
-    )
-  }
 
   return (
     <ReactFlowProvider>
-      <DiagramCanvasInner {...props} />
+      <div className="w-full h-full relative flex flex-col flex-1">
+        {isEmpty && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto">
+              <DiagramEditorEmptyState type={props.diagramType} />
+            </div>
+          </div>
+        )}
+        <DiagramCanvasInner {...props} />
+      </div>
     </ReactFlowProvider>
   )
 }
@@ -132,8 +127,9 @@ function DiagramCanvasInner({
   onUndo,
   onRedo,
   onSaveDiagram,
+  onAddActor,
 }: DiagramCanvasProps) {
-  const { fitView, zoomTo, setCenter, getNodes } = useReactFlow()
+  const { fitView, zoomTo, setCenter, getNodes, screenToFlowPosition } = useReactFlow()
 
   // 1. Local/Saved preferences
   const [gridType, setGridType] = useState<BackgroundVariant>(() => {
@@ -430,6 +426,27 @@ function DiagramCanvasInner({
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onPaneClick={onPaneClick}
+        onDragOver={(event) => {
+          event.preventDefault()
+          event.dataTransfer.dropEffect = 'move'
+        }}
+        onDrop={(event) => {
+          event.preventDefault()
+          try {
+            const dataStr = event.dataTransfer.getData('application/reactflow')
+            if (!dataStr) return
+            const { type, name } = JSON.parse(dataStr)
+            if (type === 'actorNode' && onAddActor) {
+              const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+              })
+              onAddActor(name, position)
+            }
+          } catch (err) {
+            console.error('Error handling drop on reactflow:', err)
+          }
+        }}
         fitView
         nodesConnectable={true}
         edgesReconnectable={true}

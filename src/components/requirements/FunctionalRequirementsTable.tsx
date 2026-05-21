@@ -370,8 +370,9 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     } catch (e: any) {
       const errorMsg = e.message || 'Error al mejorar requisito'
       
-      // Check if it's a 400 Bad Request from backend
-      if (e.status === 400 || e.statusCode === 400) {
+      if (e.data?.errorCode === 'error.requirement.out_of_context' || e.message?.includes('El requerimiento ingresado no parece estar relacionado')) {
+        setRowStatus(localId, 'error', 'El requerimiento ingresado no parece estar relacionado con el proyecto actual. Por favor, revísalo.')
+      } else if (e.status === 400 || e.statusCode === 400) {
         setRowStatus(
           localId,
           'error',
