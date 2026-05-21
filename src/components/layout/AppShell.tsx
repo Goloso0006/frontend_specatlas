@@ -1,5 +1,4 @@
 import React from 'react';
-import { Sidebar } from './Sidebar';
 import { TopNavigationBar } from './TopNavigationBar';
 
 /**
@@ -17,7 +16,6 @@ import { TopNavigationBar } from './TopNavigationBar';
  */
 export const AppShell: React.FC<{ children: React.ReactNode; hideSidebar?: boolean }> = ({
   children,
-  hideSidebar = false,
 }) => {
   return (
     <div
@@ -53,7 +51,6 @@ export const AppShell: React.FC<{ children: React.ReactNode; hideSidebar?: boole
           ].join(', '),
         }}
       >
-        {!hideSidebar && <Sidebar />}
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

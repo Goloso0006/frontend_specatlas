@@ -99,4 +99,8 @@ export const diagramsApi = {
   async saveRelations(diagramId: string, relations: Array<{ actorName: string; requirementCode: string }>): Promise<void> {
     await httpProxy.post(endpoints.diagrams.saveRelations(diagramId), relations)
   },
+
+  async syncProjectGraph(projectId: string): Promise<void> {
+    await httpProxy.post(`/api/admin/graph/sync/project/${projectId}`)
+  },
 }

@@ -193,8 +193,27 @@ export function DiagramSidebar({
               👤
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 Recursos del Proyecto
+                <button
+                  onClick={async () => {
+                    if (!projectId) return
+                    setIsLoadingAssets(true)
+                    try {
+                      await diagramsApi.syncProjectGraph(projectId)
+                      const res = await diagramsApi.getModelingAssets(projectId)
+                      setAssets(res || [])
+                    } catch (err) {
+                      console.error("Error refreshing/syncing assets:", err)
+                    } finally {
+                      setIsLoadingAssets(false)
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-600 transition-colors text-[10px]"
+                  title="Sincronizar recursos"
+                >
+                  🔄
+                </button>
               </h2>
               <p className="text-xs text-zinc-400 dark:text-zinc-500">
                 Arrastra actores al lienzo
@@ -224,10 +243,31 @@ export function DiagramSidebar({
           ) : assetsError ? (
             <div className="text-center py-8 text-xs text-red-500">{assetsError}</div>
           ) : actors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-400 dark:text-zinc-500 space-y-2">
+            <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-400 dark:text-zinc-500 space-y-3">
               <span className="text-3xl opacity-30">👤</span>
               <p className="text-xs font-medium">No se encontraron actores en este proyecto.</p>
               <p className="text-[10px] opacity-75 max-w-[200px]">Crea requisitos que involucren actores para que la IA los detecte automáticamente.</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  if (!projectId) return
+                  setIsLoadingAssets(true)
+                  try {
+                    await diagramsApi.syncProjectGraph(projectId)
+                    const res = await diagramsApi.getModelingAssets(projectId)
+                    setAssets(res || [])
+                  } catch (err) {
+                    console.error("Error syncing graph assets:", err)
+                    setAssetsError("Error al sincronizar actores del proyecto.")
+                  } finally {
+                    setIsLoadingAssets(false)
+                  }
+                }}
+                className="mt-2 text-xs"
+              >
+                🔄 Sincronizar actores
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-2.5">
