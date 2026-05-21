@@ -45,10 +45,10 @@
   --color-text-muted: #848484;
   --color-text-inverse: #F4F4F2;
 
-  --color-accent: var(--ocd-tweak-home-accent-color, #2563EB);
-  --color-accent-hover: var(--ocd-tweak-home-accent-hover, #1D4ED8);
-  --color-accent-subtle: var(--ocd-tweak-home-accent-subtle, #DBEAFE);
-  --color-accent-foreground: #FFFFFF;
+  --color-accent: var(--ocd-tweak-home-accent-color, #725735);
+  --color-accent-hover: var(--ocd-tweak-home-accent-hover, #5C452B);
+  --color-accent-subtle: var(--ocd-tweak-home-accent-subtle, #EFE6D4);
+  --color-accent-foreground: #FAFAFA;
 
   --color-success: #2F855A;
   --color-success-subtle: #E8F3ED;
@@ -81,9 +81,9 @@
   --color-text-inverse: #2B2B2B;
 
   --color-accent: var(--ocd-tweak-home-accent-color, #D0B17A);
-  --color-accent-hover: var(--ocd-tweak-home-accent-hover, #93C5FD);
+  --color-accent-hover: var(--ocd-tweak-home-accent-hover, #E2C993);
   --color-accent-subtle: rgba(208, 177, 122, 0.16);
-  --color-accent-foreground: #08111F;
+  --color-accent-foreground: #181818;
 
   --color-success: #4ADE80;
   --color-success-subtle: rgba(74, 222, 128, 0.12);

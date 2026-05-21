@@ -1,29 +1,14 @@
-import { FormEvent, useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "authAccentColor": "#725735",
-  "authAccentHover": "#5C452B",
-  "authPanelWarmth": "#EFE6D4",
-  "authCardRadius": "1.75rem"
-}/*EDITMODE-END*/;
-
-const trustPoints = [
-  'Mapea requisitos, diagramas y reglas ISO en un flujo trazable.',
-  'Conserva memoria del proyecto para reducir ambigüedad técnica.',
-  'Diseñado para equipos que documentan decisiones críticas de software.',
-]
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -33,8 +18,7 @@ export function LoginPage() {
     try {
       await login({ email, password })
       navigate('/app', { replace: true })
-    } catch (loginError) {
-      console.error(loginError)
+    } catch {
       setError('No pudimos iniciar sesión. Revisa tu correo y contraseña.')
     } finally {
       setIsSubmitting(false)
@@ -42,117 +26,56 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[var(--color-bg)] text-app-text-primary">
-      <section className="relative grid min-h-screen lg:grid-cols-[1.02fr_0.98fr]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,var(--ocd-tweak-auth-panel-warmth,#EFE6D4),transparent_31%),radial-gradient(circle_at_78%_82%,rgba(114,87,53,0.14),transparent_30%)]" />
-        <div className="relative hidden border-r border-app-border-strong px-10 py-10 lg:flex lg:flex-col lg:justify-between xl:px-16">
-          <Link to="/" className="group inline-flex w-fit items-center gap-3 focus-ring rounded-full">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-app-border-strong bg-app-card shadow-[0_14px_40px_rgba(43,43,43,0.08)]">
-              <span className="h-5 w-5 rounded-md bg-[var(--ocd-tweak-auth-accent-color,#725735)] shadow-[inset_0_-6px_0_rgba(255,255,255,0.18)]" />
-            </span>
-            <span className="text-xl font-black tracking-[-0.04em]">SpecAtles</span>
+    <main className="min-h-screen bg-[var(--color-bg)] px-4 py-8 text-[var(--color-text-primary)] sm:px-6 lg:px-8">
+      <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-[0_30px_90px_rgba(43,43,43,0.10)] lg:grid-cols-[0.92fr_1.08fr]">
+        <aside className="hidden border-r border-[var(--color-border)] bg-[var(--color-accent-subtle)] p-10 lg:flex lg:flex-col lg:justify-between">
+          <Link to="/" className="inline-flex w-fit items-center gap-3 rounded-full border border-[var(--color-border)] bg-white/55 px-4 py-2 text-sm font-bold text-[var(--color-text-primary)]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-accent)]" />
+            SpecAtlas
           </Link>
-
-          <div className="max-w-xl">
-            <p className="mb-5 w-fit rounded-full border border-app-border bg-app-card/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-app-text-secondary">
-              Acceso seguro al workspace
-            </p>
-            <h1 className="text-[clamp(2.7rem,6vw,5.9rem)] font-black leading-[0.92] tracking-[-0.075em] text-app-text-primary">
-              Vuelve al mapa vivo de tu software.
-            </h1>
-            <p className="mt-7 max-w-lg text-lg leading-8 text-app-text-secondary">
-              Entra para continuar refinando requisitos, diagramas y reglas de validación sin perder el contexto técnico del proyecto.
-            </p>
+          <div>
+            <p className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-[var(--color-accent)]">Acceso seguro</p>
+            <h1 className="max-w-md text-4xl font-black leading-[0.96] tracking-tight text-[var(--color-text-primary)] sm:text-5xl">Vuelve a tu mapa de requisitos.</h1>
+            <p className="mt-5 max-w-md text-base leading-7 text-[var(--color-text-secondary)]">Continúa documentando reglas ISO, decisiones técnicas y diagramas desde el último proyecto trabajado.</p>
           </div>
+          <p className="text-sm text-[var(--color-text-secondary)]">Sistema cálido, técnico y sin distracciones para equipos de análisis.</p>
+        </aside>
 
-          <div className="grid gap-3">
-            {trustPoints.map((point, index) => (
-              <div key={point} className="flex items-start gap-3 rounded-2xl border border-app-border bg-app-card/72 p-4 shadow-[0_18px_50px_rgba(43,43,43,0.06)] backdrop-blur">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--ocd-tweak-auth-panel-warmth,#EFE6D4)] text-xs font-bold text-app-text-primary">
-                  {index + 1}
-                </span>
-                <p className="text-sm leading-6 text-app-text-secondary">{point}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="flex items-center justify-center p-6 sm:p-10">
+          <form onSubmit={handleSubmit} className="w-full max-w-md">
+            <Link to="/" className="mb-10 inline-flex items-center gap-3 text-lg font-black text-[var(--color-text-primary)] lg:hidden">
+              <span className="h-3 w-3 rounded-full bg-[var(--color-accent)]" />
+              SpecAtlas
+            </Link>
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">Iniciar sesión</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-[var(--color-text-primary)]">Entra a tu workspace</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">Usa tus credenciales para abrir tus proyectos y requerimientos guardados.</p>
 
-        <div className="relative flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
-          <div className="w-full max-w-[29rem] rounded-[var(--ocd-tweak-auth-card-radius,1.75rem)] border border-app-border-strong bg-app-card/92 p-6 shadow-[0_28px_90px_rgba(43,43,43,0.14)] backdrop-blur-xl sm:p-8">
-            <div className="mb-8 lg:hidden">
-              <Link to="/" className="inline-flex items-center gap-3 focus-ring rounded-full">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl border border-app-border-strong bg-app-card">
-                  <span className="h-5 w-5 rounded-md bg-[var(--ocd-tweak-auth-accent-color,#725735)]" />
-                </span>
-                <span className="text-xl font-black tracking-[-0.04em]">SpecAtles</span>
-              </Link>
+            <div className="mt-8 grid gap-4">
+              <label className="grid gap-2 text-sm font-bold text-[var(--color-text-primary)]">
+                Correo electrónico
+                <input className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-base font-medium outline-none transition focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-subtle)]" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
+              </label>
+              <label className="grid gap-2 text-sm font-bold text-[var(--color-text-primary)]">
+                Contraseña
+                <input className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-base font-medium outline-none transition focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-subtle)]" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+              </label>
             </div>
 
-            <div className="mb-7">
-              <p className="text-sm font-semibold text-[var(--ocd-tweak-auth-accent-color,#725735)]">Iniciar sesión</p>
-              <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-app-text-primary">Continúa tu análisis</h2>
-              <p className="mt-3 text-sm leading-6 text-app-text-secondary">Usa tus credenciales para volver al panel de proyectos de SpecAtles.</p>
-            </div>
+            {error && <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}
 
-            {error && (
-              <div className="mb-5 rounded-2xl border border-app-danger/30 bg-app-danger-subtle px-4 py-3 text-sm leading-6 text-app-danger" role="alert">
-                {error}
-              </div>
-            )}
+            <button className="mt-6 min-h-12 w-full rounded-2xl bg-[var(--color-accent)] px-5 font-bold text-[var(--color-accent-foreground)] shadow-[0_14px_30px_rgba(114,87,53,0.22)] transition hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Ingresando…' : 'Ingresar'}
+            </button>
 
-            <form className="grid gap-5" onSubmit={handleSubmit}>
-              <Input
-                label="Correo electrónico"
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                placeholder="equipo@empresa.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                className="h-12 rounded-xl bg-white/70"
-              />
-              <Input
-                label="Contraseña"
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                className="h-12 rounded-xl bg-white/70"
-              />
-
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <label className="flex items-center gap-2 text-app-text-secondary">
-                  <input type="checkbox" className="h-4 w-4 rounded border-app-border-strong accent-[var(--ocd-tweak-auth-accent-color,#725735)]" />
-                  Mantener sesión
-                </label>
-                <button type="button" className="font-semibold text-[var(--ocd-tweak-auth-accent-color,#725735)] underline-offset-4 hover:underline focus-ring rounded-md">
-                  Recuperar acceso
-                </button>
-              </div>
-
-              <Button
-                type="submit"
-                size="lg"
-                isLoading={isSubmitting}
-                className="h-12 rounded-xl bg-[var(--ocd-tweak-auth-accent-color,#725735)] text-white shadow-[0_14px_30px_rgba(114,87,53,0.24)] hover:bg-[var(--ocd-tweak-auth-accent-hover,#5C452B)]"
-              >
-                Entrar a SpecAtles
-              </Button>
-            </form>
-
-            <p className="mt-7 text-center text-sm text-app-text-secondary">
-              ¿Aún no tienes cuenta?{' '}
-              <Link to="/register" className="font-bold text-[var(--ocd-tweak-auth-accent-color,#725735)] underline-offset-4 hover:underline focus-ring rounded-md">
-                Crear cuenta
-              </Link>
+            <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
+              ¿Aún no tienes cuenta? <Link className="font-bold text-[var(--color-accent)] hover:text-[var(--color-accent-hover)]" to="/register">Crear cuenta</Link>
             </p>
-          </div>
+          </form>
         </div>
       </section>
     </main>
   )
 }
+
+export default LoginPage

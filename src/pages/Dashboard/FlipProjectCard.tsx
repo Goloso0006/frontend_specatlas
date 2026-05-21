@@ -12,23 +12,23 @@ export function FlipProjectCard({ project, onClick, onDelete }: FlipProjectCardP
 
   const statusConfig: Record<string, { color: string; icon: string; label: string }> = {
     ACTIVE: {
-      color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+      color: 'text-[var(--color-accent)] bg-[var(--color-accent-subtle)] border-[var(--color-border)]',
       icon: '●',
       label: 'Activo',
     },
     INACTIVE: {
-      color: 'text-slate-400 bg-slate-400/10 border-slate-400/20',
+      color: 'text-[var(--color-text-secondary)] bg-[var(--color-surface)] border-[var(--color-border)]',
       icon: '○',
       label: 'Inactivo',
     },
     ARCHIVED: {
-      color: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+      color: 'text-[var(--color-warning)] bg-[var(--color-warning-subtle)] border-[var(--color-border)]',
       icon: '◔',
       label: 'Archivado',
     },
     DRAFT: {
-      color: 'text-slate-400 bg-slate-400/10 border-slate-400/20',
-      icon: '○',
+      color: 'text-[var(--color-text-secondary)] bg-[var(--color-surface)] border-[var(--color-border)]',
+      icon: '◌',
       label: 'Borrador',
     },
   }
@@ -36,9 +36,9 @@ export function FlipProjectCard({ project, onClick, onDelete }: FlipProjectCardP
   const status = statusConfig[project.status] || statusConfig.ARCHIVED
 
   return (
-    <div className="flip-card w-full h-56 cursor-pointer group/card" onClick={onClick}>
+    <div className="flip-card h-64 w-full cursor-pointer group/card" onClick={onClick}>
       <div className="flip-card-inner">
-        <div className="flip-card-front flex flex-col justify-between p-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="flip-card-front project-card-surface flex flex-col justify-between p-5">
           <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[var(--color-accent)] opacity-30 group-hover/card:opacity-80 transition-opacity" />
           <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[var(--color-accent)] opacity-30 group-hover/card:opacity-80 transition-opacity" />
           <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-[var(--color-accent)] opacity-30 group-hover/card:opacity-80 transition-opacity" />
@@ -69,7 +69,7 @@ export function FlipProjectCard({ project, onClick, onDelete }: FlipProjectCardP
           </div>
         </div>
 
-        <div className="flip-card-back flex flex-col p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+        <div className="flip-card-back flex flex-col overflow-hidden rounded-[var(--ocd-tweak-dashboard-card-radius,1.35rem)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <div className="absolute top-3 left-3 text-[var(--color-text-muted)] opacity-60">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -90,7 +90,7 @@ export function FlipProjectCard({ project, onClick, onDelete }: FlipProjectCardP
                     event.stopPropagation()
                     setConfirmDelete(true)
                   }}
-                  className="flex items-center gap-1 text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-400/10 px-2 py-1 rounded-md transition-colors"
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-[var(--color-text-muted)] transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
                   title="Eliminar proyecto"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
