@@ -27,7 +27,7 @@ export default function HeroSection() {
                   speed={90}
                   deleteSpeed={45}
                   pause={2000}
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#4ade80]"
+                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-[var(--color-accent)] drop-shadow-[0_0_calc(var(--ocd-tweak-home-glow-strength,0.12)*80px)_rgba(114,87,53,0.38)]"
                 />
               </span>
             </h1>

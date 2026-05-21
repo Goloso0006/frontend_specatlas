@@ -112,7 +112,7 @@ export function HeroFlowGraph() {
 
       <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-3 pointer-events-none">
         <div className="rounded-full border border-[rgba(224,224,224,0.12)] bg-[#2B2B2B]/90 px-4 py-2 backdrop-blur-md shadow-lg flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 rounded-full bg-[var(--color-accent)] shadow-[0_0_18px_rgba(37,99,235,0.75)] animate-pulse"></div>
           <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E0E0E0]">SpecAtlas Architecture</div>
         </div>
       </div>

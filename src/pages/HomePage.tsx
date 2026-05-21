@@ -9,86 +9,109 @@ import usePreloader from '../hooks/usePreloader'
 import HeroSection from '../components/sections/HeroSection'
 import '../styles/flipcard.css'
 
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "homeAccentColor": "#725735",
+  "homeAccentHover": "#5C452B",
+  "homeAccentSubtle": "#EFE6D4",
+  "homeGlowStrength": 0.12
+}/*EDITMODE-END*/;
+void TWEAK_DEFAULTS;
+
+const riskCards = [
+  { label: 'Requisitos ambiguos', value: 'retraba­jo', text: 'Historias sin criterios medibles terminan en cambios tardíos y decisiones dispersas.' },
+  { label: 'Trazabilidad rota', value: 'impacto invisible', text: 'Cuando cambia una regla, el equipo no ve qué pantallas, datos o diagramas quedan afectados.' },
+  { label: 'Conocimiento perdido', value: 'memoria frágil', text: 'Las decisiones de análisis viven en chats, documentos sueltos y revisiones difíciles de auditar.' }
+]
+
+const solutionBullets = [
+  'Convierte texto libre en requisitos estructurados en menos de 10 segundos',
+  'Detecta ambigüedades automáticamente con criterios IEEE 830 / ISO 25010',
+  'Encuentra requisitos similares mediante búsqueda semántica con pgvector',
+  'Calcula impacto con grafos de dependencias en Neo4j',
+  'Genera diagramas UML asistidos por IA sin perder trazabilidad'
+]
+
+const techStack = [
+  { name: 'PostgreSQL 16', description: 'Base relacional principal', details: 'Usuarios, proyectos, requisitos, eventos y reglas de validación con consistencia transaccional.', icon: (<img src="/iconHomeTechStack/noun-postgresql-3451760.svg" alt="PostgreSQL" className="h-14 w-14 object-contain" />) },
+  { name: 'pgvector', description: 'Búsqueda semántica', details: 'Embeddings de 768 dimensiones para similitud, duplicados y recuperación contextual.', icon: (<img src="/iconHomeTechStack/noun-vector-8224612.svg" alt="pgvector" className="h-14 w-14 object-contain" />) },
+  { name: 'Neo4j', description: 'Relaciones e impacto', details: 'Dependencias entre requisitos para visualizar cambios antes de romper flujos críticos.', icon: (<img src="/iconHomeTechStack/noun-spiderweb-8078963.svg" alt="Neo4j" className="h-14 w-14 object-contain" />) },
+  { name: 'Google Gemini', description: 'Motor de análisis IA', details: 'Transforma texto, detecta ambigüedades y genera modelos con contexto del proyecto.', icon: (<img src="/iconHomeTechStack/noun-artificial-8234436.svg" alt="Google Gemini" className="h-13 w-13 object-contain" />) },
+  { name: 'Spring Boot 3', description: 'Backend Java 21', details: 'API REST con seguridad, JWT y servicios separados por dominio funcional.', icon: (<img src="/iconHomeTechStack/noun-power-button-8306535.svg" alt="Spring Boot 3" className="h-13 w-13 object-contain" />) },
+  { name: 'React + TypeScript', description: 'Frontend de trabajo', details: 'Interfaz rápida para revisar, editar, trazar y modelar especificaciones de software.', icon: (<img src="/iconHomeTechStack/noun-atom-8190848.svg" alt="React + TypeScript" className="h-13 w-13 object-contain" />) }
+]
+
+const memories = [
+  { name: 'Memoria Procedimental', tech: 'PostgreSQL', table: 'validation_rules', function: 'Reglas de validación IEEE 830 / ISO 25010', icon: (<img src="/iconHomeArchitecture/noun-memory-8182813.svg" alt="Memoria Procedimental" className="h-8 w-8 object-contain" />) },
+  { name: 'Memoria Semántica', tech: 'pgvector + Gemini', table: 'requirements.embedding', function: 'Búsqueda por similitud semántica', icon: (<img src="/iconHomeArchitecture/noun-memories-7872495.svg" alt="Memoria Semántica" className="h-8 w-8 object-contain" />) },
+  { name: 'Memoria Estructural', tech: 'PostgreSQL + Neo4j', table: 'requirements + grafo', function: 'Dependencias y relaciones', icon: (<img src="/iconHomeArchitecture/noun-memory-8220321.svg" alt="Memoria Estructural" className="h-8 w-8 object-contain" />) },
+  { name: 'Memoria Episódica', tech: 'PostgreSQL', table: 'requirement_events', function: 'Historial completo de cambios', icon: (<img src="/iconHomeArchitecture/noun-memory-8158325.svg" alt="Memoria Episódica" className="h-8 w-8 object-contain" />) }
+]
+
 export default function HomePage() {
   const { show, hide } = usePreloader()
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[var(--color-bg)] text-[var(--color-text-primary)] antialiased">
       <DustParticles />
-
       <TopNav />
       <PreloaderOverlay show={show} hide={hide} />
 
       <div className="relative z-10">
         <HeroSection />
 
-        <section id="problem" className="py-24 px-6 bg-[var(--color-bg-secondary)]">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">¿Por qué fallan los proyectos de software?</h2>
-              <p className="text-xl text-[var(--color-text-secondary)] max-w-3xl mx-auto">El 70% de los proyectos fallan no por errores de código, sino por problemas en el análisis</p>
+        <section id="problem" className="px-6 py-24 bg-[var(--color-bg-secondary)]">
+          <div className="mx-auto max-w-7xl">
+            <div className="mx-auto mb-16 max-w-3xl text-center">
+              <p className="mb-3 text-xs font-mono uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Antes de modelar</p>
+              <h2 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">El riesgo nace en el análisis, no en el código</h2>
+              <p className="text-xl text-[var(--color-text-secondary)]">SpecAtlas ordena la etapa donde los requisitos se vuelven decisiones verificables.</p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-3">
+              {riskCards.map((risk) => (
+                <article key={risk.label} className="group relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_18px_45px_rgba(43,43,43,0.09)]">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--color-border),var(--color-accent),var(--color-border))] opacity-70" />
+                  <p className="text-xs font-mono uppercase tracking-[0.18em] text-[var(--color-text-muted)]">{risk.label}</p>
+                  <h3 className="mt-4 text-2xl font-black tracking-[-0.04em] text-[var(--color-text-primary)]">{risk.value}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">{risk.text}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Solution Section */}
-        <section id="solution" className="py-24 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <section id="solution" className="px-6 py-24">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid items-center gap-16 lg:grid-cols-[0.9fr_1.1fr]">
               <div>
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-                  SpecAtlas: Análisis
-                  <span className="block text-[var(--color-text-secondary)]">activo e inteligente</span>
-                </h2>
-                <p className="text-lg text-[var(--color-text-secondary)] mb-8 leading-relaxed">
-                  A diferencia de herramientas que solo almacenan requisitos, SpecAtlas es un entorno
-                  activo que analiza, valida y cuestiona la información usando IA.
-                </p>
+                <p className="mb-3 text-xs font-mono uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Flujo de calidad</p>
+                <h2 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl">De frase ambigua a especificación auditable</h2>
+                <p className="mb-8 text-lg leading-relaxed text-[var(--color-text-secondary)]">SpecAtlas no solo almacena requisitos: los analiza, los estructura y mantiene memoria del razonamiento técnico detrás de cada decisión.</p>
                 <div className="space-y-4">
-                  {[
-                    'Convierte texto libre en requisitos estructurados en <10 segundos',
-                    'Detecta ambigüedades automáticamente (IEEE 830 / ISO 25010)',
-                    'Búsqueda semántica con pgvector (768 dimensiones)',
-                    'Análisis de impacto con grafos de dependencias (Neo4j)',
-                    'Generación de diagramas UML con IA (Google Gemini 2.5 Flash)'
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mt-0.5">
-                        <svg className="w-3 h-3 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {solutionBullets.map((item) => (
+                    <div key={item} className="flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+                      <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)]">
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <p className="text-[var(--color-text-secondary)]">{item}</p>
+                      <p className="text-sm leading-6 text-[var(--color-text-secondary)]">{item}</p>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="relative">
-                <div className="relative bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-8 shadow-lg">
-                  <div className="space-y-5">
-                    <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
-                      <div className="text-xs font-mono text-[var(--color-text-muted)] mb-2">
-                        <img src="/iconsHomeSectionSolution/noun-text-5035477.svg" alt="Texto original" className="inline-block w-4 h-4 mr-2 align-text-bottom" />
-                        Texto original:
-                      </div>
-                      <div className="text-sm text-[var(--color-text-secondary)] italic">"El sistema debe ser rápido y fácil de usar"</div>
-                    </div>
-                    <div className="flex justify-center">
-                      <div className="w-8 h-8 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-border-strong)]">
-                      <div className="text-xs font-mono text-[var(--color-accent)] mb-2 font-semibold"><img src="/iconsHomeSectionSolution/noun-item-7552539.svg" alt="Requisito estructurado" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Requisito estructurado:</div>
-                      <div className="text-sm text-[var(--color-text-primary)] space-y-2">
-                        <div><span className="font-medium">Título:</span> Tiempo de respuesta del sistema</div>
-                        <div><span className="font-medium">Criterio BDD:</span> Dado que el usuario realiza una acción, cuando el sistema procesa la solicitud, entonces la respuesta debe ser menor a 2 segundos</div>
-                        <div className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-card)] p-2 rounded-md mt-2">
-                          <img src="/iconsHomeSectionSolution/noun-warning-6740277.svg" alt="Advertencia" className="inline-block w-4 h-4 mr-2 align-text-bottom" />Ambigüedad detectada: "fácil" sin métrica definida
-                        </div>
-                      </div>
+              <div className="relative rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 shadow-[0_24px_70px_rgba(43,43,43,0.10)]">
+                <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                  <div className="rounded-2xl bg-[var(--color-bg-card)] p-4">
+                    <div className="mb-2 text-xs font-mono text-[var(--color-text-muted)]"><img src="/iconsHomeSectionSolution/noun-text-5035477.svg" alt="Texto original" className="mr-2 inline-block h-4 w-4 align-text-bottom" />Texto original</div>
+                    <div className="text-sm italic text-[var(--color-text-secondary)]">“El sistema debe ser rápido y fácil de usar”</div>
+                  </div>
+                  <div className="mx-auto my-4 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)]">↓</div>
+                  <div className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-accent-subtle)] p-5">
+                    <div className="mb-3 text-xs font-mono font-semibold text-[var(--color-accent)]"><img src="/iconsHomeSectionSolution/noun-item-7552539.svg" alt="Requisito estructurado" className="mr-2 inline-block h-4 w-4 align-text-bottom" />Requisito estructurado</div>
+                    <div className="space-y-2 text-sm text-[var(--color-text-primary)]">
+                      <div><span className="font-semibold">Título:</span> Tiempo de respuesta del sistema</div>
+                      <div><span className="font-semibold">BDD:</span> Dado que el usuario realiza una acción, cuando el sistema procesa la solicitud, entonces la respuesta debe ser menor a 2 segundos.</div>
+                      <div className="mt-3 rounded-xl bg-[var(--color-bg-card)] p-3 text-xs text-[var(--color-text-muted)]"><img src="/iconsHomeSectionSolution/noun-warning-6740277.svg" alt="Advertencia" className="mr-2 inline-block h-4 w-4 align-text-bottom" />Ambigüedad detectada: “fácil” no tiene métrica definida.</div>
                     </div>
                   </div>
                 </div>
@@ -97,140 +120,71 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="py-24 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Módulos principales</h2>
-              <p className="text-xl text-[var(--color-text-secondary)] max-w-3xl mx-auto">Tres pilares fundamentales para el análisis y diseño de software</p>
+        <section id="features" className="px-6 py-24 bg-[linear-gradient(180deg,var(--color-bg),var(--color-bg-secondary))]">
+          <div className="mx-auto max-w-7xl">
+            <div className="mx-auto mb-16 max-w-3xl text-center">
+              <p className="mb-3 text-xs font-mono uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Módulos principales</p>
+              <h2 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">Tres superficies para trabajar requisitos con contexto</h2>
+              <p className="text-xl text-[var(--color-text-secondary)]">Tarjetas más claras, con jerarquía editorial y detalles accionables al explorar cada módulo.</p>
             </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <FlipCard
-                icon={(<img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="w-16 h-16" />)}
-                title="Gestión de Requisitos"
-                description="Conversión de texto libre, validación IEEE 830/ISO 25010, exportación PDF/Excel"
-                backContent={(
-                  <div className="space-y-3 text-left w-full px-2">
-                    <div className="w-12 h-12 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl"><img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="w-8 h-8" /></span>
-                    </div>
-                    <h4 className="text-lg font-semibold text-[var(--color-text-primary)] text-center">Gestión de Requisitos</h4>
-                    <ul className="text-sm text-[var(--color-text-secondary)] space-y-2 mt-3">
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Conversión texto → requisito</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Validación automática</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Detección de ambigüedades</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Exportación PDF/Excel</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Historial de decisiones</li>
-                    </ul>
-                  </div>
-                )}
-              />
-
-              <FlipCard
-                icon={(<img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="w-16 h-16" />)}
-                title="Análisis y Calidad"
-                description="Búsqueda semántica pgvector, análisis de impacto Neo4j, trazabilidad completa"
-                backContent={(
-                  <div className="space-y-3 text-left w-full px-2">
-                    <div className="w-12 h-12 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl"><img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="w-8 h-8" /></span>
-                    </div>
-                    <h4 className="text-lg font-semibold text-[var(--color-text-primary)] text-center">Análisis y Calidad</h4>
-                    <ul className="text-sm text-[var(--color-text-secondary)] space-y-2 mt-3">
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Búsqueda semántica (768D)</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Detección de duplicados</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Análisis de impacto</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Grafo de dependencias</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Memoria episódica</li>
-                    </ul>
-                  </div>
-                )}
-              />
-
-              <FlipCard
-                icon={(<img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="w-16 h-16" />)}
-                title="Modelado UML"
-                description="Diagramas de casos de uso, clases, secuencia, componentes y despliegue"
-                backContent={(
-                  <div className="space-y-3 text-left w-full px-2">
-                    <div className="w-12 h-12 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl"><img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="w-8 h-8" /></span>
-                    </div>
-                    <h4 className="text-lg font-semibold text-[var(--color-text-primary)] text-center">Modelado UML</h4>
-                    <ul className="text-sm text-[var(--color-text-secondary)] space-y-2 mt-3">
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Casos de uso</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Diagrama de clases</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Secuencias</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Componentes</li>
-                      <li className="flex items-center gap-2"><span className="text-[var(--color-accent)]">✓</span> Generación con IA</li>
-                    </ul>
-                  </div>
-                )}
-              />
+            <div className="grid gap-8 md:grid-cols-3">
+              <FlipCard icon={(<img src="/iconsHomeFlipCard/noun-dependencies-8099254.svg" alt="Gestión de Requisitos" className="h-12 w-12" />)} title="Gestión de Requisitos" description="Convierte texto libre, valida calidad y exporta especificaciones listas para revisión." backContent={(<div className="w-full space-y-3 px-2 text-left"><h4 className="text-center text-lg font-semibold text-[var(--color-text-primary)]">Gestión de Requisitos</h4><ul className="mt-3 space-y-2 text-sm text-[var(--color-text-secondary)]"><li>✓ Conversión texto → requisito</li><li>✓ Validación automática</li><li>✓ Detección de ambigüedades</li><li>✓ Exportación PDF/Excel</li><li>✓ Historial de decisiones</li></ul></div>)} />
+              <FlipCard icon={(<img src="/iconsHomeFlipCard/noun-analysis-5915854.svg" alt="Análisis y Calidad" className="h-12 w-12" />)} title="Análisis y Calidad" description="Encuentra duplicados, dependencias y riesgos antes de que lleguen a desarrollo." backContent={(<div className="w-full space-y-3 px-2 text-left"><h4 className="text-center text-lg font-semibold text-[var(--color-text-primary)]">Análisis y Calidad</h4><ul className="mt-3 space-y-2 text-sm text-[var(--color-text-secondary)]"><li>✓ Búsqueda semántica</li><li>✓ Detección de duplicados</li><li>✓ Análisis de impacto</li><li>✓ Grafo de dependencias</li><li>✓ Memoria episódica</li></ul></div>)} />
+              <FlipCard icon={(<img src="/iconsHomeFlipCard/noun-uml-8322951.svg" alt="Modelado UML" className="h-12 w-12" />)} title="Modelado UML" description="Genera diagramas conectados a requisitos y mantén modelos alineados al alcance." backContent={(<div className="w-full space-y-3 px-2 text-left"><h4 className="text-center text-lg font-semibold text-[var(--color-text-primary)]">Modelado UML</h4><ul className="mt-3 space-y-2 text-sm text-[var(--color-text-secondary)]"><li>✓ Casos de uso</li><li>✓ Diagrama de clases</li><li>✓ Secuencias</li><li>✓ Componentes</li><li>✓ Generación con IA</li></ul></div>)} />
             </div>
           </div>
         </section>
 
-        <section id="tech" className="py-24 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Stack tecnológico</h2>
-              <p className="text-xl text-[var(--color-text-secondary)] max-w-3xl mx-auto">Arquitectura de triple almacenamiento optimizada para cada tipo de dato</p>
+        <section id="tech" className="px-6 py-24">
+          <div className="mx-auto max-w-7xl">
+            <div className="mx-auto mb-16 max-w-3xl text-center">
+              <p className="mb-3 text-xs font-mono uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Stack operativo</p>
+              <h2 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">Tecnología organizada por responsabilidad</h2>
+              <p className="text-xl text-[var(--color-text-secondary)]">Una arquitectura de almacenamiento, IA y modelado donde cada pieza tiene una función clara.</p>
             </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'PostgreSQL 16', description: 'Base de datos relacional principal', details: 'Usuarios, proyectos, requisitos, eventos, reglas de validación', icon: (<img src="/iconHomeTechStack/noun-postgresql-3451760.svg" alt="PostgreSQL" className="w-15 h-15 object-contain" />) },
-                { name: 'pgvector', description: 'Búsqueda semántica vectorial', details: 'Embeddings de 768 dimensiones con Gemini text-embedding-004', icon: (<img src="/iconHomeTechStack/noun-vector-8224612.svg" alt="pgvector" className="w-14 h-14 object-contain" />) },
-                { name: 'Neo4j', description: 'Base de datos de grafos', details: 'Dependencias entre requisitos y análisis de impacto', icon: (<img src="/iconHomeTechStack/noun-spiderweb-8078963.svg" alt="Neo4j" className="w-14 h-14 object-contain" />) },
-                { name: 'Google Gemini', description: 'Inteligencia Artificial', details: 'gemini-2.5-flash para análisis y generación de contenido', icon: (<img src="/iconHomeTechStack/noun-artificial-8234436.svg" alt="Google Gemini" className="w-13 h-13 object-contain" />) },
-                { name: 'Spring Boot 3', description: 'Backend Java 21', details: 'API REST con Spring Security + JWT para autenticación', icon: (<img src="/iconHomeTechStack/noun-power-button-8306535.svg" alt="Spring Boot 3" className="w-13 h-13 object-contain" />) },
-                { name: 'React + TypeScript', description: 'Frontend moderno', details: 'Vite + Tailwind CSS para una interfaz rápida y responsiva', icon: (<img src="/iconHomeTechStack/noun-atom-8190848.svg" alt="React + TypeScript" className="w-13 h-13 object-contain" />) }
-              ].map((tech, idx) => (
-                <div key={idx} className="group p-6 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-                  <div className="text-4xl mb-4 opacity-80 group-hover:scale-110 transition-transform">{tech.icon}</div>
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">{tech.name}</h3>
-                  <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{tech.description}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{tech.details}</p>
-                </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {techStack.map((tech) => (
+                <article key={tech.name} className="group relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_18px_45px_rgba(43,43,43,0.09)]">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--color-border),var(--color-accent-subtle),var(--color-border))]" />
+                  <div className="mb-5 grid h-16 w-16 place-items-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] opacity-90 transition-transform group-hover:scale-105">{tech.icon}</div>
+                  <h3 className="mb-1 text-lg font-black tracking-[-0.03em] text-[var(--color-text-primary)]">{tech.name}</h3>
+                  <p className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)]">{tech.description}</p>
+                  <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">{tech.details}</p>
+                </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="py-24 px-6 bg-[var(--color-bg-secondary)]">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Arquitectura de las 4 Memorias</h2>
-              <p className="text-xl text-[var(--color-text-secondary)] max-w-3xl mx-auto">Modelo cognitivo inspirado en la memoria humana para gestión inteligente de requisitos</p>
+        <section className="px-6 py-24 bg-[var(--color-bg-secondary)]">
+          <div className="mx-auto max-w-7xl">
+            <div className="mx-auto mb-16 max-w-3xl text-center">
+              <p className="mb-3 text-xs font-mono uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Memoria del sistema</p>
+              <h2 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">Arquitectura de las 4 Memorias</h2>
+              <p className="text-xl text-[var(--color-text-secondary)]">Modelo cognitivo para que los requisitos no sean documentos aislados, sino conocimiento recuperable.</p>
             </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { name: 'Memoria Procedimental', tech: 'PostgreSQL', table: 'validation_rules', function: 'Reglas de validación IEEE 830 / ISO 25010', icon: (<img src="/iconHomeArchitecture/noun-memory-8182813.svg" alt="Memoria Procedimental" className="w-8 h-8 object-contain" />) },
-                { name: 'Memoria Semántica', tech: 'pgvector + Gemini', table: 'requirements.embedding', function: 'Búsqueda por similitud semántica', icon: (<img src="/iconHomeArchitecture/noun-memories-7872495.svg" alt="Memoria Semántica" className="w-8 h-8 object-contain" />) },
-                { name: 'Memoria Estructural', tech: 'PostgreSQL + Neo4j', table: 'requirements + grafo', function: 'Dependencias y relaciones', icon: (<img src="/iconHomeArchitecture/noun-memory-8220321.svg" alt="Memoria Estructural" className="w-8 h-8 object-contain" />) },
-                { name: 'Memoria Episódica', tech: 'PostgreSQL', table: 'requirement_events', function: 'Historial completo de cambios', icon: (<img src="/iconHomeArchitecture/noun-memory-8158325.svg" alt="Memoria Episódica" className="w-8 h-8 object-contain" />) }
-              ].map((memory, idx) => (
-                <div key={idx} className="p-6 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-all duration-300 hover:shadow-md">
-                  <div className="text-3xl mb-4">{memory.icon}</div>
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">{memory.name}</h3>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {memories.map((memory) => (
+                <article key={memory.name} className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_18px_45px_rgba(43,43,43,0.08)]">
+                  <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--color-surface)]">{memory.icon}</div>
+                  <h3 className="mb-3 text-lg font-black tracking-[-0.03em] text-[var(--color-text-primary)]">{memory.name}</h3>
                   <div className="space-y-2 text-sm">
-                    <div className="text-[var(--color-accent)] font-mono text-xs">{memory.tech}</div>
-                    <div className="text-[var(--color-text-muted)] font-mono text-xs bg-[var(--color-surface)] px-2 py-1 rounded-md">{memory.table}</div>
-                    <div className="text-[var(--color-text-secondary)] text-xs">{memory.function}</div>
+                    <div className="font-mono text-xs font-semibold text-[var(--color-accent)]">{memory.tech}</div>
+                    <div className="rounded-md bg-[var(--color-surface)] px-2 py-1 font-mono text-xs text-[var(--color-text-muted)]">{memory.table}</div>
+                    <div className="text-xs leading-5 text-[var(--color-text-secondary)]">{memory.function}</div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="py-24 px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Comienza a transformar tu proceso de análisis hoy</h2>
-            <p className="text-xl text-[var(--color-text-secondary)] mb-8 leading-relaxed">Únete a equipos de desarrollo que ya están ahorrando tiempo y mejorando la calidad de sus especificaciones con SpecAtlas</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <section className="px-6 py-24">
+          <div className="mx-auto max-w-4xl rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-bg-card)] p-8 text-center shadow-[0_24px_70px_rgba(43,43,43,0.08)] md:p-12">
+            <p className="mb-3 text-xs font-mono uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Siguiente paso</p>
+            <h2 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl">Transforma análisis disperso en especificaciones confiables</h2>
+            <p className="mb-8 text-xl leading-relaxed text-[var(--color-text-secondary)]">Empieza con un proyecto, convierte requisitos reales y conserva la trazabilidad desde el primer cambio.</p>
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Button variant="primary"><Link to="/register">Crear cuenta gratuita</Link></Button>
               <Button variant="secondary"><Link to="/login">Iniciar sesión</Link></Button>
             </div>
