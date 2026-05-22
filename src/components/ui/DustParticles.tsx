@@ -25,7 +25,7 @@ export default function DustParticles({
   maxRadius = 2.5,
   speed = 0.3,
   opacityMax = 0.6,
-  color = '255, 255, 255',
+  color = 'var(--color-text-primary)',
   zIndex = 0,
 }: DustParticlesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -100,8 +100,11 @@ export default function DustParticles({
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color}, ${currentOpacity})`;
+        ctx.globalAlpha = currentOpacity;
+        const isDark = document.documentElement.classList.contains('dark');
+        ctx.fillStyle = isDark ? '#ffffffff' : '#000000ff';
         ctx.fill();
+        ctx.globalAlpha = 1.0;
       }
 
       animationFrameRef.current = requestAnimationFrame(animate);
