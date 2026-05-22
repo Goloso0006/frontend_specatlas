@@ -91,13 +91,13 @@ const initialNodes: HeroNode[] = [
 ];
 
 const initialEdges: Edge[] = [
-  { id: 'e1', source: 'input', target: 'core', animated: true, style: { stroke: 'rgba(224,224,224,0.5)', strokeWidth: 2 } },
-  { id: 'e2', source: 'core', target: 'rf1', animated: true, style: { stroke: 'rgba(224,224,224,0.35)', strokeWidth: 1.5 } },
-  { id: 'e3', source: 'core', target: 'rnf1', animated: true, style: { stroke: 'rgba(224,224,224,0.35)', strokeWidth: 1.5 } },
-  { id: 'e4', source: 'core', target: 'trace', style: { stroke: 'rgba(224,224,224,0.3)', strokeWidth: 1.5, strokeDasharray: '4 4' } },
-  { id: 'e5', source: 'trace', target: 'uml1', style: { stroke: 'rgba(224,224,224,0.2)', strokeWidth: 1.2 } },
-  { id: 'e6', source: 'trace', target: 'uml2', style: { stroke: 'rgba(224,224,224,0.2)', strokeWidth: 1.2 } },
-  { id: 'e7', source: 'trace', target: 'db', style: { stroke: 'rgba(224,224,224,0.2)', strokeWidth: 1.2 } },
+  { id: 'e1', source: 'input', target: 'core', animated: true, style: { stroke: 'rgba(114,87,53,0.7)', strokeWidth: 2 } },
+  { id: 'e2', source: 'core', target: 'rf1', animated: true, style: { stroke: 'rgba(114,87,53,0.55)', strokeWidth: 1.5 } },
+  { id: 'e3', source: 'core', target: 'rnf1', animated: true, style: { stroke: 'rgba(114,87,53,0.55)', strokeWidth: 1.5 } },
+  { id: 'e4', source: 'core', target: 'trace', style: { stroke: 'rgba(114,87,53,0.5)', strokeWidth: 1.5, strokeDasharray: '4 4' } },
+  { id: 'e5', source: 'trace', target: 'uml1', style: { stroke: 'rgba(114,87,53,0.4)', strokeWidth: 1.2 } },
+  { id: 'e6', source: 'trace', target: 'uml2', style: { stroke: 'rgba(114,87,53,0.4)', strokeWidth: 1.2 } },
+  { id: 'e7', source: 'trace', target: 'db', style: { stroke: 'rgba(114,87,53,0.4)', strokeWidth: 1.2 } },
 ];
 
 export function HeroFlowGraph() {
@@ -105,15 +105,15 @@ export function HeroFlowGraph() {
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   return (
-    <section className="relative w-full overflow-hidden rounded-2xl border border-[rgba(224,224,224,0.12)] bg-[#181818] shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
+    <section className="relative w-full overflow-hidden rounded-2xl border border-[var(--color-accent)] bg-transparent">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.06),transparent_38%),radial-gradient(circle_at_75%_20%,rgba(255,255,255,0.035),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_28%)]" />
       
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(224,224,224,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(224,224,224,0.04)_1px,transparent_1px)] bg-[size:60px_60px] opacity-20" />
 
       <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-3 pointer-events-none">
-        <div className="rounded-full border border-[rgba(224,224,224,0.12)] bg-[#2B2B2B]/90 px-4 py-2 backdrop-blur-md shadow-lg flex items-center gap-2">
+        <div className="rounded-full border border-[var(--color-accent)]/60 bg-[var(--color-bg-card)]/90 px-4 py-2 backdrop-blur-md shadow-lg flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[var(--color-accent)] shadow-[0_0_18px_rgba(37,99,235,0.75)] animate-pulse"></div>
-          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E0E0E0]">SpecAtlas Architecture</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-primary)]">SpecAtlas Architecture</div>
         </div>
       </div>
 
@@ -143,13 +143,13 @@ export function HeroFlowGraph() {
           elementsSelectable={true}
           
           proOptions={{ hideAttribution: true }} 
-          defaultEdgeOptions={{ type: 'smoothstep', style: { stroke: 'rgba(224,224,224,0.28)', strokeWidth: 1.2 } }}
+          defaultEdgeOptions={{ type: 'smoothstep', style: { stroke: 'rgba(114,87,53,0.4)', strokeWidth: 1.2 } }}
         >
           <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="rgba(224,224,224,0.15)" />
           
           <Panel position="bottom-center" className="mb-6">
-             <div className="bg-[#1e1e1e]/80 backdrop-blur-md border border-[#333] px-5 py-2.5 rounded-xl text-[11px] tracking-wider font-semibold text-[#a3a3a3] flex gap-3 shadow-xl">
-               <span className="text-white inline-flex items-center whitespace-nowrap flex-shrink-0 mr-2.5"><img src="/iconKnowledgeGraph/noun-tips-7740167.svg" alt="Tip" className="w-4 h-4 mr-1.5" />Tip:</span>
+             <div className="bg-[var(--color-bg-card)]/80 backdrop-blur-md border border-[var(--color-accent)]/40 px-5 py-2.5 rounded-xl text-[11px] tracking-wider font-semibold text-[var(--color-text-muted)] flex gap-3 shadow-xl">
+               <span className="text-[var(--color-text-primary)] inline-flex items-center whitespace-nowrap flex-shrink-0 mr-2.5"><img src="/iconKnowledgeGraph/noun-tips-7740167.svg" alt="Tip" className="w-4 h-4 mr-1.5" />Tip:</span>
                <span className="leading-snug">Arrastra las tarjetas para interactuar con la arquitectura.</span>
              </div>
           </Panel>

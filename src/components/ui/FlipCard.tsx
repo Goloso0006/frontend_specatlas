@@ -18,7 +18,7 @@ export default function FlipCard({
         <div className="absolute inset-0 backface-hidden">
           <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(180deg,var(--color-bg-card),var(--color-surface))] p-6 text-left shadow-[0_12px_34px_rgba(43,43,43,0.06)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-[var(--color-border-strong)] group-hover:shadow-[0_22px_55px_rgba(43,43,43,0.11)]">
             <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[var(--color-accent-subtle)] opacity-70 blur-2xl transition-transform duration-500 group-hover:scale-125" />
-            <div className="relative mb-6 grid h-16 w-16 place-items-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-sm transition-transform group-hover:scale-105">
+            <div className="relative mb-6">
               <div className="opacity-80">{icon}</div>
             </div>
             <div className="relative mt-auto">
