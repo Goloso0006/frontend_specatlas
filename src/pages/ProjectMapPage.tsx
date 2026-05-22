@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useCallback, useState } from 'react'
+import { useMemo, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { requirementFacade } from '../facades/requirement.facade'
 import { graphApi } from '../api/services/graphApi'
@@ -30,7 +30,6 @@ export function ProjectMapPage() {
   const graphData = mapResource.data?.graphData ?? null
   const isLoading = mapResource.isLoading
 
-  const [loadedFromCache, setLoadedFromCache] = useState(false)
 
   const cacheKey = projectId ? `req-map:${projectId}` : null
 
@@ -44,7 +43,6 @@ export function ProjectMapPage() {
       try {
         const parsed = JSON.parse(cached)
         mapResource.setData(parsed)
-        setLoadedFromCache(true)
         return
       } catch (err) {
         // ignore parse errors and fall through to load
@@ -63,10 +61,9 @@ export function ProjectMapPage() {
     if (!projectId) return
     // Force reload and update cache
     void mapResource.load(projectId).then((res) => {
-      if (res && cacheKey) {
+        if (res && cacheKey) {
         try {
           localStorage.setItem(cacheKey, JSON.stringify(res))
-          setLoadedFromCache(false)
         } catch {}
       }
     })
