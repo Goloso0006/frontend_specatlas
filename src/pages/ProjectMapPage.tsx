@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useCallback, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { requirementFacade } from '../facades/requirement.facade'
 import { graphApi } from '../api/services/graphApi'
-import { useAutoResourceLoader } from '../hooks/useResourceLoader'
+import { useResourceLoader } from '../hooks/useResourceLoader'
 import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { RequirementGraphFlow } from '../components/graph/RequirementGraphFlow'
@@ -13,8 +13,7 @@ export function ProjectMapPage() {
   const navigate = useNavigate()
 
   const projectId = routeProjectId ?? contextProjectId ?? ''
-
-  const mapResource = useAutoResourceLoader(
+  const mapResource = useResourceLoader(
     async (activeProjectId: string) => {
       const reqs = await requirementFacade.getRequirementsByProject(activeProjectId)
       try {
@@ -24,13 +23,54 @@ export function ProjectMapPage() {
         return { requirements: reqs, graphData: null }
       }
     },
-    isValidProjectId(projectId) && !projectId.startsWith('USR-') ? [projectId] as [string] : null,
     { errorMessage: 'Error al cargar el mapa del proyecto.' },
   )
 
   const requirements = mapResource.data?.requirements ?? []
   const graphData = mapResource.data?.graphData ?? null
   const isLoading = mapResource.isLoading
+
+  const [loadedFromCache, setLoadedFromCache] = useState(false)
+
+  const cacheKey = projectId ? `req-map:${projectId}` : null
+
+  // On mount / project change: try loading from cache first. If no cache, autoload.
+  useEffect(() => {
+    if (!isValidProjectId(projectId) || projectId.startsWith('USR-')) return
+    if (!cacheKey) return
+
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached)
+        mapResource.setData(parsed)
+        setLoadedFromCache(true)
+        return
+      } catch (err) {
+        // ignore parse errors and fall through to load
+      }
+    }
+
+    // No cache: auto-load once
+    void mapResource.load(projectId).then((res) => {
+      if (res && cacheKey) localStorage.setItem(cacheKey, JSON.stringify(res))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
+
+  const handleUpdate = useCallback(() => {
+    if (!isValidProjectId(projectId) || projectId.startsWith('USR-')) return
+    if (!projectId) return
+    // Force reload and update cache
+    void mapResource.load(projectId).then((res) => {
+      if (res && cacheKey) {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(res))
+          setLoadedFromCache(false)
+        } catch {}
+      }
+    })
+  }, [mapResource, projectId, cacheKey])
 
   const content = useMemo(() => ({ requirements, graphData }), [requirements, graphData])
 
@@ -56,9 +96,19 @@ export function ProjectMapPage() {
             Volver
           </button>
           
-          <span className="text-[11px] font-mono font-medium uppercase tracking-[0.16em] text-(--color-accent)">
-            // trazabilidad global
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-mono font-medium uppercase tracking-[0.16em] text-(--color-accent)">
+              // trazabilidad global
+            </span>
+            <button
+              onClick={handleUpdate}
+              disabled={mapResource.isLoading}
+              title="Actualiza el mapa (solicita al servicio/IA)"
+              className="ml-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/90 border border-[var(--color-border)]"
+            >
+              Actualizar
+            </button>
+          </div>
           <h1 className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight text-(--color-text-primary) leading-tight">
             Mapa de requisitos
           </h1>
