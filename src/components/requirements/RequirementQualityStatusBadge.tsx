@@ -20,7 +20,7 @@ export const RequirementQualityStatusBadge: React.FC<RequirementQualityStatusBad
           onClick?.()
         }}
         className={[
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border',
+          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border whitespace-nowrap',
           'bg-gray-500/5 border-gray-500/20 text-gray-400',
           'text-[11px] font-medium tracking-wide cursor-pointer',
           'transition-all duration-200 hover:bg-gray-500/10 hover:border-gray-500/30',
@@ -74,7 +74,7 @@ export const RequirementQualityStatusBadge: React.FC<RequirementQualityStatusBad
         onClick?.()
       }}
       className={[
-        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border',
+        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border whitespace-nowrap',
         'text-[11px] font-medium tracking-wide cursor-pointer',
         'transition-all duration-200 shadow-sm',
         badgeClasses,

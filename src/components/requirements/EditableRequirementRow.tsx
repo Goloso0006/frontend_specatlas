@@ -237,7 +237,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
       </td>
 
       {/* Estado + calidad */}
-      <td className="px-4 py-3 w-28 align-top">
+      <td className="px-4 py-3 w-36 align-top">
         <div className="flex flex-col gap-1 mt-1">
           <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md inline-block w-fit shadow-sm ${
             status === 'saved' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
