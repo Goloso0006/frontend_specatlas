@@ -170,7 +170,7 @@ export default function HomePage() {
                   <h3 className="mb-3 text-lg font-black tracking-[-0.03em] text-[var(--color-text-primary)]">{memory.name}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="font-mono text-xs font-semibold text-[var(--color-accent)]">{memory.tech}</div>
-                    <div className="rounded-md bg-[var(--color-surface)] px-2 py-1 font-mono text-xs text-[var(--color-text-muted)]">{memory.table}</div>
+                    <div className="rounded-md bg-app-accent px-2 py-1 font-mono text-xs text-app-accent-foreground">{memory.table}</div>
                     <div className="text-xs leading-5 text-[var(--color-text-secondary)]">{memory.function}</div>
                   </div>
                 </article>
