@@ -126,9 +126,6 @@ export interface DiagramEditorController {
   canRedo: boolean
   isDirty: boolean
   lastSavedTime: number | null
-  showRecoveryModal: boolean
-  handleRestoreDraft: () => void
-  handleDiscardDraft: () => void
   handleUndo: () => void
   handleRedo: () => void
   handleBack: () => Promise<void>
@@ -319,88 +316,7 @@ export function useDiagramEditorController(): DiagramEditorController {
     }
   }, [])
 
-  // Recovery draft states & checker
-  const [draftKey, setDraftKey] = useState('')
-  const [showRecoveryModal, setShowRecoveryModal] = useState(false)
-  const [draftData, setDraftData] = useState<any>(null)
 
-  useEffect(() => {
-    if (!projectId) return
-    const key = `specatlas.diagramDraft.${projectId}.${diagramId || 'new'}`
-    setDraftKey(key)
-    const saved = localStorage.getItem(key)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (parsed && (parsed.nodes?.length > 0 || parsed.edges?.length > 0)) {
-          setDraftData(parsed)
-          setShowRecoveryModal(true)
-        }
-      } catch (e) {
-        console.error('Error parsing local draft', e)
-      }
-    }
-  }, [projectId, diagramId])
-
-  const handleRestoreDraft = useCallback(() => {
-    if (draftData) {
-      setNodes(draftData.nodes)
-      setEdges(draftData.edges)
-      setDiagramName(draftData.name)
-      if (draftData.diagramType) {
-        setDiagramType(draftData.diagramType)
-      }
-      setIsDirty(true)
-      showFeedback('success', 'Borrador local restaurado correctamente.')
-    }
-    setShowRecoveryModal(false)
-    setDraftData(null)
-  }, [draftData, showFeedback])
-
-  const handleDiscardDraft = useCallback(() => {
-    if (draftKey) {
-      localStorage.removeItem(draftKey)
-    }
-    setShowRecoveryModal(false)
-    setDraftData(null)
-    showFeedback('info', 'Borrador local descartado.')
-  }, [draftKey, showFeedback])
-
-  // Autosave Draft local effect
-  const autosaveTimerRef = useRef<any>(null)
-  useEffect(() => {
-    if (!isDirty) return
-    if (isDraggingRef.current) return // Do not autosave while dragging
-
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current)
-    }
-
-    autosaveTimerRef.current = setTimeout(() => {
-      if (!draftKey) return
-
-      const saveAction = () => {
-        const draft = {
-          nodes,
-          edges,
-          diagramType,
-          name: diagramName,
-          timestamp: Date.now(),
-        }
-        localStorage.setItem(draftKey, JSON.stringify(draft))
-      }
-
-      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-        window.requestIdleCallback(() => saveAction())
-      } else {
-        saveAction()
-      }
-    }, 1500) // Debounce autosave to 1500ms for safety and CPU relaxation
-
-    return () => {
-      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current)
-    }
-  }, [nodes, edges, diagramName, isDirty, draftKey, diagramType])
 
   const isClass = diagramType === 'CLASS'
   const isUseCase = diagramType === 'USE_CASE'
@@ -2037,14 +1953,11 @@ export function useDiagramEditorController(): DiagramEditorController {
     setSelectedNodeId,
     setEditorTarget,
     clearSelection,
-    // Safely exposed undo/redo/dirty/drafts
+    // Safely exposed undo/redo/dirty
     canUndo,
     canRedo,
     isDirty,
     lastSavedTime,
-    showRecoveryModal,
-    handleRestoreDraft,
-    handleDiscardDraft,
     handleUndo,
     handleRedo,
     handleBack,

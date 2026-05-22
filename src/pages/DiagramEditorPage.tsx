@@ -82,14 +82,11 @@ export function DiagramEditorPage() {
     setSelectedNodeId,
     setEditorTarget,
     clearSelection,
-    // History, dirty checks & recovery drafts
+    // History, dirty checks
     canUndo,
     canRedo,
     isDirty,
     lastSavedTime,
-    showRecoveryModal,
-    handleRestoreDraft,
-    handleDiscardDraft,
     handleUndo,
     handleRedo,
     handleBack,
@@ -250,35 +247,6 @@ export function DiagramEditorPage() {
             onAutoLayout={handleAutoLayout}
             onCleanDuplicates={handleCleanDuplicateEdges}
           />
-        )}
-        {showRecoveryModal && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 pointer-events-none">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4 pointer-events-auto">
-              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl animate-bounce">
-                ⚠️
-              </div>
-              <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
-                ¿Restaurar borrador no guardado?
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Se encontró una versión local no guardada más reciente que la versión del servidor. ¿Deseas restaurar tus últimos cambios?
-              </p>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleDiscardDraft}
-                  className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-xs font-bold"
-                >
-                  Descartar
-                </button>
-                <button
-                  onClick={handleRestoreDraft}
-                  className="flex-1 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all text-xs font-bold shadow-lg shadow-blue-600/25"
-                >
-                  Restaurar
-                </button>
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </DiagramErrorBoundary>
