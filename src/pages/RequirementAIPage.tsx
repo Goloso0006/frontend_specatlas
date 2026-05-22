@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useProject, isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { RequirementDraftItem } from '../components/requirements/RequirementDraftItem'
-import { useRequirementAI, MIN_TEXT_LENGTH, type RequirementType } from '../hooks/useRequirementAI'
+import { useRequirementAI, MIN_TEXT_LENGTH, MAX_TEXT_LENGTH, type RequirementType } from '../hooks/useRequirementAI'
 
 interface RequirementAIPageProps {
   requirementType: RequirementType
@@ -61,6 +61,13 @@ export function RequirementAIPage({ requirementType }: RequirementAIPageProps) {
   }
 
   const label = typeLabel(requirementType)
+  const trimmedLength = inputText.trim().length
+
+  const charCountLabel = (() => {
+    if (trimmedLength === 0) return `Mín. ${MIN_TEXT_LENGTH} caracteres`
+    if (trimmedLength < MIN_TEXT_LENGTH) return `${trimmedLength} caracteres (mín. ${MIN_TEXT_LENGTH})`
+    return `${trimmedLength} caracteres (max. ${MAX_TEXT_LENGTH})`
+  })()
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)]">
@@ -87,17 +94,14 @@ export function RequirementAIPage({ requirementType }: RequirementAIPageProps) {
               Texto de entrada
             </span>
             <span className="text-[11px] text-[var(--color-text-muted)]">
-              {inputText.trim().length > 0
-                ? `${inputText.trim().length} caracteres${inputText.trim().length < MIN_TEXT_LENGTH ? ` (mín. ${MIN_TEXT_LENGTH})` : ''}`
-                : `Mín. ${MIN_TEXT_LENGTH} caracteres`
-              }
+              {charCountLabel}
             </span>
           </div>
           <div className="p-5">
             <textarea
               id="ai-input-text"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value.slice(0, MAX_TEXT_LENGTH))}
               placeholder={`Pega aquí el texto de reunión, correo, conversación o documento...\n\nEjemplo: "El cliente necesita notificaciones por email al cambiar estado. Debe llegar en menos de 5 min."`}
               rows={8}
               disabled={isGenerating || isSavingBatch}

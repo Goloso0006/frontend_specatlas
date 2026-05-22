@@ -139,7 +139,7 @@ export function FunctionalRequirementAIPage() {
     setGeneratedRequirements(prev => prev.filter((_, i) => i !== index))
   }
 
-  const canGenerate = inputText.trim().length > 0 && !isLoading
+  const canGenerate = inputText.trim().length >= 20 && inputText.trim().length <= 5000 && !isLoading
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[var(--color-bg)] text-[var(--color-text-primary)]">
@@ -161,14 +161,14 @@ export function FunctionalRequirementAIPage() {
           <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Texto de entrada</span>
             {inputText.trim().length > 0 && (
-              <span className="text-[11px] text-[var(--color-text-muted)]">{inputText.trim().length} caracteres</span>
+              <span className="text-[11px] text-[var(--color-text-muted)]">{inputText.trim().length} caracteres (max. 5000)</span>
             )}
           </div>
           <div className="p-5">
             <textarea
               id="ai-input-text"
               value={inputText}
-              onChange={(event) => setInputText(event.target.value)}
+              onChange={(event) => setInputText(event.target.value.slice(0, 5000))}
               placeholder="Ejemplo: El cliente mencionó que necesita que el sistema envíe una notificación por email cuando un pedido cambia de estado. Esto aplica para todos los usuarios registrados. También es importante que llegue en menos de 5 minutos…"
               rows={10}
               className={`${AI_INPUT_CLASSNAME} resize-y min-h-[220px]`}

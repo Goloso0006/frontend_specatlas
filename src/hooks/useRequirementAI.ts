@@ -23,6 +23,7 @@ export interface RequirementDraft {
 }
 
 export const MIN_TEXT_LENGTH = 20
+export const MAX_TEXT_LENGTH = 5000
 
 function manualPath(projectId: string, type: RequirementType): string {
   return type === 'FUNCTIONAL'
@@ -338,7 +339,7 @@ export function useRequirementAI(projectId: string, requirementType: Requirement
   }
 
   const selectedCount = drafts.filter(d => d.selected && !d.discarded).length
-  const canGenerate = inputText.trim().length >= MIN_TEXT_LENGTH && !isGenerating && !isSavingBatch && quotaCountdown === 0
+  const canGenerate = inputText.trim().length >= MIN_TEXT_LENGTH && inputText.trim().length <= MAX_TEXT_LENGTH && !isGenerating && !isSavingBatch && quotaCountdown === 0
 
   return {
     inputText,

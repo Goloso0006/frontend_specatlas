@@ -312,14 +312,14 @@ export function NonFunctionalRequirementAIPage() {
           <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Texto de entrada</span>
             {inputText.trim().length > 0 && (
-              <span className="text-[11px] text-[var(--color-text-muted)]">{inputText.trim().length} caracteres</span>
+              <span className="text-[11px] text-[var(--color-text-muted)]">{inputText.trim().length} caracteres (max. 5000)</span>
             )}
           </div>
           <div className="p-5">
             <textarea
               id="rnf-ai-input-text"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value.slice(0, 5000))}
               placeholder="Ejemplo: El sistema debe responder en menos de 2 segundos ante cualquier petición bajo carga normal. La disponibilidad mínima esperada es del 99.5%…"
               rows={10}
               className={`${inputCls} resize-y min-h-[180px]`}
@@ -330,7 +330,7 @@ export function NonFunctionalRequirementAIPage() {
               type="button"
               id="btn-generate-rnf-ai"
               onClick={handleGenerate}
-              disabled={!inputText.trim() || isLoading}
+              disabled={!(inputText.trim().length >= 20 && inputText.trim().length <= 5000) || isLoading}
               className="flex-shrink-0 inline-flex items-center gap-2 h-9 px-5 rounded-xl text-[13px] font-semibold bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isLoading ? (
