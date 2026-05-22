@@ -127,6 +127,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
           onClick={(e) => e.stopPropagation()}
           placeholder="Título del requisito..."
           rows={1}
+          maxLength={100}
           className={`w-full px-2 py-1 text-sm font-semibold bg-transparent border-0 focus:ring-1 focus:ring-[var(--color-accent)] rounded transition-all placeholder:text-[var(--color-text-muted)]/40 overflow-hidden resize-none whitespace-pre-wrap break-words leading-relaxed h-auto ${
             isInvalid && !requirement.title ? 'bg-rose-500/5 ring-1 ring-rose-500/30' : ''
           }`}
@@ -143,6 +144,11 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
             }
           }}
         />
+        <span className={`block text-right text-[9px] font-mono mt-0.5 px-2 ${
+          (requirement.title?.length ?? 0) >= 90 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+        }`}>
+          {requirement.title?.length ?? 0}/100
+        </span>
 
         {/* Horizontal Badges */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2 px-2">
@@ -198,6 +204,7 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
           onClick={(e) => e.stopPropagation()}
           placeholder="Describe la funcionalidad..."
           rows={1}
+          maxLength={500}
           className={`w-full px-2 py-1 text-[13px] bg-transparent border-0 focus:ring-1 focus:ring-[var(--color-accent)] rounded transition-all overflow-hidden resize-none whitespace-pre-wrap break-words leading-relaxed h-auto min-h-[48px] placeholder:text-[var(--color-text-muted)]/40 ${
             isInvalid && !requirement.description ? 'bg-rose-500/5 ring-1 ring-rose-500/30' : ''
           }`}
@@ -214,6 +221,11 @@ export const EditableRequirementRow: React.FC<EditableRequirementRowProps> = ({
             }
           }}
         />
+        <span className={`block text-right text-[9px] font-mono mt-0.5 px-2 ${
+          (requirement.description?.length ?? 0) >= 460 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+        }`}>
+          {requirement.description?.length ?? 0}/500
+        </span>
       </td>
 
       {/* Actores */}

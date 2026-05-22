@@ -54,11 +54,21 @@ export function LoginPage() {
             <div className="mt-8 grid gap-4">
               <label className="grid gap-2 text-sm font-bold text-[var(--color-text-primary)]">
                 Correo electrónico
-                <input className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-base font-medium outline-none transition focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-subtle)]" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
+                <input className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-base font-medium outline-none transition focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-subtle)]" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required maxLength={100} />
+                <span className={`text-right text-[10px] font-mono -mt-1 ${
+                  email.length >= 90 ? 'text-rose-500' : 'text-[var(--color-text-secondary)]'
+                }`}>
+                  {email.length}/100
+                </span>
               </label>
               <label className="grid gap-2 text-sm font-bold text-[var(--color-text-primary)]">
                 Contraseña
-                <input className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-base font-medium outline-none transition focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-subtle)]" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+                <input className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-base font-medium outline-none transition focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-subtle)]" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required maxLength={64} />
+                <span className={`text-right text-[10px] font-mono -mt-1 ${
+                  password.length >= 56 ? 'text-rose-500' : 'text-[var(--color-text-secondary)]'
+                }`}>
+                  {password.length}/64
+                </span>
               </label>
             </div>
 
