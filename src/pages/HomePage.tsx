@@ -146,7 +146,7 @@ export default function HomePage() {
               {techStack.map((tech) => (
                 <article key={tech.name} className="group relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_18px_45px_rgba(43,43,43,0.09)]">
                   <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--color-border),var(--color-accent-subtle),var(--color-border))]" />
-                  <div className="mb-5 grid h-16 w-16 place-items-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] opacity-90 transition-transform group-hover:scale-105">{tech.icon}</div>
+                  <div className="mb-5 grid h-16 w-16 place-items-center opacity-90 transition-transform group-hover:scale-105">{tech.icon}</div>
                   <h3 className="mb-1 text-lg font-black tracking-[-0.03em] text-[var(--color-text-primary)]">{tech.name}</h3>
                   <p className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)]">{tech.description}</p>
                   <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">{tech.details}</p>
