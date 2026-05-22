@@ -595,12 +595,12 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
     // Check custom tags
     if (trimmed === '{{REQUISITOS_TABLA}}') {
       return (
-        <div key={index} className="my-6 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900/20 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300 print:border-black print:shadow-none">
-          <div className="p-4 bg-indigo-600/10 border-b border-slate-800 flex items-center justify-between print:border-black print:bg-slate-100">
-            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 print:text-black">
+        <div key={index} className="my-6 border border-[var(--color-border-strong)] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-surface)]/50 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300 print:border-black print:shadow-none">
+          <div className="p-4 bg-[var(--color-accent-subtle)] border-b border-[var(--color-border-strong)] flex items-center justify-between print:border-black print:bg-slate-100">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5 print:text-black">
               <span>🟢</span> Tabla de Requisitos del Proyecto
             </span>
-            <span className="text-[9px] font-bold text-slate-500 print:text-black">
+            <span className="text-[9px] font-bold text-[var(--color-text-muted)] print:text-black">
               Sincronizado en tiempo real
             </span>
           </div>
@@ -611,12 +611,12 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
 
     if (trimmed === '{{REQUISITOS_TABLA_FUNCIONAL}}') {
       return (
-        <div key={index} className="my-6 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900/20 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300 print:border-black print:shadow-none">
-          <div className="p-4 bg-indigo-600/10 border-b border-slate-800 flex items-center justify-between print:border-black print:bg-slate-100">
-            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 print:text-black">
+        <div key={index} className="my-6 border border-[var(--color-border-strong)] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-surface)]/50 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300 print:border-black print:shadow-none">
+          <div className="p-4 bg-[var(--color-accent-subtle)] border-b border-[var(--color-border-strong)] flex items-center justify-between print:border-black print:bg-slate-100">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5 print:text-black">
               <span>⚙️</span> Tabla de Requisitos Funcionales
             </span>
-            <span className="text-[9px] font-bold text-slate-500 print:text-black">
+            <span className="text-[9px] font-bold text-[var(--color-text-muted)] print:text-black">
               Sincronizado en tiempo real
             </span>
           </div>
@@ -627,12 +627,12 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
 
     if (trimmed === '{{REQUISITOS_TABLA_NO_FUNCIONAL}}') {
       return (
-        <div key={index} className="my-6 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900/20 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300 print:border-black print:shadow-none">
-          <div className="p-4 bg-emerald-600/10 border-b border-slate-800 flex items-center justify-between print:border-black print:bg-slate-100">
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 print:text-black">
+        <div key={index} className="my-6 border border-[var(--color-border-strong)] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-surface)]/50 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300 print:border-black print:shadow-none">
+          <div className="p-4 bg-[var(--color-success-subtle)] border-b border-[var(--color-border-strong)] flex items-center justify-between print:border-black print:bg-slate-100">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[var(--color-success)] flex items-center gap-1.5 print:text-black">
               <span>🛡️</span> Tabla de Requisitos No Funcionales
             </span>
-            <span className="text-[9px] font-bold text-slate-500 print:text-black">
+            <span className="text-[9px] font-bold text-[var(--color-text-muted)] print:text-black">
               Sincronizado en tiempo real
             </span>
           </div>
@@ -646,9 +646,9 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
       const diagId = parts[0]
       const diagName = parts[1] || 'Diagrama Sin Nombre'
       return (
-        <div key={index} className="my-6 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-300 print:border-black print:shadow-none">
-          <div className="p-4 bg-purple-600/10 border-b border-slate-800 flex items-center justify-between print:border-black print:bg-slate-100">
-            <span className="text-[11px] font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5 print:text-black">
+        <div key={index} className="my-6 border border-[var(--color-border-strong)] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-surface)]/50 backdrop-blur-sm animate-in fade-in duration-300 print:border-black print:shadow-none">
+          <div className="p-4 bg-[var(--color-warning-subtle)] border-b border-[var(--color-border-strong)] flex items-center justify-between print:border-black print:bg-slate-100">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[var(--color-warning)] flex items-center gap-1.5 print:text-black">
               <span>🎨</span> Modelo Visual: {diagName}
             </span>
           </div>
@@ -659,19 +659,19 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
 
     // Parse Headings
     if (trimmed.startsWith('# ')) {
-      return <h1 key={index} className="text-xl font-black text-white mt-6 mb-2 print:text-black">{trimmed.substring(2)}</h1>
+      return <h1 key={index} className="text-xl font-black text-[var(--color-text-primary)] mt-6 mb-2 print:text-black">{trimmed.substring(2)}</h1>
     }
     if (trimmed.startsWith('## ')) {
-      return <h2 key={index} className="text-base font-black text-indigo-300 mt-5 mb-2 print:text-black print:text-sm">{trimmed.substring(3)}</h2>
+      return <h2 key={index} className="text-base font-black text-[var(--color-accent)] mt-5 mb-2 print:text-black print:text-sm">{trimmed.substring(3)}</h2>
     }
     if (trimmed.startsWith('### ')) {
-      return <h3 key={index} className="text-sm font-bold text-slate-200 mt-4 mb-1 print:text-black">{trimmed.substring(4)}</h3>
+      return <h3 key={index} className="text-sm font-bold text-[var(--color-text-secondary)] mt-4 mb-1 print:text-black">{trimmed.substring(4)}</h3>
     }
 
     // Parse bullet points
     if (trimmed.startsWith('- ')) {
       return (
-        <ul key={index} className="list-disc pl-5 text-sm text-slate-300 space-y-1 print:text-black">
+        <ul key={index} className="list-disc pl-5 text-sm text-[var(--color-text-secondary)] space-y-1 print:text-black">
           <li>{parseMarkdownLinks(trimmed.substring(2))}</li>
         </ul>
       )
@@ -679,7 +679,7 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
 
     // Default line rendering
     return (
-      <p key={index} className="text-sm text-slate-300 leading-relaxed min-h-[1rem] whitespace-pre-wrap print:text-black">
+      <p key={index} className="text-sm text-[var(--color-text-secondary)] leading-relaxed min-h-[1rem] whitespace-pre-wrap print:text-black">
         {parseMarkdownLinks(line)}
       </p>
     )
@@ -759,9 +759,9 @@ function LiveRequirementsTable({ projectId, defaultFilter = 'ALL' }: { projectId
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 space-y-2 text-slate-500 bg-slate-900/10">
-        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Consultando base de requisitos...</span>
+      <div className="flex flex-col items-center justify-center py-10 space-y-2 text-[var(--color-text-muted)] bg-[var(--color-bg-card)]/50">
+        <div className="w-6 h-6 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-accent)]">Consultando base de requisitos...</span>
       </div>
     )
   }
@@ -783,7 +783,7 @@ function LiveRequirementsTable({ projectId, defaultFilter = 'ALL' }: { projectId
   })
 
   return (
-    <div className="p-4 space-y-4 bg-slate-950/40 print:bg-white print:p-0">
+    <div className="p-4 space-y-4 bg-[var(--color-bg-secondary)]/30 rounded-xl border border-[var(--color-border)] print:bg-white print:border-none print:p-0">
       {/* Controls */}
       <div className="flex flex-col sm:flex-row items-center gap-3 no-print">
         {/* Search */}
@@ -793,20 +793,20 @@ function LiveRequirementsTable({ projectId, defaultFilter = 'ALL' }: { projectId
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filtrar por código, título o descripción..."
-            className="w-full bg-slate-900/60 border border-slate-800 hover:border-slate-700/80 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all placeholder:text-slate-600"
+            className="w-full bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] rounded-xl px-3 py-2 text-xs text-[var(--color-text-primary)] outline-none transition-all placeholder:text-[var(--color-text-muted)]"
           />
         </div>
 
         {/* Filter buttons */}
-        <div className="bg-slate-900 p-0.5 rounded-lg flex border border-slate-800/80 w-full sm:w-auto">
+        <div className="bg-[var(--color-surface)] p-0.5 rounded-lg flex border border-[var(--color-border-strong)] w-full sm:w-auto">
           {(['ALL', 'FUNCTIONAL', 'NON_FUNCTIONAL'] as const).map(type => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
               className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-[10px] font-bold tracking-tight uppercase transition-all ${
                 filterType === type
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-accent-foreground)]'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               {type === 'ALL' ? 'Todos' : type === 'FUNCTIONAL' ? 'Funcional' : 'No Funcional'}
@@ -817,37 +817,37 @@ function LiveRequirementsTable({ projectId, defaultFilter = 'ALL' }: { projectId
 
       {/* Grid List for elegant presentation */}
       {filtered.length === 0 ? (
-        <div className="text-center py-8 text-slate-500 text-xs italic">
+        <div className="text-center py-8 text-[var(--color-text-muted)] text-xs italic bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)]">
           No se encontraron requisitos que coincidan con los filtros.
         </div>
       ) : (
-        <div className="border border-slate-800/60 rounded-xl overflow-hidden bg-slate-900/10 print:border-black">
+        <div className="border border-[var(--color-border)] rounded-xl overflow-hidden bg-[var(--color-bg-card)] print:border-black">
           <table className="w-full border-collapse text-left text-xs">
             <thead>
-              <tr className="bg-slate-900/80 border-b border-slate-800 text-slate-400 font-bold print:bg-slate-100 print:text-black print:border-black">
+              <tr className="bg-[var(--color-surface)] border-b border-[var(--color-border-strong)] text-[var(--color-text-secondary)] font-bold print:bg-slate-100 print:text-black print:border-black">
                 <th className="p-3 w-24">Código</th>
                 <th className="p-3 w-1/4">Título</th>
                 <th className="p-3">Descripción</th>
                 <th className="p-3 w-28 text-center">Tipo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850 print:divide-slate-200">
+            <tbody className="divide-y divide-[var(--color-border)] print:divide-slate-200">
               {filtered.map(req => (
-                <tr key={req.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-3 font-mono font-black text-indigo-400 align-top print:text-black">
+                <tr key={req.id} className="hover:bg-[var(--color-surface)]/50 transition-colors">
+                  <td className="p-3 font-mono font-black text-[var(--color-accent)] align-top print:text-black">
                     {req.code}
                   </td>
-                  <td className="p-3 font-bold text-slate-200 align-top print:text-black">
+                  <td className="p-3 font-bold text-[var(--color-text-primary)] align-top print:text-black">
                     {req.title}
                   </td>
-                  <td className="p-3 text-slate-400 leading-relaxed whitespace-pre-wrap align-top print:text-black">
+                  <td className="p-3 text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-wrap align-top print:text-black">
                     {req.description}
                   </td>
                   <td className="p-3 text-center align-top">
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                       req.requirementType === 'FUNCTIONAL'
-                        ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 print:bg-transparent print:text-black'
-                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 print:bg-transparent print:text-black'
+                        ? 'bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent)]/20 print:bg-transparent print:text-black'
+                        : 'bg-[var(--color-success-subtle)] text-[var(--color-success)] border border-[var(--color-success)]/20 print:bg-transparent print:text-black'
                     }`}>
                       {req.requirementType === 'FUNCTIONAL' ? 'Funcional' : 'No Funcional'}
                     </span>
@@ -882,15 +882,15 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
 
   if (isLoading) {
     return (
-      <div className="p-8 text-center text-slate-500 text-xs">
-        <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+      <div className="p-8 text-center text-[var(--color-text-muted)] text-xs">
+        <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
         Generando vista previa del modelo...
       </div>
     )
   }
 
   if (!diagram) {
-    return <div className="p-6 text-center text-rose-500 text-xs font-bold">Error: El diagrama no pudo ser cargado.</div>
+    return <div className="p-6 text-center text-[var(--color-danger)] text-xs font-bold">Error: El diagrama no pudo ser cargado.</div>
   }
 
   // Parse sourceJson safely
@@ -928,19 +928,19 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
   }
 
   return (
-    <div className="p-6 bg-slate-950/40 space-y-6 print:bg-white print:text-black print:p-0">
+    <div className="p-6 bg-[var(--color-bg-secondary)]/30 space-y-6 print:bg-white print:text-black print:p-0">
       
       {/* Visual Canvas Redesign */}
-      <div data-diagram-id={diagramId} className="exportable-diagram-canvas relative w-full h-[380px] bg-slate-900/60 dark:bg-slate-950/80 border border-slate-800 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center print:border-black print:h-auto print:py-8 print:bg-slate-50">
+      <div data-diagram-id={diagramId} className="exportable-diagram-canvas relative w-full h-[380px] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-3xl overflow-hidden shadow-inner flex items-center justify-center print:border-black print:h-auto print:py-8 print:bg-slate-50">
         
         {/* Dot grid background */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle,_rgba(255,255,255,0.06)_1px,_transparent_1px)] bg-[size:16px_16px] pointer-events-none print:hidden" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle,_var(--color-border-strong)_1px,_transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-50 print:hidden" />
         
         {/* SVG connection edges */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 1.5 L 10 5 L 0 8.5 z" className="fill-indigo-500/40 dark:fill-indigo-500/20 print:fill-black" />
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" className="fill-[var(--color-accent)] opacity-60 print:fill-black print:opacity-100" />
             </marker>
           </defs>
           {relations.map((rel: DiagramRelationDTO, index: number) => {
@@ -958,7 +958,7 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
                   y1={`${sourceCoords.top}%`}
                   x2={`${targetCoords.left}%`}
                   y2={`${targetCoords.top}%`}
-                  className="stroke-indigo-500/35 dark:stroke-indigo-500/20 stroke-[1.5px] print:stroke-black"
+                  className="stroke-[var(--color-accent)] stroke-[1.5px] opacity-60 print:stroke-black print:opacity-100"
                   strokeDasharray="4 4"
                   markerEnd="url(#arrow)"
                 />
@@ -969,7 +969,7 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
 
         {/* Absolute nodes layer */}
         {nodes.length === 0 ? (
-          <div className="text-center text-slate-500 text-xs italic z-10">
+          <div className="text-center text-[var(--color-text-muted)] text-xs italic z-10">
             Sin elementos en el lienzo.
           </div>
         ) : (
@@ -998,32 +998,32 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
                   transform: 'translate(-50%, -50%)',
                 }}
                 className={`transition-all select-none print:bg-white print:border-black print:text-black z-20 ${
-                  isActor ? 'flex flex-col items-center gap-1' : 'min-w-[150px] rounded-xl border-2 shadow-lg text-left'
+                  isActor ? 'flex flex-col items-center gap-1' : 'min-w-[150px] rounded-xl border border-[var(--color-border-strong)] shadow-lg text-left'
                 } ${
-                  isActor ? '' : 'bg-slate-900 border-slate-700/60'
+                  isActor ? '' : 'bg-[var(--color-bg-card)]'
                 }`}
               >
                 {isActor ? (
                   // DIBUJO DE ACTOR COMPLETO
                   <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full border-2 border-purple-500/50 bg-purple-950/30 flex items-center justify-center shadow-lg print:border-black print:bg-white text-2xl">
+                    <div className="w-12 h-12 rounded-full border border-[var(--color-accent)] bg-[var(--color-accent-subtle)] flex items-center justify-center shadow-lg print:border-black print:bg-white text-2xl">
                       👤
                     </div>
-                    <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-purple-300 print:text-black bg-slate-900/80 px-2 py-0.5 rounded print:bg-transparent">
+                    <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-accent)] print:text-black bg-[var(--color-surface)] px-2 py-0.5 rounded border border-[var(--color-border)] print:bg-transparent print:border-none">
                       {name}
                     </span>
                   </div>
                 ) : (
                   // DIBUJO DE CLASE COMPLETA
-                  <div className="flex flex-col w-full text-slate-200">
+                  <div className="flex flex-col w-full text-[var(--color-text-primary)]">
                     {/* Header */}
-                    <header className={`border-b-2 border-slate-700/60 ${isClass ? 'bg-indigo-900/80' : 'bg-slate-800/80'} px-3 py-2 text-center rounded-t-xl print:border-black print:bg-slate-100 print:text-black`}>
+                    <header className={`border-b border-[var(--color-border-strong)] ${isClass ? 'bg-[var(--color-surface)]' : 'bg-[var(--color-bg-secondary)]'} px-3 py-2 text-center rounded-t-xl print:border-black print:bg-slate-100 print:text-black`}>
                       {isClass && umlType !== 'CLASS' && (
-                        <p className="text-[8px] font-bold uppercase tracking-widest opacity-80 mb-0.5">
+                        <p className="text-[8px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-0.5">
                           {`<<${umlType.toLowerCase()}>>`}
                         </p>
                       )}
-                      <h3 className="text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5">
+                      <h3 className="text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 text-[var(--color-text-primary)]">
                         {!isClass && <span className="text-sm">⚙️</span>}
                         {name}
                       </h3>
@@ -1032,29 +1032,29 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
                     {/* Attributes and Methods only shown if it's a class or has attributes */}
                     {(isClass || attributes.length > 0 || methods.length > 0) && (
                       <>
-                        <section className="border-b-2 border-slate-700/60 px-3 py-2 min-h-[24px] print:border-black print:text-black bg-slate-950/40">
+                        <section className="border-b border-[var(--color-border-strong)] px-3 py-2 min-h-[24px] print:border-black print:text-black bg-[var(--color-bg-card)]">
                           {attributes.length === 0 ? (
                             <div className="h-2"></div>
                           ) : (
                             attributes.map((attr: any, i: number) => (
                               <div key={i} className="text-[9px] font-mono leading-tight">
-                                <span className="text-blue-400 font-bold mr-1">{formatVis(attr.visibility)}</span>
-                                <span className="font-bold text-slate-300">{attr.name}</span>
-                                <span className="opacity-60 text-slate-400">: {attr.type || 'String'}</span>
+                                <span className="text-[var(--color-accent)] font-bold mr-1">{formatVis(attr.visibility)}</span>
+                                <span className="font-bold text-[var(--color-text-primary)]">{attr.name}</span>
+                                <span className="text-[var(--color-text-muted)]">: {attr.type || 'String'}</span>
                               </div>
                             ))
                           )}
                         </section>
                         
-                        <section className="px-3 py-2 min-h-[24px] print:text-black bg-slate-950/40 rounded-b-xl">
+                        <section className="px-3 py-2 min-h-[24px] print:text-black bg-[var(--color-bg-card)] rounded-b-xl">
                           {methods.length === 0 ? (
                             <div className="h-2"></div>
                           ) : (
                             methods.map((meth: any, i: number) => (
                               <div key={i} className="text-[9px] font-mono leading-tight truncate max-w-[180px]">
-                                <span className="text-emerald-400 font-bold mr-1">{formatVis(meth.visibility)}</span>
-                                <span className="font-bold text-slate-300">{meth.name}()</span>
-                                <span className="opacity-60 text-slate-400">: {meth.returnType || 'void'}</span>
+                                <span className="text-[var(--color-success)] font-bold mr-1">{formatVis(meth.visibility)}</span>
+                                <span className="font-bold text-[var(--color-text-primary)]">{meth.name}()</span>
+                                <span className="text-[var(--color-text-muted)]">: {meth.returnType || 'void'}</span>
                               </div>
                             ))
                           )}
@@ -1072,11 +1072,11 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
       {/* Detail Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Nodes section */}
-        <div className="border border-slate-800/80 rounded-xl p-4 bg-slate-900/20 print:border-black">
-          <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-3 print:text-black">Elementos del Modelo ({nodes.length})</h4>
+        <div className="border border-[var(--color-border)] rounded-xl p-4 bg-[var(--color-bg-card)] print:border-black">
+          <h4 className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-3 print:text-black">Elementos del Modelo ({nodes.length})</h4>
           <div className="flex flex-wrap gap-2">
             {nodes.length === 0 ? (
-              <span className="text-xs text-slate-500 italic">Sin elementos en el lienzo.</span>
+              <span className="text-xs text-[var(--color-text-muted)] italic">Sin elementos en el lienzo.</span>
             ) : (
               nodes.map((node: DiagramNodeDTO) => {
                 const kind = (node as any)?.kind || 'node'
@@ -1086,8 +1086,8 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
                     key={node.id}
                     className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${
                       isActor
-                        ? 'bg-purple-600/15 text-purple-300 border border-purple-500/20 print:text-black print:border-black'
-                        : 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/20 print:text-black print:border-black'
+                        ? 'bg-[var(--color-warning-subtle)] text-[var(--color-warning)] border border-[var(--color-warning)]/20 print:text-black print:border-black'
+                        : 'bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent)]/20 print:text-black print:border-black'
                     }`}
                   >
                     <span>{isActor ? '👤' : '⚙️'}</span>
@@ -1100,11 +1100,11 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
         </div>
 
         {/* Relations section */}
-        <div className="border border-slate-800/80 rounded-xl p-4 bg-slate-900/20 print:border-black">
-          <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-3 print:text-black">Relaciones de Diseño ({relations.length})</h4>
+        <div className="border border-[var(--color-border)] rounded-xl p-4 bg-[var(--color-bg-card)] print:border-black">
+          <h4 className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-3 print:text-black">Relaciones de Diseño ({relations.length})</h4>
           <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
             {relations.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">Sin relaciones mapeadas en el lienzo.</p>
+              <p className="text-xs text-[var(--color-text-muted)] italic">Sin relaciones mapeadas en el lienzo.</p>
             ) : (
               relations.map((rel: DiagramRelationDTO, index: number) => {
                 const sourceNode = nodes.find((n: DiagramNodeDTO) => n.id === rel.source)
@@ -1112,10 +1112,10 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
                 const sourceName = getNodeName(sourceNode)
                 const targetName = getNodeName(targetNode)
                 return (
-                  <div key={index} className="text-xs text-slate-300 flex items-center gap-2 print:text-black">
-                    <span className="font-bold text-slate-200 print:text-black">{sourceName}</span>
-                    <span className="text-indigo-400 font-bold print:text-black">→</span>
-                    <span className="font-medium text-slate-400 print:text-black">{targetName}</span>
+                  <div key={index} className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2 print:text-black">
+                    <span className="font-bold text-[var(--color-text-primary)] print:text-black">{sourceName}</span>
+                    <span className="text-[var(--color-accent)] font-bold print:text-black">→</span>
+                    <span className="font-medium text-[var(--color-text-muted)] print:text-black">{targetName}</span>
                   </div>
                 )
               })
@@ -1126,3 +1126,4 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
     </div>
   )
 }
+
