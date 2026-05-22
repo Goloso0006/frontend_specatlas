@@ -70,9 +70,15 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
               value={requirement.title || ''}
               onChange={(e) => onUpdate({ title: e.target.value })}
               placeholder="Escribe el título del requisito..."
+              maxLength={100}
               className="w-full px-3 py-2 text-sm font-semibold bg-[var(--color-surface)]/20 border border-[var(--color-border)] focus:border-[var(--color-accent)]/50 focus:ring-0 rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/30 transition-all"
             />
           </div>
+          <span className={`block text-right text-[9px] font-mono mt-1 ${
+            (requirement.title?.length ?? 0) >= 90 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+          }`}>
+            {requirement.title?.length ?? 0}/100
+          </span>
         </section>
 
         {/* Description Section */}
@@ -84,9 +90,15 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
               onChange={(e) => onUpdate({ description: e.target.value })}
               placeholder="Describe detalladamente la funcionalidad del requisito..."
               rows={5}
+              maxLength={500}
               className="w-full text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 focus:ring-0 resize-y leading-relaxed placeholder:text-[var(--color-text-muted)]/30"
             />
           </div>
+          <span className={`block text-right text-[9px] font-mono mt-1 ${
+            (requirement.description?.length ?? 0) >= 460 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+          }`}>
+            {requirement.description?.length ?? 0}/500
+          </span>
         </section>
 
         {/* Acceptance Criteria Section */}

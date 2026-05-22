@@ -621,8 +621,14 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                         <input value={row.requirement.title} onClick={e => e.stopPropagation()}
                           onChange={e => updateRow(row.localId, { title: e.target.value })}
                           placeholder="Título del RNF..."
+                          maxLength={100}
                           className={`w-full text-sm font-semibold bg-transparent border-0 focus:ring-1 focus:ring-[var(--color-accent)] rounded transition-all placeholder:text-[var(--color-text-muted)]/40 ${isInvalid && !row.requirement.title ? 'bg-rose-500/5 ring-1 ring-rose-500/30' : ''}`}
                         />
+                        <span className={`block text-right text-[9px] font-mono mt-0.5 ${
+                          (row.requirement.title?.length ?? 0) >= 90 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+                        }`}>
+                          {row.requirement.title?.length ?? 0}/100
+                        </span>
                         {row.requirement.description && (
                           <p className="text-[11px] text-[var(--color-text-muted)] whitespace-pre-wrap break-words mt-1 px-0.5 leading-relaxed max-w-2xl">
                             {row.requirement.description}
@@ -815,10 +821,16 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                     value={row.requirement.title}
                     onChange={e => updateRow(row.localId, { title: e.target.value })}
                     placeholder="Título del RNF..."
+                    maxLength={100}
                     className={`w-full px-3 py-2 text-sm font-semibold bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all ${
                       isInvalid && !row.requirement.title ? 'bg-rose-500/5 ring-1 ring-rose-500/30' : ''
                     }`}
                   />
+                  <span className={`block text-right text-[9px] font-mono mt-1 ${
+                    (row.requirement.title?.length ?? 0) >= 90 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+                  }`}>
+                    {row.requirement.title?.length ?? 0}/100
+                  </span>
                 </div>
 
                 {/* Descripción (Full Width) */}
@@ -831,10 +843,16 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                     onChange={e => updateRow(row.localId, { description: e.target.value })}
                     placeholder="Describe el requisito no funcional..."
                     rows={4}
+                    maxLength={500}
                     className={`w-full px-3 py-2 text-sm bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] resize-none transition-all ${
                       isInvalid && !row.requirement.description ? 'ring-1 ring-rose-500/30' : ''
                     }`}
                   />
+                  <span className={`block text-right text-[9px] font-mono mt-1 ${
+                    (row.requirement.description?.length ?? 0) >= 460 ? 'text-rose-500' : 'text-[var(--color-text-muted)]/50'
+                  }`}>
+                    {row.requirement.description?.length ?? 0}/500
+                  </span>
                 </div>
 
                 {/* Section: Criterios de Aceptación (Tarjeta Aparte) */}
