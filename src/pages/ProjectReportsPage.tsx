@@ -265,7 +265,7 @@ export default function ProjectReportsPage() {
   }
 
   return (
-    <div className="w-full h-full min-h-[calc(100vh-80px)] flex bg-slate-950 text-slate-100 font-sans print:bg-white print:text-black">
+    <div className="w-full h-full min-h-[calc(100vh-80px)] flex bg-[var(--color-bg)] text-[var(--color-text-primary)] font-sans print:bg-white print:text-black">
       {/* Dynamic media CSS for premium print layout */}
       <style>{`
         @media print {
@@ -288,14 +288,17 @@ export default function ProjectReportsPage() {
       `}</style>
 
       {/* Sidebar List */}
-      <div className="w-80 border-r border-slate-800 bg-slate-900/50 flex flex-col flex-shrink-0 no-print">
-        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
-          <h2 className="text-sm font-black tracking-tight text-white flex items-center gap-2">
-            <span>📚</span> Wiki del Proyecto
+      <div className="w-80 border-r border-[var(--color-border)] bg-[var(--color-bg-card)] flex flex-col flex-shrink-0 no-print">
+        <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
+          <h2 className="text-sm font-black tracking-tight text-[var(--color-text-primary)] flex items-center gap-2">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} className="text-[var(--color-accent)]">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Wiki del Proyecto
           </h2>
           <button
             onClick={handleCreateReport}
-            className="p-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 shadow-md transition-all active:scale-95"
+            className="p-1.5 px-3 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] font-bold text-xs flex items-center gap-1 shadow-md transition-all active:scale-95"
           >
             <span>+</span> Nuevo
           </button>
@@ -303,12 +306,12 @@ export default function ProjectReportsPage() {
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-10 space-y-2 text-slate-500">
-              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center py-10 space-y-2 text-[var(--color-text-muted)]">
+              <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
               <span className="text-[10px]">Cargando reportes...</span>
             </div>
           ) : reports.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 space-y-1">
+            <div className="text-center py-12 text-[var(--color-text-muted)] space-y-1">
               <span className="text-2xl block">📁</span>
               <p className="text-[11px]">No hay documentos creados aún.</p>
             </div>
@@ -319,17 +322,17 @@ export default function ProjectReportsPage() {
                 onClick={() => handleSelectReport(report)}
                 className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 group relative overflow-hidden ${
                   selectedReport?.id === report.id
-                    ? 'bg-indigo-600/10 border-indigo-500/80 shadow-md shadow-indigo-500/5'
-                    : 'bg-slate-900/40 border-slate-800/60 hover:bg-slate-800/40 hover:border-slate-700/80'
+                    ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
+                    : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-xs text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+                  <h3 className="font-bold text-xs text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
                     {report.title}
                   </h3>
                   <button
                     onClick={(e) => handleDeleteReport(report.id, e)}
-                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-rose-500/10 hover:text-rose-400 text-slate-500 transition-all"
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[var(--color-text-muted)] transition-all"
                     title="Eliminar reporte"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,7 +340,7 @@ export default function ProjectReportsPage() {
                     </svg>
                   </button>
                 </div>
-                <span className="text-[9px] text-slate-500 font-medium">
+                <span className="text-[9px] text-[var(--color-text-muted)] font-medium">
                   Modificado: {new Date(report.updatedAt).toLocaleDateString()}
                 </span>
               </div>
@@ -347,31 +350,31 @@ export default function ProjectReportsPage() {
       </div>
 
       {/* Editor / Preview Panel */}
-      <div className="flex-1 flex flex-col bg-slate-950/20 relative print-content">
+      <div className="flex-1 flex flex-col bg-[var(--color-bg)] relative print-content">
         {isEditing && selectedReport ? (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Header Control Toolbar */}
-            <div className="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/20 backdrop-blur-sm no-print">
+            <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-card)] no-print">
               <div className="flex-1 max-w-lg">
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   onBlur={handleSaveReport}
-                  className="w-full bg-transparent text-white font-extrabold text-lg focus:outline-none border-b border-transparent focus:border-indigo-500/60 pb-0.5 placeholder:text-slate-600"
+                  className="w-full bg-transparent text-[var(--color-text-primary)] font-extrabold text-lg focus:outline-none border-b border-transparent focus:border-[var(--color-accent)] pb-0.5 placeholder:text-[var(--color-text-muted)]"
                   placeholder="Título de la Documentación"
                 />
               </div>
 
               <div className="flex items-center gap-2">
                 {/* Tabs */}
-                <div className="bg-slate-900 border border-slate-800 p-0.5 rounded-lg flex items-center">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] p-0.5 rounded-lg flex items-center">
                   <button
                     onClick={() => setActiveTab('edit')}
                     className={`px-3 py-1 rounded-md text-[11px] font-black tracking-tight transition-all ${
                       activeTab === 'edit'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-[var(--color-accent)] text-[var(--color-accent-foreground)] shadow-sm'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                     }`}
                   >
                     ✏️ Editar
@@ -380,27 +383,27 @@ export default function ProjectReportsPage() {
                     onClick={() => setActiveTab('preview')}
                     className={`px-3 py-1 rounded-md text-[11px] font-black tracking-tight transition-all ${
                       activeTab === 'preview'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-[var(--color-accent)] text-[var(--color-accent-foreground)] shadow-sm'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                     }`}
                   >
                     👁️ Vista Previa
                   </button>
                 </div>
 
-                <div className="h-4 w-px bg-slate-800" />
+                <div className="h-4 w-px bg-[var(--color-border)]" />
 
                 {/* Exports */}
                 <button
                   onClick={handleExportPDF}
-                  className="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
+                  className="p-1.5 px-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
                   title="Imprimir o Guardar como PDF"
                 >
                   📄 PDF
                 </button>
                 <button
                   onClick={handleExportWord}
-                  className="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
+                  className="p-1.5 px-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
                   title="Exportar a Microsoft Word"
                 >
                   📝 Word
@@ -408,7 +411,7 @@ export default function ProjectReportsPage() {
 
                 <button
                   onClick={handleSaveReport}
-                  className="p-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-md"
+                  className="p-1.5 px-3 rounded-lg bg-[var(--color-success)] hover:opacity-90 text-white font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-md"
                 >
                   💾 Guardar
                 </button>
@@ -420,38 +423,38 @@ export default function ProjectReportsPage() {
               {activeTab === 'edit' ? (
                 <div className="h-full flex flex-col">
                   {/* Rich Editing Bar */}
-                  <div className="p-2 border-b border-slate-800/80 bg-slate-900/40 flex items-center gap-1.5 rich-bar overflow-x-auto">
+                  <div className="p-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center gap-1.5 rich-bar overflow-x-auto">
                     <button
                       onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA}}')}
-                      className="p-1.5 px-3 rounded-lg bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/25 hover:text-indigo-300 font-bold text-[10px] flex items-center gap-1.5 transition-all shadow-sm shadow-indigo-950/20 shrink-0"
+                      className="p-1.5 px-3 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/30 text-[var(--color-accent)] hover:opacity-80 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
                     >
                       📊 Requisitos (Todos)
                     </button>
                     <button
                       onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA_FUNCIONAL}}')}
-                      className="p-1.5 px-3 rounded-lg bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/25 hover:text-indigo-300 font-bold text-[10px] flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                      className="p-1.5 px-3 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/30 text-[var(--color-accent)] hover:opacity-80 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
                     >
                       ⚙️ Funcionales
                     </button>
                     <button
                       onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA_NO_FUNCIONAL}}')}
-                      className="p-1.5 px-3 rounded-lg bg-emerald-600/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/25 hover:text-emerald-300 font-bold text-[10px] flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                      className="p-1.5 px-3 rounded-lg bg-[var(--color-success-subtle)] border border-[var(--color-success)]/30 text-[var(--color-success)] hover:opacity-80 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
                     >
                       🛡️ No Funcionales
                     </button>
                     <button
                       onClick={() => void openCommandPalette()}
-                      className="p-1.5 px-3 rounded-lg bg-purple-600/15 border border-purple-500/30 text-purple-400 hover:bg-purple-600/25 hover:text-purple-300 font-bold text-[10px] flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                      className="p-1.5 px-3 rounded-lg bg-[var(--color-warning-subtle)] border border-[var(--color-warning)]/30 text-[var(--color-warning)] hover:opacity-80 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
                     >
                       🎨 Importar Diagrama
                     </button>
                     <button
                       onClick={() => insertTagAtCursor(`[🔗 Ir a Requisitos](/app/projects/${projectId}/requirements)`)}
-                      className="p-1.5 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-750 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
+                      className="p-1.5 px-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
                     >
                       🔗 Enlace a Tablas
                     </button>
-                    <span className="text-[10px] text-slate-500 select-none ml-auto hidden md:inline shrink-0">
+                    <span className="text-[10px] text-[var(--color-text-muted)] select-none ml-auto hidden md:inline shrink-0">
                       Escribe <code>///</code> para abrir el menú de comandos en cualquier parte.
                     </span>
                   </div>
@@ -460,14 +463,14 @@ export default function ProjectReportsPage() {
                     ref={textareaRef}
                     value={content}
                     onChange={handleTextareaChange}
-                    className="flex-1 w-full bg-slate-950 border-none outline-none resize-none p-6 text-sm text-slate-300 font-mono leading-relaxed placeholder:text-slate-700 custom-scrollbar"
+                    className="flex-1 w-full bg-[var(--color-bg)] border-none outline-none resize-none p-6 text-sm text-[var(--color-text-secondary)] font-mono leading-relaxed placeholder:text-[var(--color-text-muted)] custom-scrollbar"
                     placeholder="# Escribe aquí en formato Markdown...&#10;&#10;Escribe /// en cualquier parte del documento para insertar requerimientos, diagramas del proyecto o enlaces dinámicos."
                   />
                 </div>
               ) : (
-                <div className="h-full overflow-y-auto p-8 leading-relaxed custom-scrollbar bg-slate-950 print:bg-white print:text-black print:p-0">
+                <div className="h-full overflow-y-auto p-8 leading-relaxed custom-scrollbar bg-[var(--color-bg)] print:bg-white print:text-black print:p-0">
                   <div className="max-w-4xl mx-auto space-y-6 print:max-w-full">
-                    <h1 className="text-2xl font-black text-white pb-3 border-b border-slate-800/80 print:text-black print:border-black">
+                    <h1 className="text-2xl font-black text-[var(--color-text-primary)] pb-3 border-b border-[var(--color-border)] print:text-black print:border-black">
                       {title}
                     </h1>
                     <LiveDocumentRenderer content={content} projectId={projectId || ''} />
@@ -477,12 +480,12 @@ export default function ProjectReportsPage() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-slate-500 space-y-3 no-print">
-            <div className="w-16 h-16 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl shadow-xl">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-[var(--color-text-muted)] space-y-3 no-print">
+            <div className="w-16 h-16 rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] flex items-center justify-center text-3xl shadow-xl">
               📝
             </div>
             <div className="text-center space-y-1">
-              <h3 className="font-extrabold text-sm text-slate-300">Ningún documento seleccionado</h3>
+              <h3 className="font-extrabold text-sm text-[var(--color-text-secondary)]">Ningún documento seleccionado</h3>
               <p className="text-[11px] max-w-sm leading-relaxed">
                 Selecciona un reporte de ingeniería en la barra lateral o crea uno nuevo para empezar a redactar documentación viva de requisitos.
               </p>
@@ -493,79 +496,79 @@ export default function ProjectReportsPage() {
 
       {/* Modern Command Palette Modal */}
       {isPaletteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5">
                 ⚡ Paleta de Comandos Wiki
               </h3>
               <button
                 onClick={() => setIsPaletteOpen(false)}
-                className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-300 transition-all text-xs"
+                className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all text-xs"
               >
                 Cerrar (Esc)
               </button>
             </div>
 
              <div className="space-y-2">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Comandos Básicos</p>
+              <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wide">Comandos Básicos</p>
               <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                 <button
                   onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA}}')}
-                  className="w-full text-left p-2.5 rounded-xl bg-slate-850 hover:bg-indigo-600/10 hover:text-indigo-400 border border-transparent hover:border-indigo-500/20 text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] border border-transparent hover:border-[var(--color-accent)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
                 >
                   <span>📊 Incrustar Todos los Requisitos</span>
-                  <span className="text-[9px] font-mono text-slate-500">{"{{REQUISITOS_TABLA}}"}</span>
+                  <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{"{{REQUISITOS_TABLA}}"}</span>
                 </button>
                 <button
                   onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA_FUNCIONAL}}')}
-                  className="w-full text-left p-2.5 rounded-xl bg-slate-850 hover:bg-indigo-600/10 hover:text-indigo-400 border border-transparent hover:border-indigo-500/20 text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] border border-transparent hover:border-[var(--color-accent)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
                 >
                   <span>⚙️ Incrustar Requisitos Funcionales</span>
-                  <span className="text-[9px] font-mono text-slate-500">{"{{REQUISITOS_TABLA_FUNCIONAL}}"}</span>
+                  <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{"{{REQUISITOS_TABLA_FUNCIONAL}}"}</span>
                 </button>
                 <button
                   onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA_NO_FUNCIONAL}}')}
-                  className="w-full text-left p-2.5 rounded-xl bg-slate-850 hover:bg-indigo-600/10 hover:text-indigo-400 border border-transparent hover:border-indigo-500/20 text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] border border-transparent hover:border-[var(--color-accent)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
                 >
                   <span>🛡️ Incrustar Requisitos No Funcionales</span>
-                  <span className="text-[9px] font-mono text-slate-500">{"{{REQUISITOS_TABLA_NO_FUNCIONAL}}"}</span>
+                  <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{"{{REQUISITOS_TABLA_NO_FUNCIONAL}}"}</span>
                 </button>
                 <button
                   onClick={() => insertTagAtCursor(`[🔗 Ir a Requisitos](/app/projects/${projectId}/requirements)`)}
-                  className="w-full text-left p-2.5 rounded-xl bg-slate-850 hover:bg-indigo-600/10 hover:text-indigo-400 border border-transparent hover:border-indigo-500/20 text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] border border-transparent hover:border-[var(--color-accent)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
                 >
                   <span>🔗 Insertar Enlace al Workspace de Requisitos</span>
-                  <span className="text-[9px] font-mono text-slate-500">Enlace</span>
+                  <span className="text-[9px] font-mono text-[var(--color-text-muted)]">Enlace</span>
                 </button>
                 <button
                   onClick={() => insertTagAtCursor(`[🎨 Ir a Lienzo de Diagramas](/app/projects/${projectId}/diagrams)`)}
-                  className="w-full text-left p-2.5 rounded-xl bg-slate-850 hover:bg-indigo-600/10 hover:text-indigo-400 border border-transparent hover:border-indigo-500/20 text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] border border-transparent hover:border-[var(--color-accent)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
                 >
                   <span>🔗 Insertar Enlace a Canvas de Diagramas</span>
-                  <span className="text-[9px] font-mono text-slate-500">Enlace</span>
+                  <span className="text-[9px] font-mono text-[var(--color-text-muted)]">Enlace</span>
                 </button>
               </div>
             </div>
 
             <div className="space-y-2 pt-2">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Importar Diagrama Activo</p>
+              <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wide">Importar Diagrama Activo</p>
               {isLoadingDiagrams ? (
-                <div className="text-center py-4 text-[10px] text-slate-500">Cargando diagramas...</div>
+                <div className="text-center py-4 text-[10px] text-[var(--color-text-muted)]">Cargando diagramas...</div>
               ) : projectDiagrams.length === 0 ? (
-                <div className="text-center py-4 text-[10px] text-slate-500">No hay diagramas creados en este proyecto. Crea uno primero.</div>
+                <div className="text-center py-4 text-[10px] text-[var(--color-text-muted)]">No hay diagramas creados en este proyecto. Crea uno primero.</div>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-1.5 custom-scrollbar">
                   {projectDiagrams.map(diag => (
                     <button
                       key={diag.id}
                       onClick={() => insertTagAtCursor(`{{DIAGRAMA:${diag.id}:${diag.name}}}`)}
-                      className="w-full text-left p-2.5 px-3.5 rounded-xl bg-slate-850 hover:bg-purple-600/10 hover:text-purple-400 border border-transparent hover:border-purple-500/20 text-xs font-bold transition-all flex items-center justify-between"
+                      className="w-full text-left p-2.5 px-3.5 rounded-xl hover:bg-[var(--color-warning-subtle)] hover:text-[var(--color-warning)] border border-transparent hover:border-[var(--color-warning)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
                     >
                       <span className="flex items-center gap-2">
                         <span>🎨</span> {diag.name}
                       </span>
-                      <span className="text-[9px] uppercase tracking-wider bg-slate-800 text-slate-500 px-2 py-0.5 rounded-md font-black">
+                      <span className="text-[9px] uppercase tracking-wider bg-[var(--color-surface)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-md font-black">
                         {diag.diagramType === 'CLASS' ? 'Clases' : 'Casos Uso'}
                       </span>
                     </button>
