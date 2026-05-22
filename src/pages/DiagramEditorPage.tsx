@@ -92,6 +92,7 @@ export function DiagramEditorPage() {
     handleDiscardDraft,
     handleUndo,
     handleRedo,
+    handleBack,
   } = controller
 
   /* ── Guards ── */
@@ -131,6 +132,7 @@ export function DiagramEditorPage() {
           canUndo={canUndo}
           canRedo={canRedo}
           diagramType={diagramType}
+          onBack={handleBack}
         />
 
         <div className="flex-1 min-h-0 flex overflow-hidden relative rounded-[1.75rem] border border-(--color-border-strong) bg-(--color-bg-card) shadow-[0_24px_80px_rgba(43,43,43,0.08)]">

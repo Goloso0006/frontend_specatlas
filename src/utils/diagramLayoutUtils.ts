@@ -38,12 +38,13 @@ export function autoLayoutDiagram(
       }
     })
 
-    const spacingY = 160
+    const cols = Math.min(3, Math.max(1, Math.ceil(Math.sqrt(useCases.length))))
+    const spacingY = 200
     const actorXLeft = 80
-    const actorXRight = 950
     const useCaseStartX = 340
-    const useCaseSpacingX = 300
-    const useCaseSpacingY = 140
+    const useCaseSpacingX = 400
+    const useCaseSpacingY = 200
+    const actorXRight = useCaseStartX + cols * useCaseSpacingX + 120
 
     // 1. Layout primary actors on the left
     primaryActors.forEach((actor, index) => {
@@ -58,7 +59,6 @@ export function autoLayoutDiagram(
     })
 
     // 3. Layout Use Cases in a grid
-    const cols = Math.min(3, Math.max(1, Math.ceil(Math.sqrt(useCases.length))))
     useCases.forEach((uc, index) => {
       const col = index % cols
       const row = Math.floor(index / cols)
@@ -115,8 +115,8 @@ export function autoLayoutDiagram(
     const packages = nextNodes.filter(n => n.type === 'packageNode')
     const standaloneNodes = nextNodes.filter(n => n.type !== 'packageNode' && !(n.data as any).packageId)
 
-    const spacingX = 280
-    const spacingY = 280
+    const spacingX = 400
+    const spacingY = 400
     let currentPkgX = 50
     let currentPkgY = 80
 

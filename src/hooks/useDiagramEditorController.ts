@@ -131,6 +131,7 @@ export interface DiagramEditorController {
   handleDiscardDraft: () => void
   handleUndo: () => void
   handleRedo: () => void
+  handleBack: () => Promise<void>
 }
 
 const HELP_TIPS = [
@@ -157,7 +158,7 @@ export function useDiagramEditorController(): DiagramEditorController {
     diagramId?: string
     diagramTypePath?: string
   }>()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
 
   const newType = (
@@ -214,6 +215,7 @@ export function useDiagramEditorController(): DiagramEditorController {
   const isRestoringHistoryRef = useRef(false)
   const isDraggingRef = useRef(false)
   const lastValidationRef = useRef<any>({ valid: true, errors: [] })
+  const hasGeneratedRef = useRef(false)
 
   const captureHistorySnapshot = useCallback((reason: string) => {
     if (isRestoringHistoryRef.current) return
@@ -234,6 +236,88 @@ export function useDiagramEditorController(): DiagramEditorController {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
+
+  // Save on unmount protection for internal navigation
+  const saveOnUnmountRef = useRef({
+    isDirty,
+    nodes,
+    edges,
+    diagramType,
+    diagramName,
+    diagramId,
+    projectId,
+  })
+
+  useEffect(() => {
+    saveOnUnmountRef.current = {
+      isDirty,
+      nodes,
+      edges,
+      diagramType,
+      diagramName,
+      diagramId,
+      projectId,
+    }
+  }, [isDirty, nodes, edges, diagramType, diagramName, diagramId, projectId])
+
+  useEffect(() => {
+    return () => {
+      const current = saveOnUnmountRef.current
+      if (current.isDirty && current.projectId && current.diagramName.trim()) {
+        const source = reactFlowToDiagramSource(current.nodes, current.edges, current.diagramType)
+        const payload = {
+          projectId: current.projectId.trim(),
+          name: current.diagramName.trim(),
+          sourceJson: serializeDiagramSource(source),
+          plantUmlCode: null,
+        }
+
+        void diagramFacade.saveOrUpdate(current.diagramId.trim() || null, payload, current.diagramType)
+          .then((data) => {
+            if (data && current.diagramType === 'USE_CASE') {
+              const relations = current.edges
+                .map(edge => {
+                  const sourceNode = current.nodes.find(n => n.id === edge.source)
+                  const targetNode = current.nodes.find(n => n.id === edge.target)
+                  if (!sourceNode || !targetNode) return null
+
+                  let actorNode = null
+                  let useCaseNode = null
+
+                  if (sourceNode.data?.kind === 'actor') {
+                    actorNode = sourceNode
+                  } else if (targetNode.data?.kind === 'actor') {
+                    actorNode = targetNode
+                  }
+
+                  if (sourceNode.data?.kind === 'useCase') {
+                    useCaseNode = sourceNode
+                  } else if (targetNode.data?.kind === 'useCase') {
+                    useCaseNode = targetNode
+                  }
+
+                  if (actorNode && useCaseNode) {
+                    const actorName = actorNode.data?.name || ''
+                    const requirementCode = useCaseNode.data?.derivedFromRequirements?.[0] || ''
+                    if (actorName && requirementCode) {
+                      return { actorName, requirementCode }
+                    }
+                  }
+                  return null
+                })
+                .filter((r): r is { actorName: string; requirementCode: string } => r !== null)
+
+              void diagramsApi.saveRelations(data.id, relations).catch(err => {
+                console.error('Error saving relations on unmount:', err)
+              })
+            }
+          })
+          .catch((err) => {
+            console.error('Failed to autosave diagram on unmount:', err)
+          })
+      }
+    }
+  }, [])
 
   // Recovery draft states & checker
   const [draftKey, setDraftKey] = useState('')
@@ -525,13 +609,19 @@ export function useDiagramEditorController(): DiagramEditorController {
       setDiagramType(newType)
       localStorage.setItem('diagram_type_new', newType)
       setDiagramName(`Nuevo Diagrama de ${newType === 'CLASS' ? 'Clases' : 'Casos de Uso'}`)
-      if (actionParam === 'generate' && isValidProjectId(routeProjectId)) {
+      if (actionParam === 'generate' && isValidProjectId(routeProjectId) && !hasGeneratedRef.current) {
+        hasGeneratedRef.current = true
+        // Clear search parameters to avoid re-triggering on future renders
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('action')
+        setSearchParams(newParams, { replace: true })
+
         setTimeout(() => {
           void handleGenerateAutoDiagram()
         }, 300)
       }
     }
-  }, [routeDiagramId, diagramId, nodes.length, newType, actionParam, routeProjectId, handleLoadDiagram])
+  }, [routeDiagramId, diagramId, nodes.length, newType, actionParam, routeProjectId, handleLoadDiagram, searchParams, setSearchParams])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1865,6 +1955,15 @@ export function useDiagramEditorController(): DiagramEditorController {
     }
   }, [nodes, edges, selectedNodeId, selectedEdgeId, popRedo, showFeedback])
 
+  const handleBack = useCallback(async () => {
+    if (isDirty) {
+      showFeedback('info', 'Guardando cambios antes de salir...')
+      await handleSaveDiagram(true)
+    }
+    const typePath = diagramType === 'CLASS' ? 'class' : 'use-case'
+    navigate(`/app/projects/${projectId}/diagrams/${typePath}`)
+  }, [isDirty, handleSaveDiagram, diagramType, projectId, navigate, showFeedback])
+
   return {
     state: editorState,
     actions: editorActions,
@@ -1948,5 +2047,6 @@ export function useDiagramEditorController(): DiagramEditorController {
     handleDiscardDraft,
     handleUndo,
     handleRedo,
+    handleBack,
   }
 }

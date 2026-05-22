@@ -20,6 +20,7 @@ interface DiagramHeaderProps {
   canUndo?: boolean
   canRedo?: boolean
   diagramType: string // Added!
+  onBack?: () => void
 }
 
 export function DiagramHeader({
@@ -39,6 +40,7 @@ export function DiagramHeader({
   canUndo = false,
   canRedo = false,
   diagramType, // Added!
+  onBack,
 }: DiagramHeaderProps) {
   const [timeAgo, setTimeAgo] = useState('')
   const { projectId } = useParams()
@@ -70,8 +72,12 @@ export function DiagramHeader({
       <div className="flex items-center gap-3">
         <button
           onClick={() => {
-            const typePath = diagramType === 'CLASS' ? 'class' : 'use-case'
-            navigate(`/app/projects/${projectId}/diagrams/${typePath}`)
+            if (onBack) {
+              onBack()
+            } else {
+              const typePath = diagramType === 'CLASS' ? 'class' : 'use-case'
+              navigate(`/app/projects/${projectId}/diagrams/${typePath}`)
+            }
           }}
           className="h-8 w-8 rounded-xl border border-(--color-border-strong) bg-(--color-surface) text-(--color-text-muted) hover:bg-(--color-accent-subtle) hover:text-(--color-accent) flex items-center justify-center transition-all duration-200"
           title="Volver"

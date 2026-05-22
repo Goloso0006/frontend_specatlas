@@ -180,8 +180,8 @@ export function mapGeneratedUseCaseDiagramToCanvas(source: any): GeneratedCanvas
   
   const UC_START_X = 420
   const UC_COLS = 2
-  const UC_SPACING_X = 360
-  const UC_SPACING_Y = 160
+  const UC_SPACING_X = 400
+  const UC_SPACING_Y = 200
 
   const actorNodes = rawActors.map((actor: any, index: number) => {
     const defaultPos = {

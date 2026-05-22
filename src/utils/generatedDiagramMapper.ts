@@ -25,8 +25,8 @@ export function mapGeneratedClassDiagramToCanvas(source: DiagramSourceDTO): Gene
   
   // 1. Normalize Nodes and assign positions
   const COLS = 4
-  const SPACING_X = 360
-  const SPACING_Y = 240
+  const SPACING_X = 400
+  const SPACING_Y = 400
 
   const nodes = (source.nodes || []).map((node, index) => {
     const normalized = normalizeNode(node)
@@ -240,8 +240,8 @@ export function mapGeneratedUseCaseDiagramToCanvas(source: any): GeneratedCanvas
   
   const UC_START_X = 420
   const UC_COLS = 2
-  const UC_SPACING_X = 360
-  const UC_SPACING_Y = 160
+  const UC_SPACING_X = 400
+  const UC_SPACING_Y = 200
 
   const actorNodes = rawActors.map((actor: any, index: number) => {
     const defaultPos = {

@@ -22,8 +22,8 @@ export function mapGeneratedClassDiagramToCanvas(source: DiagramSourceDTO): Gene
   
   // 1. Normalize Nodes and assign positions
   const COLS = 4
-  const SPACING_X = 360
-  const SPACING_Y = 240
+  const SPACING_X = 400
+  const SPACING_Y = 400
 
   const nodes = (source.nodes || []).map((node, index) => {
     const normalized = normalizeNode(node)
