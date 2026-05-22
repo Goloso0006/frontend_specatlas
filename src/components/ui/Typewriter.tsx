@@ -55,7 +55,7 @@ export default function Typewriter({
       aria-live="polite"
     >
       <span>{display}</span>
-      <span className="ml-1 inline-block text-[#4ade80] animate-pulse">|</span>
+      <span className="ml-1 inline-block text-app-accent animate-pulse">|</span>
     </span>
   )
 }
