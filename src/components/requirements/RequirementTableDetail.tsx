@@ -6,7 +6,7 @@ interface RequirementTableDetailProps {
   status: string
   onClose: () => void
   onSave: () => void
-  onImprove: () => void
+  onImprove?: () => void
   onUpdate: (updates: Partial<RequirementDTO>) => void
 }
 
@@ -15,7 +15,7 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
   status,
   onClose,
   onSave,
-  onImprove,
+  onImprove: _onImprove,
   onUpdate
 }) => {
   const handleCriteriaChange = (index: number, value: string) => {
@@ -198,20 +198,11 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="p-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30 grid grid-cols-2 gap-3">
-        <button 
-          onClick={onImprove}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg)] transition-all active:scale-95"
-        >
-          <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Mejorar IA
-        </button>
+      <div className="p-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30">
         <button 
           onClick={onSave}
           disabled={status === 'saved'}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-[var(--color-accent)]/20 disabled:opacity-50 disabled:grayscale disabled:scale-100"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-[var(--color-accent)]/20 disabled:opacity-50 disabled:grayscale disabled:scale-100"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

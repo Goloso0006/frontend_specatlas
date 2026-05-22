@@ -106,7 +106,7 @@ export const RequirementQualityBadge: React.FC<RequirementQualityBadgeProps> = (
 
   const dom = dominantSeverity(issues)
   const count = issues.length
-  const label = count === 1 ? '1 observación' : `${count} observaciones`
+  const label = `revisar (${count})`
 
   return (
     <div
