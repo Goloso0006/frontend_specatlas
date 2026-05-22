@@ -120,8 +120,8 @@ export const RequirementQualityBadge: React.FC<RequirementQualityBadgeProps> = (
         type="button"
         onClick={() => setOpen(v => !v)}
         className={[
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border',
-          'text-[15px] font-bold uppercase tracking-wider cursor-pointer whitespace-nowrap',
+          'inline-flex items-center gap-1 px-3 py-0.5 rounded-md border',
+          'text-[9px] font-bold uppercase tracking-wider cursor-pointer whitespace-nowrap',
           'transition-colors hover:opacity-80',
           severityBg(dom),
         ].join(' ')}
