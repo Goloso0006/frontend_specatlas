@@ -166,7 +166,7 @@ export default function HomePage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {memories.map((memory) => (
                 <article key={memory.name} className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_18px_45px_rgba(43,43,43,0.08)]">
-                  <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--color-surface)]">{memory.icon}</div>
+                  <div className="mb-4">{memory.icon}</div>
                   <h3 className="mb-3 text-lg font-black tracking-[-0.03em] text-[var(--color-text-primary)]">{memory.name}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="font-mono text-xs font-semibold text-[var(--color-accent)]">{memory.tech}</div>
