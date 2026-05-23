@@ -1,6 +1,17 @@
 import React from 'react'
 import type { RequirementDTO } from '../../types/requirements'
 
+const ACCEPTANCE_CRITERION_MAX_LENGTH = 100
+
+function sanitizeAcceptanceCriterion(value: string, maxLineBreaks: number): string {
+  const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const lineLimited = maxLineBreaks > 0
+    ? normalized.split('\n').slice(0, maxLineBreaks + 1).join('\n')
+    : normalized.replace(/\n/g, '')
+
+  return lineLimited.slice(0, ACCEPTANCE_CRITERION_MAX_LENGTH)
+}
+
 interface RequirementTableDetailProps {
   requirement: RequirementDTO
   status: string
@@ -18,9 +29,11 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
   onImprove: _onImprove,
   onUpdate
 }) => {
+  const acceptanceCriterionLineBreakLimit = requirement.requirementType === 'FUNCTIONAL' ? 1 : 0
+
   const handleCriteriaChange = (index: number, value: string) => {
     const newCriteria = [...(requirement.acceptanceCriteria || [])]
-    newCriteria[index] = value
+    newCriteria[index] = sanitizeAcceptanceCriterion(value, acceptanceCriterionLineBreakLimit)
     onUpdate({ acceptanceCriteria: newCriteria })
   }
 
@@ -123,8 +136,14 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
                   <textarea
                     value={criteria}
                     onChange={(e) => handleCriteriaChange(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && criteria.split('\n').length - 1 >= acceptanceCriterionLineBreakLimit) {
+                        e.preventDefault()
+                      }
+                    }}
                     placeholder="Dado que... cuando... entonces..."
                     rows={1}
+                    maxLength={ACCEPTANCE_CRITERION_MAX_LENGTH}
                     className="flex-1 text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 focus:ring-0 resize-none overflow-hidden leading-relaxed h-auto"
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement

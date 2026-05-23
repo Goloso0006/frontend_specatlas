@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import type { RequirementDTO } from '../../types/requirements'
 import { NonFunctionalDetailEditor, CriteriaList } from './RequirementDraftEditor'
+import { getAcceptanceCriterionLineBreakLimit } from '../../utils/acceptanceCriteria'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -189,6 +190,7 @@ export const RequirementFormModal: React.FC<RequirementFormModalProps> = ({
             <CriteriaList 
               items={form.acceptanceCriteria || []} 
               isEditing={true} 
+              maxLineBreaks={getAcceptanceCriterionLineBreakLimit(form.requirementType)}
               onChange={(updated) => setForm({ ...form, acceptanceCriteria: updated })}
             />
           </div>

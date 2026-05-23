@@ -13,6 +13,7 @@ import { RequirementQualityStatusBadge } from './RequirementQualityStatusBadge'
 import { RequirementQualityDetailModal } from './RequirementQualityDetailModal'
 import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
 import { qualityAnalysisApi } from '../../api/services/qualityAnalysisApi'
+import { sanitizeAcceptanceCriteriaList } from '../../utils/acceptanceCriteria'
 import {
   EMPTY_FILTERS,
   buildFilterOptions,
@@ -46,6 +47,7 @@ function NfDetailPanel({
   onChange: (d: Partial<NonFunctionalDetailDTO>) => void
 }) {
   const inp = 'w-full px-2 py-1.5 text-xs rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]'
+
   return (
     <div className="grid grid-cols-2 gap-3 p-4 bg-[var(--color-surface)]/40 rounded-xl border border-[var(--color-border)] mt-2">
       <div>
@@ -265,11 +267,17 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
   const updateRow = (localId: string, updates: Partial<RequirementDTO>) => {
     setRows(prev => prev.map(row => {
       if (row.localId === localId) {
-        const updatedReq = { ...row.requirement, ...updates }
-        if ('title' in updates || 'description' in updates) {
-          handleRowChangeDebounced(localId, updatedReq)
+        const next = {
+          ...row.requirement,
+          ...updates,
+          acceptanceCriteria: updates.acceptanceCriteria
+            ? sanitizeAcceptanceCriteriaList(updates.acceptanceCriteria, updates.requirementType ?? row.requirement.requirementType)
+            : row.requirement.acceptanceCriteria,
         }
-        return { ...row, requirement: updatedReq, status: row.status === 'saved' ? 'draft' : row.status }
+        if ('title' in updates || 'description' in updates) {
+          handleRowChangeDebounced(localId, next)
+        }
+        return { ...row, requirement: next, status: row.status === 'saved' ? 'draft' : row.status }
       }
       return row
     }))
@@ -724,7 +732,20 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
           suggested={aiPreview.suggested}
           onCancel={() => setAiPreview(null)}
           onApply={() => {
-            setRows(prev => prev.map(r => r.localId === aiPreview.localId ? { ...r, requirement: { ...r.requirement, ...aiPreview.suggested, id: r.requirement.id, code: r.requirement.code }, status: 'ai_improved' } : r))
+            setRows(prev => prev.map(r => r.localId === aiPreview.localId ? {
+              ...r,
+              requirement: {
+                ...r.requirement,
+                ...aiPreview.suggested,
+                acceptanceCriteria: sanitizeAcceptanceCriteriaList(
+                  aiPreview.suggested.acceptanceCriteria,
+                  aiPreview.suggested.requirementType ?? r.requirement.requirementType,
+                ),
+                id: r.requirement.id,
+                code: r.requirement.code,
+              },
+              status: 'ai_improved',
+            } : r))
             setAiPreview(null)
           }}
         />
@@ -871,15 +892,21 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                         (row.requirement.acceptanceCriteria || []).map((c, i) => (
                           <div key={i} className="flex gap-2 items-start bg-[var(--color-surface)]/20 p-2 rounded-lg border border-[var(--color-border)]/50 focus-within:border-[var(--color-accent)]/50 transition-colors">
                             <span className="text-[var(--color-accent)] font-bold text-xs mt-1.5 ml-1 flex-shrink-0">✓</span>
-                            <textarea 
-                              value={c} 
+                            <textarea
+                              value={c}
                               onChange={e => {
                                 const next = [...(row.requirement.acceptanceCriteria || [])]
                                 next[i] = e.target.value
                                 updateRow(row.localId, { acceptanceCriteria: next })
-                              }} 
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                }
+                              }}
                               placeholder="Escribe un criterio de aceptación..."
                               rows={3}
+                              maxLength={200}
                               className="flex-1 px-2.5 py-1 text-xs bg-transparent border-0 focus:ring-0 resize-none focus:outline-none placeholder:text-[var(--color-text-muted)]/40 overflow-hidden"
                             />
                             <button 
@@ -897,6 +924,7 @@ export const NonFunctionalRequirementsTable: React.FC<Props> = ({ projectId, ini
                     </div>
                     <div className="flex justify-start">
                       <button 
+                        type="button"
                         onClick={() => updateRow(row.localId, { acceptanceCriteria: [...(row.requirement.acceptanceCriteria || []), ''] })}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-[var(--color-accent)] bg-[var(--color-accent-subtle)]/30 hover:bg-[var(--color-accent-subtle)]/50 font-bold transition-all"
                       >

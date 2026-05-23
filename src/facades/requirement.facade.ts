@@ -1,5 +1,6 @@
 import { requirementsApi, validationRulesApi, traceabilityApi, testCasesApi } from '../api/services/requirementsApi'
 import { adaptRequirementDTO } from '../adapters/requirements.adapter'
+import { sanitizeAcceptanceCriteriaList } from '../utils/acceptanceCriteria'
 import type {
   DuplicateCheckRequest,
   DuplicateMatchResponse,
@@ -63,12 +64,15 @@ export class RequirementFacade {
    * Persists a requirement (create or update depending on backend logic).
    */
   async saveRequirement(dto: RequirementDTO): Promise<RequirementDTO> {
-    return this.api.save({
+    const normalized = {
       ...dto,
       projectId: dto.projectId.trim(),
       title: dto.title.trim(),
       description: dto.description.trim(),
-    })
+      acceptanceCriteria: sanitizeAcceptanceCriteriaList(dto.acceptanceCriteria, dto.requirementType),
+    }
+
+    return adaptRequirementDTO(await this.api.save(normalized))
   }
 
   /**
@@ -110,6 +114,7 @@ export class RequirementFacade {
         ...dto,
         projectId: dto.projectId.trim(),
         requirementType: dto.requirementType,
+        acceptanceCriteria: sanitizeAcceptanceCriteriaList(dto.acceptanceCriteria, dto.requirementType),
       }
     }
 
@@ -124,7 +129,10 @@ export class RequirementFacade {
       throw new Error('La propuesta de IA no es válida.')
     }
 
-    return adaptRequirementDTO(improved)
+    return adaptRequirementDTO({
+      ...improved,
+      acceptanceCriteria: sanitizeAcceptanceCriteriaList(improved.acceptanceCriteria, improved.requirementType),
+    })
   }
 
   /**

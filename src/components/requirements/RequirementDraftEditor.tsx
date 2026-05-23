@@ -1,5 +1,11 @@
 import React, { useState } from 'react'
 import type { RequirementDTO, NonFunctionalDetailDTO } from '../../types/requirements'
+import {
+  ACCEPTANCE_CRITERION_MAX_LENGTH,
+  clampAcceptanceCriterionValue,
+  getAcceptanceCriterionLineBreakLimit,
+  shouldBlockAcceptanceCriterionEnter,
+} from '../../utils/acceptanceCriteria'
 
 // ── Shared input style ────────────────────────────────────────────────────
 
@@ -69,12 +75,20 @@ interface CriteriaListProps {
   items: string[]
   isEditing: boolean
   onChange: (items: string[]) => void
+  maxLineBreaks?: number
+  maxLength?: number
 }
 
-export const CriteriaList: React.FC<CriteriaListProps> = ({ items, isEditing, onChange }) => {
+export const CriteriaList: React.FC<CriteriaListProps> = ({
+  items,
+  isEditing,
+  onChange,
+  maxLineBreaks = 0,
+  maxLength = ACCEPTANCE_CRITERION_MAX_LENGTH,
+}) => {
   const handleItemChange = (index: number, value: string) => {
     const newItems = [...items]
-    newItems[index] = value
+    newItems[index] = clampAcceptanceCriterionValue(value, maxLineBreaks, maxLength)
     onChange(newItems)
   }
 
@@ -118,8 +132,14 @@ export const CriteriaList: React.FC<CriteriaListProps> = ({ items, isEditing, on
                   <textarea
                     value={criterion}
                     onChange={(e) => handleItemChange(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && shouldBlockAcceptanceCriterionEnter(criterion, maxLineBreaks)) {
+                        e.preventDefault()
+                      }
+                    }}
                     placeholder="Dado que... cuando... entonces..."
                     rows={1}
+                    maxLength={maxLength}
                     className={[
                       'flex-1 text-[12.5px] px-2 py-1.5 rounded-lg leading-relaxed',
                       'bg-[var(--color-bg)] border border-[var(--color-border-strong)]',
@@ -495,6 +515,7 @@ export const RequirementDraftEditor: React.FC<RequirementDraftEditorProps> = ({
         <CriteriaList 
           items={draft.acceptanceCriteria} 
           isEditing={isEditing} 
+          maxLineBreaks={getAcceptanceCriterionLineBreakLimit(draft.requirementType)}
           onChange={(updated) => onChange({ ...draft, acceptanceCriteria: updated })}
         />
 

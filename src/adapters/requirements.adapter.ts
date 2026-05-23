@@ -5,19 +5,21 @@ import type {
   SearchResponse,
 } from '../types/requirements'
 import { normalizeNumber, normalizeString, normalizeStringArray } from './common'
+import { sanitizeAcceptanceCriteriaList } from '../utils/acceptanceCriteria'
 
 export function adaptRequirementDTO(response: Partial<RequirementDTO> | null | undefined): RequirementDTO {
+  const requirementType = response?.requirementType
   return {
     id: normalizeString(response?.id),
     code: normalizeString(response?.code),
     title: normalizeString(response?.title),
     description: normalizeString(response?.description),
     actors: normalizeStringArray(response?.actors),
-    acceptanceCriteria: normalizeStringArray(response?.acceptanceCriteria),
+    acceptanceCriteria: sanitizeAcceptanceCriteriaList(normalizeStringArray(response?.acceptanceCriteria), requirementType),
     isoClassification: normalizeString(response?.isoClassification),
     projectId: normalizeString(response?.projectId),
     relatedCodes: normalizeStringArray(response?.relatedCodes),
-    requirementType: response?.requirementType,
+    requirementType,
     nonFunctionalDetail: response?.nonFunctionalDetail
       ? {
           category: normalizeString(response.nonFunctionalDetail.category),

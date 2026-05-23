@@ -13,6 +13,7 @@ import { requirementFacade } from '../../facades/requirement.facade'
 import { qualityAnalysisApi } from '../../api/services/qualityAnalysisApi'
 import { generateNextCode } from '../../utils/requirementCodeUtils'
 import { sortRequirements } from '../../utils/requirementSortUtils'
+import { sanitizeAcceptanceCriteriaList } from '../../utils/acceptanceCriteria'
 import {
   EMPTY_FILTERS,
   buildFilterOptions,
@@ -258,7 +259,13 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   const updateRow = (localId: string, updates: Partial<RequirementDTO>) => {
     setRows(prev => prev.map(row => {
       if (row.localId === localId) {
-        const updatedReq = { ...row.requirement, ...updates }
+        const updatedReq = {
+          ...row.requirement,
+          ...updates,
+          acceptanceCriteria: updates.acceptanceCriteria
+            ? sanitizeAcceptanceCriteriaList(updates.acceptanceCriteria, updates.requirementType ?? row.requirement.requirementType)
+            : row.requirement.acceptanceCriteria,
+        }
         if ('title' in updates || 'description' in updates) {
           handleRowChangeDebounced(localId, updatedReq)
         }
@@ -303,7 +310,7 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   const handleSave = async (localId: string) => {
     const row = rows.find(r => r.localId === localId)
     if (!row) return
-    const { requirement } = row
+    const requirement = row.requirement
     if (!requirement.title.trim() || !requirement.description.trim()) {
       setRowStatus(localId, 'incomplete', 'Título y descripción requeridos')
       return
@@ -315,8 +322,12 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
         console.log("[SAVE_REQUIREMENT] saved requirement", saved.id);
         console.log("[SAVE_REQUIREMENT] updating local row only");
         setRows(prev => {
+          const normalizedSaved = {
+            ...saved,
+            acceptanceCriteria: sanitizeAcceptanceCriteriaList(saved.acceptanceCriteria, saved.requirementType),
+          }
           const updated = prev.map(r =>
-            r.localId === localId ? { ...r, requirement: saved, status: 'saved' as RowStatus, errorMessage: undefined } : r,
+            r.localId === localId ? { ...r, requirement: normalizedSaved, status: 'saved' as RowStatus, errorMessage: undefined } : r,
           )
           // Re-sort ALL rows together (drafts + saved) so newly saved items land in correct position
           const allReqs = sortRequirements(updated.map(r => r.requirement))
@@ -465,7 +476,20 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
     const { suggested, localId } = aiPreview
     setRows(prev => prev.map(r =>
       r.localId === localId
-        ? { ...r, requirement: { ...r.requirement, ...suggested, id: r.requirement.id, code: r.requirement.code }, status: 'ai_improved' }
+        ? {
+            ...r,
+            requirement: {
+              ...r.requirement,
+              ...suggested,
+              acceptanceCriteria: sanitizeAcceptanceCriteriaList(
+                suggested.acceptanceCriteria,
+                suggested.requirementType ?? r.requirement.requirementType,
+              ),
+              id: r.requirement.id,
+              code: r.requirement.code,
+            },
+            status: 'ai_improved',
+          }
         : r,
     ))
     setAiPreview(null)
