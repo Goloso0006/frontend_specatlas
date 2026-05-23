@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { EditableRequirementRow, type RowStatus } from './EditableRequirementRow'
 import { RequirementAiImprovePreview } from './RequirementAiImprovePreview'
 import { RequirementSimilarityPanel } from './RequirementSimilarityPanel'
@@ -96,6 +96,7 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   // Duplicates risk and traceability link counts states
   const [duplicateInfoMap, setDuplicateInfoMap] = useState<Map<string, { status: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'; matches: any[] }>>(new Map())
   const [traceabilityCountMap, setTraceabilityCountMap] = useState<Map<string, number>>(new Map())
+  const saveInFlightRef = useRef<Set<string>>(new Set())
 
   const getDuplicateStatus = (matches: any[]) => {
     // Filter matches to only keep relevant ones (e.g., level !== 'LOW' and similarity >= 15%)
@@ -308,14 +309,20 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
   // ── Save ─────────────────────────────────────────────────────────────────
 
   const handleSave = async (localId: string) => {
+    if (saveInFlightRef.current.has(localId)) return
     const row = rows.find(r => r.localId === localId)
     if (!row) return
+    saveInFlightRef.current.add(localId)
     const requirement = row.requirement
     if (!requirement.title.trim() || !requirement.description.trim()) {
       setRowStatus(localId, 'incomplete', 'Título y descripción requeridos')
+      saveInFlightRef.current.delete(localId)
       return
     }
     setRowStatus(localId, 'saving')
+    if (selectedLocalId === localId) {
+      setSelectedLocalId(null)
+    }
     try {
       const saved = await requirementFacade.saveRequirement({ ...requirement, id: requirement.id || '' })
       if (saved) {
@@ -340,6 +347,8 @@ export const FunctionalRequirementsTable: React.FC<FunctionalRequirementsTablePr
       }
     } catch (e: any) {
       setRowStatus(localId, 'error', e.message || 'Error de servidor')
+    } finally {
+      saveInFlightRef.current.delete(localId)
     }
   }
 

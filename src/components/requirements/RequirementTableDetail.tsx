@@ -232,13 +232,13 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
       <div className="p-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30">
         <button 
           onClick={onSave}
-          disabled={status === 'saved'}
+          disabled={status === 'saved' || status === 'saving'}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-[var(--color-accent)]/20 disabled:opacity-50 disabled:grayscale disabled:scale-100"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          {status === 'saved' ? 'Guardado' : 'Guardar ahora'}
+          {status === 'saved' ? 'Guardado' : status === 'saving' ? 'Guardando…' : 'Guardar ahora'}
         </button>
       </div>
     </div>
