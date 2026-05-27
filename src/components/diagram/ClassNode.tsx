@@ -14,21 +14,58 @@ function ClassNodeComponent({ data, selected }: NodeProps<Node<DiagramClassNodeD
   const methods = Array.isArray(data.methods) ? data.methods : []
   const enumValues = Array.isArray(data.enumValues) ? data.enumValues : []
 
+  const compactMode = !!(data as any).compactMode
+  const hideEmptySections = !!(data as any).hideEmptySections
+  const hideVisibilitySymbols = !!(data as any).hideVisibilitySymbols
+  const accentColor = data.style?.color || 'neutral'
+
+  // Map accent color to header background classes
+  const accentHeaderMap: Record<string, string> = {
+    neutral: 'bg-slate-50/80 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200',
+    gris: 'bg-slate-200/80 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200',
+    azul: 'bg-blue-50/80 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200',
+    verde: 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200',
+    dorado: 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200',
+    violeta: 'bg-purple-50/80 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200',
+    rojo: 'bg-rose-50/80 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200',
+  }
+
+  // For special UML types, use their own color regardless of accent
+  const headerBg = isInterface ? 'bg-amber-50/80 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300'
+    : isEnum ? 'bg-emerald-50/80 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300'
+    : isAbstract ? 'bg-purple-50/80 dark:bg-purple-950/20 text-purple-800 dark:text-purple-300'
+    : (accentHeaderMap[accentColor] || accentHeaderMap.neutral)
+
+  // Map accent color to border highlight
+  const accentBorderMap: Record<string, string> = {
+    neutral: 'border-slate-800 dark:border-slate-700/60 hover:border-slate-700 dark:hover:border-slate-500',
+    gris: 'border-slate-500 dark:border-slate-500',
+    azul: 'border-blue-500 dark:border-blue-500',
+    verde: 'border-emerald-500 dark:border-emerald-500',
+    dorado: 'border-amber-500 dark:border-amber-500',
+    violeta: 'border-purple-500 dark:border-purple-500',
+    rojo: 'border-rose-500 dark:border-rose-500',
+  }
+
+  const borderClass = selected
+    ? 'border-blue-500 dark:border-blue-400 shadow-[0_12px_30px_rgba(59,130,246,0.25)] z-20 scale-[1.02]'
+    : (data as any).packageId
+      ? 'border-slate-400 dark:border-slate-600 shadow-sm opacity-95'
+      : `${accentBorderMap[accentColor] || accentBorderMap.neutral} hover:shadow-lg`
+
   // Hover and selection classes for handles
   const handleTargetClass = `!w-2 !h-2 ${selected ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 hover:scale-125 !bg-blue-500 !border-0 transition-all duration-200`
   const handleSourceClass = `!w-2 !h-2 ${selected ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 hover:scale-125 !bg-emerald-500 !border-0 transition-all duration-200`
 
   const packageId = (data as any).packageId
 
+  const showAttrSection = !isInterface && !isEnum && (!hideEmptySections || attributes.length > 0)
+  const showMethodSection = !isEnum && (!hideEmptySections || methods.length > 0)
+  const showEnumSection = isEnum && (!hideEmptySections || enumValues.length > 0)
+
   return (
     <article
-      className={`group relative min-w-[220px] bg-white dark:bg-slate-900 rounded-xl border-2 transition-all duration-300 shadow-md ${
-        selected 
-          ? 'border-blue-500 dark:border-blue-400 shadow-[0_12px_30px_rgba(59,130,246,0.25)] z-20 scale-[1.02]' 
-          : packageId
-            ? 'border-slate-400 dark:border-slate-600 shadow-sm opacity-95'
-            : 'border-slate-800 dark:border-slate-700/60 hover:border-slate-700 dark:hover:border-slate-500 hover:shadow-lg'
-      }`}
+      className={`group relative min-w-[220px] bg-white dark:bg-slate-900 rounded-xl border-2 transition-all duration-300 shadow-md ${borderClass}`}
       style={{ zIndex: 10 }}
     >
       {/* Subtle compact toolbar on hover/selection */}
@@ -102,12 +139,7 @@ function ClassNodeComponent({ data, selected }: NodeProps<Node<DiagramClassNodeD
       <Handle type="source" position={Position.Bottom} id="s-bottom-right" style={{ left: '80%' }} className={handleSourceClass} />
       
       {/* Header: Stereotype & Name */}
-      <header className={`relative border-b-2 border-slate-800 dark:border-slate-700/60 px-4 py-3.5 text-center rounded-t-xl transition-colors duration-200 ${
-        isInterface ? 'bg-amber-50/80 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300' : 
-        isEnum ? 'bg-emerald-50/80 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300' : 
-        isAbstract ? 'bg-purple-50/80 dark:bg-purple-950/20 text-purple-800 dark:text-purple-300' :
-        'bg-slate-50/80 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200'
-      }`}>
+      <header className={`relative border-b-2 border-slate-800 dark:border-slate-700/60 ${compactMode ? 'px-3 py-2' : 'px-4 py-3.5'} text-center rounded-t-xl transition-colors duration-200 ${headerBg}`}>
         {packageId && (
           <span className="absolute top-2 right-2 px-1 py-0.5 rounded bg-slate-200/50 dark:bg-slate-800/60 text-[8px] text-slate-500 font-bold scale-90 opacity-70" title="Dentro de paquete">
             📦
@@ -124,13 +156,13 @@ function ClassNodeComponent({ data, selected }: NodeProps<Node<DiagramClassNodeD
       </header>
 
       {/* Attributes Section */}
-      {!isInterface && !isEnum && (
-        <section className="border-b-2 border-slate-800 dark:border-slate-700/60 px-3 py-2.5 min-h-[36px]">
+      {showAttrSection && (
+        <section className={`border-b-2 border-slate-800 dark:border-slate-700/60 ${compactMode ? 'px-2 py-1.5' : 'px-3 py-2.5'} min-h-[36px]`}>
           {attributes.length > 0 ? (
             <ul className="space-y-1.5">
               {attributes.map((attr) => (
                 <li key={attr.id} className="text-[10px] font-mono text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                  <span className="text-blue-500 font-bold w-2.5 text-center">{formatVisibility(attr.visibility)}</span>
+                  {!hideVisibilitySymbols && <span className="text-blue-500 font-bold w-2.5 text-center">{formatVisibility(attr.visibility)}</span>}
                   <span className="font-bold">{attr.name}</span>
                   <span className="text-slate-400 dark:text-slate-500">: {attr.type || 'String'}{attr.required ? ' *' : ''}</span>
                 </li>
@@ -143,8 +175,8 @@ function ClassNodeComponent({ data, selected }: NodeProps<Node<DiagramClassNodeD
       )}
 
       {/* Enum Values Section */}
-      {isEnum && (
-        <section className="border-b-2 border-slate-800 dark:border-slate-700/60 px-3 py-2.5 min-h-[36px]">
+      {showEnumSection && (
+        <section className={`border-b-2 border-slate-800 dark:border-slate-700/60 ${compactMode ? 'px-2 py-1.5' : 'px-3 py-2.5'} min-h-[36px]`}>
           {enumValues.length > 0 ? (
             <ul className="space-y-1.5 text-center">
               {enumValues.map((val) => (
@@ -160,8 +192,8 @@ function ClassNodeComponent({ data, selected }: NodeProps<Node<DiagramClassNodeD
       )}
 
       {/* Methods Section */}
-      {!isEnum && (
-        <section className="px-3 py-2.5 min-h-[36px]">
+      {showMethodSection && (
+        <section className={`${compactMode ? 'px-2 py-1.5' : 'px-3 py-2.5'} min-h-[36px]`}>
           {methods.length > 0 ? (
             <ul className="space-y-1.5">
               {methods.map((method) => {
@@ -176,7 +208,7 @@ function ClassNodeComponent({ data, selected }: NodeProps<Node<DiagramClassNodeD
 
                 return (
                   <li key={method.id} className="text-[10px] font-mono text-slate-600 dark:text-slate-300 truncate whitespace-nowrap" title={fullMethodText}>
-                    <span className="text-emerald-500 font-bold mr-1">{vis}</span>
+                    {!hideVisibilitySymbols && <span className="text-emerald-500 font-bold mr-1">{vis}</span>}
                     <span className="font-bold">{method.name}</span>
                     <span>(</span>
                     <span className="text-slate-400 dark:text-slate-500 text-[9px] font-normal">{paramsText}</span>
