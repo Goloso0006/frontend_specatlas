@@ -90,17 +90,15 @@ export function ProjectCreationModal({
             <small>{form.description.length}/240 caracteres</small>
           </label>
 
-          <label className="project-field">
-            <span>Estado inicial</span>
-            <select
-              value={form.status}
-              onChange={(event) => setForm({ ...form, status: event.target.value as ProjectRequest['status'] })}
-            >
-              <option value="ACTIVE">Activo — listo para trabajar</option>
-              <option value="DRAFT">Borrador — aún en definición</option>
-              <option value="ARCHIVED">Archivado — solo referencia</option>
-            </select>
-          </label>
+          <div className="project-field">
+            <span>Estado</span>
+            <input
+              value="🟢 Activo — listo para trabajar"
+              readOnly
+              disabled
+              style={{ opacity: 0.7, cursor: 'not-allowed', color: 'var(--color-text-secondary)' }}
+            />
+          </div>
 
           <div className="project-modal-note">
             <strong>Siguiente paso:</strong> al crear el proyecto irás directo a configurar reglas ISO y documentación inicial.
