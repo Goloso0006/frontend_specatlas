@@ -468,9 +468,12 @@ function DiagramCanvasInner({
           <Background 
             variant={gridType} 
             gap={24} 
-            size={gridType === BackgroundVariant.Lines ? 1 : 1.5} 
-            color="currentColor" 
-            className="text-slate-400/10 dark:text-slate-600/10" 
+            size={gridType === BackgroundVariant.Lines ? 1 : 1.8} 
+            color={
+              gridType === BackgroundVariant.Dots
+                ? (theme === 'dark' ? 'rgba(148, 163, 184, 0.5)' : 'rgba(100, 116, 139, 1)')
+                : (theme === 'dark' ? 'rgba(148, 163, 184, 0.13)' : 'rgba(100, 116, 139, 0.3)')
+            } 
           />
         )}
         <MiniMap
