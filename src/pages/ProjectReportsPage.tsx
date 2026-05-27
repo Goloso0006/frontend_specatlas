@@ -66,19 +66,38 @@ export default function ProjectReportsPage() {
     setActiveTab('edit')
   }
 
-  const handleSaveReport = async () => {
-    if (!projectId || !selectedReport) return
-    try {
-      const updated = await projectsApi.updateReport(projectId, selectedReport.id, {
-        title,
-        content
-      })
-      setReports(prev => prev.map(r => r.id === updated.id ? updated : r))
-      setSelectedReport(updated)
-    } catch (err) {
-      console.error('Error al guardar reporte:', err)
-    }
-  }
+  const latestDataRef = useRef({ title, content, id: selectedReport?.id });
+  useEffect(() => {
+    latestDataRef.current = { title, content, id: selectedReport?.id };
+  }, [title, content, selectedReport]);
+
+  // Guardado al salir de la página
+  useEffect(() => {
+    return () => {
+      const data = latestDataRef.current;
+      if (projectId && data.id) {
+        projectsApi.updateReport(projectId, data.id, { title: data.title, content: data.content }).catch(() => {});
+      }
+    };
+  }, [projectId]);
+
+  // Guardado automático (Debounce)
+  useEffect(() => {
+    if (!selectedReport || !projectId) return;
+    if (selectedReport.title === title && selectedReport.content === content) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const updated = await projectsApi.updateReport(projectId, selectedReport.id, { title, content });
+        setReports(prev => prev.map(r => r.id === updated.id ? updated : r));
+        setSelectedReport(updated);
+      } catch (err) {
+        console.error('Error auto-guardando:', err);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [title, content, projectId, selectedReport]);
 
   const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -360,7 +379,6 @@ export default function ProjectReportsPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  onBlur={handleSaveReport}
                   className="w-full bg-transparent text-[var(--color-text-primary)] font-extrabold text-lg focus:outline-none border-b border-transparent focus:border-[var(--color-accent)] pb-0.5 placeholder:text-[var(--color-text-muted)]"
                   placeholder="Título de la Documentación"
                 />
@@ -409,12 +427,6 @@ export default function ProjectReportsPage() {
                   📝 Word
                 </button>
 
-                <button
-                  onClick={handleSaveReport}
-                  className="p-1.5 px-3 rounded-lg bg-[var(--color-success)] hover:opacity-90 text-white font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-md"
-                >
-                  💾 Guardar
-                </button>
               </div>
             </div>
 
