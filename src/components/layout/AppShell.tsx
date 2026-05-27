@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TopNavigationBar } from './TopNavigationBar';
 
 /**
@@ -17,6 +17,18 @@ import { TopNavigationBar } from './TopNavigationBar';
 export const AppShell: React.FC<{ children: React.ReactNode; hideSidebar?: boolean }> = ({
   children,
 }) => {
+  // Prevent accidental navigation out of the app (e.g. hitting back too many times)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Most modern browsers ignore the custom string, but it is required for the dialog to show
+      e.returnValue = '¿Seguro que quieres abandonar la página? Es posible que los cambios no se guarden.';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   return (
     <div
       className="flex flex-col h-screen w-full app-text-primary overflow-hidden"

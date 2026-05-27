@@ -54,7 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     function handleSessionCleared(): void {
       setToken(null)
       setUser(null)
-      navigate('/login', { replace: true })
+      
+      // Replace the current protected route with Home in the browser history,
+      // then push the Login page. This guarantees that if the user hits "Atrás"
+      // after logging out, they go to the Home page instead of being trapped
+      // in a redirect loop from a protected route.
+      window.history.replaceState(null, '', '/')
+      navigate('/login')
     }
 
     window.addEventListener(AUTH_SESSION_CLEARED_EVENT, handleSessionCleared)

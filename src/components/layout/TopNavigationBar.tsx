@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useTheme } from '../../hooks/useTheme'
 import { useProject } from '../../context/ProjectContext'
+import { useSmartNavigate } from '../../hooks/useSmartNavigate'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -316,6 +317,7 @@ const RulesIcon = () => (
 
 export const TopNavigationBar: React.FC = () => {
   const navigate = useNavigate()
+  const smartNavigate = useSmartNavigate()
   const location = useLocation()
   const { logout } = useAuth()
   const breadcrumbs = useBreadcrumbs()
@@ -368,7 +370,7 @@ export const TopNavigationBar: React.FC = () => {
   }, [settingsOpen])
 
   function handleLogout() { logout(); navigate('/login') }
-  function handleHomeClick() { navigate('/app') }
+  function handleHomeClick() { smartNavigate('/app', { replace: true }) }
   function handleActionSelect(path: string) {
     setSettingsOpen(false)
     navigate(path)
@@ -434,7 +436,7 @@ export const TopNavigationBar: React.FC = () => {
                 <React.Fragment key={segment.path}>
                   <li className="flex-shrink-0"><Separator /></li>
                   <li className="flex-shrink-0 min-w-0">
-                    <BreadcrumbSegment segment={segment} onClick={() => !segment.isCurrent && navigate(segment.path)} />
+                    <BreadcrumbSegment segment={segment} onClick={() => !segment.isCurrent && smartNavigate(segment.path)} />
                   </li>
                 </React.Fragment>
               ))}

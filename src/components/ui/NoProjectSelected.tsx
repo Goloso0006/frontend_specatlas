@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Card } from './Card'
 import { Button } from './Button'
+import { useSmartNavigate } from '../../hooks/useSmartNavigate'
 
 interface NoProjectSelectedProps {
   /** Optional custom message */
@@ -12,7 +13,7 @@ interface NoProjectSelectedProps {
  * without one. Prompts the user to select a project from the dashboard.
  */
 export function NoProjectSelected({ message }: NoProjectSelectedProps) {
-  const navigate = useNavigate()
+  const smartNavigate = useSmartNavigate()
 
   return (
     <Card className="py-16 flex flex-col items-center justify-center text-center max-w-lg mx-auto">
@@ -25,7 +26,7 @@ export function NoProjectSelected({ message }: NoProjectSelectedProps) {
       <p className="app-text-secondary text-[15px] max-w-md mb-6">
         {message ?? 'Para acceder a este módulo necesitas seleccionar un proyecto desde el dashboard o la lista de proyectos.'}
       </p>
-      <Button onClick={() => navigate('/app')}>
+      <Button onClick={() => smartNavigate('/app')}>
         Ir al Dashboard
       </Button>
     </Card>

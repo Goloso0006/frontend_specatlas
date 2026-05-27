@@ -2,6 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { diagramFacade } from '../facades/diagram.facade'
 import { useApiOperation } from '../hooks/useLoadingError'
 import { useAutoResourceLoader } from '../hooks/useResourceLoader'
+import { useSmartNavigate } from '../hooks/useSmartNavigate'
 import { isValidProjectId } from '../context/ProjectContext'
 import { NoProjectSelected } from '../components/ui/NoProjectSelected'
 import { SavedDiagramCard } from '../components/diagram/SavedDiagramCard'
@@ -16,6 +17,7 @@ interface DiagramTypeDetailPageProps {
 export function DiagramTypeDetailPage({ type }: DiagramTypeDetailPageProps) {
   const { projectId } = useParams()
   const navigate = useNavigate()
+  const smartNavigate = useSmartNavigate()
   const { run, isLoading } = useApiOperation()
 
   const diagramsResource = useAutoResourceLoader(
@@ -129,7 +131,7 @@ export function DiagramTypeDetailPage({ type }: DiagramTypeDetailPageProps) {
       <header className="px-8 py-10 border-b border-[var(--color-border)] bg-[var(--color-bg-card)]/30">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-text-muted)] mb-4">
-            <Link to="/app" className="hover:text-[var(--color-accent)] transition-colors">Home</Link>
+            <button type="button" onClick={() => smartNavigate('/app')} className="hover:text-[var(--color-accent)] transition-colors">Home</button>
             <span>/</span>
             <Link to={`/app/projects/${projectId}`} className="hover:text-[var(--color-accent)] transition-colors">Proyecto</Link>
             <span>/</span>

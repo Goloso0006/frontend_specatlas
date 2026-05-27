@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { useAuth } from '../auth/useAuth'
 import DustParticles from '../components/ui/DustParticles'
 import FlipCard from '../components/ui/FlipCard'
 import { Button } from '../components/ui/Button'
@@ -48,7 +49,12 @@ const memories = [
 ]
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuth()
   const { show, hide } = usePreloader()
+
+  if (isAuthenticated) {
+    return <Navigate to="/app" replace />
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[var(--color-bg)] text-[var(--color-text-primary)] antialiased">
