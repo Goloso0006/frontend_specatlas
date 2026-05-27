@@ -918,12 +918,13 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
   const deltaX = (maxX - minX) || 1
   const deltaY = (maxY - minY) || 1
 
+  const padding = 120;
+
   const getNodeCoords = (node: DiagramNodeDTO) => {
     const x = node.position?.x ?? 0
     const y = node.position?.y ?? 0
-    // Scale coordinate cleanly from 15% to 85% to avoid hugging container borders
-    const left = 15 + ((x - minX) / deltaX) * 70
-    const top = 15 + ((y - minY) / deltaY) * 70
+    const left = (x - minX) + padding
+    const top = (y - minY) + padding
     return { left, top }
   }
 
@@ -931,13 +932,13 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
     <div className="p-6 bg-[var(--color-bg-secondary)]/30 space-y-6 print:bg-white print:text-black print:p-0">
       
       {/* Visual Canvas Redesign */}
-      <div data-diagram-id={diagramId} className="exportable-diagram-canvas relative w-full h-[380px] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-3xl overflow-hidden shadow-inner flex items-center justify-center print:border-black print:h-auto print:py-8 print:bg-slate-50">
-        
-        {/* Dot grid background */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle,_var(--color-border-strong)_1px,_transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-50 print:hidden" />
-        
-        {/* SVG connection edges */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+      <div data-diagram-id={diagramId} className="exportable-diagram-canvas relative w-full h-[500px] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-3xl overflow-auto shadow-inner print:border-black print:h-auto print:bg-slate-50 print:overflow-visible custom-scrollbar">
+        <div style={{ width: Math.max(800, deltaX + padding * 2), height: Math.max(500, deltaY + padding * 2) }} className="relative mx-auto origin-top-left print:origin-top-left print:scale-[0.65] print:w-full print:h-auto">
+          {/* Dot grid background */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle,_var(--color-border-strong)_1px,_transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-50 print:hidden" />
+          
+          {/* SVG connection edges */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M 0 1.5 L 10 5 L 0 8.5 z" className="fill-[var(--color-accent)] opacity-60 print:fill-black print:opacity-100" />
@@ -954,10 +955,10 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
             return (
               <g key={rel.id || index}>
                 <line
-                  x1={`${sourceCoords.left}%`}
-                  y1={`${sourceCoords.top}%`}
-                  x2={`${targetCoords.left}%`}
-                  y2={`${targetCoords.top}%`}
+                  x1={sourceCoords.left}
+                  y1={sourceCoords.top}
+                  x2={targetCoords.left}
+                  y2={targetCoords.top}
                   className="stroke-[var(--color-accent)] stroke-[1.5px] opacity-60 print:stroke-black print:opacity-100"
                   strokeDasharray="4 4"
                   markerEnd="url(#arrow)"
@@ -993,8 +994,8 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
                 key={node.id}
                 style={{
                   position: 'absolute',
-                  left: `${coords.left}%`,
-                  top: `${coords.top}%`,
+                  left: `${coords.left}px`,
+                  top: `${coords.top}px`,
                   transform: 'translate(-50%, -50%)',
                 }}
                 className={`transition-all select-none print:bg-white print:border-black print:text-black z-20 ${
@@ -1067,6 +1068,7 @@ function LiveDiagramPreview({ diagramId }: { diagramId: string }) {
             )
           })
         )}
+        </div>
       </div>
 
       {/* Detail Summary Cards */}
