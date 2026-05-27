@@ -412,20 +412,20 @@ export default function ProjectReportsPage() {
                 <div className="h-4 w-px bg-[var(--color-border)]" />
 
                 {/* Exports */}
-                <button
-                  onClick={handleExportPDF}
-                  className="p-1.5 px-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
-                  title="Imprimir o Guardar como PDF"
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'pdf') handleExportPDF();
+                    if (val === 'word') handleExportWord();
+                    e.target.value = '';
+                  }}
+                  className="p-1.5 pl-3 pr-8 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs transition-all cursor-pointer outline-none focus:border-[var(--color-accent)]"
                 >
-                  📄 PDF
-                </button>
-                <button
-                  onClick={handleExportWord}
-                  className="p-1.5 px-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs flex items-center gap-1 transition-all active:scale-95"
-                  title="Exportar a Microsoft Word"
-                >
-                  📝 Word
-                </button>
+                  <option value="" disabled hidden>📤 Exportar</option>
+                  <option value="pdf">📄 PDF</option>
+                  <option value="word">📝 Word</option>
+                </select>
 
               </div>
             </div>
