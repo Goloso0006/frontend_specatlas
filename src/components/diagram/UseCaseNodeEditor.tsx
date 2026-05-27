@@ -161,7 +161,7 @@ export function UseCaseNodeEditor({
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block font-bold">Color de Acento</label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 px-1">
                 {[
                   { label: 'Neutral', value: 'neutral' },
                   { label: 'Azul', value: 'azul' },
