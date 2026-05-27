@@ -10,7 +10,6 @@ export function CreateProjectCard({ onClick }: CreateProjectCardProps) {
       className="project-card-surface group relative flex h-64 w-full flex-col justify-between overflow-hidden p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
       aria-label="Crear nuevo proyecto"
     >
-      <div className="absolute inset-x-5 top-5 h-px bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-border)] to-transparent opacity-50" />
       <div className="relative z-10">
         <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-accent-subtle)] text-[var(--color-accent)] transition group-hover:scale-105">
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
