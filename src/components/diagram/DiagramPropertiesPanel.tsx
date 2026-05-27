@@ -55,7 +55,7 @@ export function DiagramPropertiesPanel({
     <>
       {/* Panel Lateral de Propiedades */}
       <aside
-        className={`absolute right-4 top-4 bottom-4 z-30 w-80 transition-all duration-300 ease-in-out transform ${
+        className={`absolute right-4 top-4 bottom-4 z-30 w-99 transition-all duration-300 ease-in-out transform ${
           isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0 pointer-events-none'
         }`}
       >
