@@ -164,13 +164,23 @@ export default function ProjectReportsPage() {
 
   // Exports
   const handleExportPDF = () => {
+    // Because the preview is always rendered and visible via print:block,
+    // we can just print directly without switching tabs.
     window.print()
   }
 
   const handleExportWord = async () => {
     if (!selectedReport) return
     
-    // Quick HTML representation to wrap as MS Word
+    const wasEdit = activeTab === 'edit'
+    if (wasEdit) {
+      setActiveTab('preview')
+      // Wait for layout to update so html2canvas can read dimensions
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    try {
+      // Quick HTML representation to wrap as MS Word
     const htmlHeader = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><title>${title}</title>
@@ -271,16 +281,21 @@ export default function ProjectReportsPage() {
       .replace(/^\- (.*$)/gim, '<li>$1</li>')
       .replace(/\n/g, '<br />')
 
-    const fileContent = htmlHeader + `<h1>${title}</h1>` + formattedBody + htmlFooter
-    const blob = new Blob([fileContent], { type: 'application/msword' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${title.toLowerCase().replace(/\s+/g, '_')}_specatlas.doc`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+      const fileContent = htmlHeader + `<h1>${title}</h1>` + formattedBody + htmlFooter
+      const blob = new Blob([fileContent], { type: 'application/msword' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${title.toLowerCase().replace(/\s+/g, '_')}_specatlas.doc`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally {
+      if (wasEdit) {
+        setActiveTab('edit')
+      }
+    }
   }
 
   return (
@@ -432,10 +447,10 @@ export default function ProjectReportsPage() {
 
             {/* Content Area */}
             <div className="flex-1 overflow-hidden relative print-content">
-              {activeTab === 'edit' ? (
-                <div className="h-full flex flex-col">
-                  {/* Rich Editing Bar */}
-                  <div className="p-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center gap-1.5 rich-bar overflow-x-auto">
+              {/* EDIT TAB */}
+              <div className={`h-full flex flex-col no-print ${activeTab === 'edit' ? 'flex' : 'hidden'}`}>
+                {/* Rich Editing Bar */}
+                <div className="p-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center gap-1.5 rich-bar overflow-x-auto">
                     <button
                       onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA}}')}
                       className="p-1.5 px-3 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/30 text-[var(--color-accent)] hover:opacity-80 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
@@ -478,17 +493,17 @@ export default function ProjectReportsPage() {
                     className="flex-1 w-full bg-[var(--color-bg)] border-none outline-none resize-none p-6 text-sm text-[var(--color-text-secondary)] font-mono leading-relaxed placeholder:text-[var(--color-text-muted)] custom-scrollbar"
                     placeholder="# Escribe aquí en formato Markdown...&#10;&#10;Escribe /// en cualquier parte del documento para insertar requerimientos, diagramas del proyecto o enlaces dinámicos."
                   />
+              </div>
+
+              {/* PREVIEW TAB */}
+              <div className={`h-full overflow-y-auto p-8 leading-relaxed custom-scrollbar bg-[var(--color-bg)] print:bg-white print:text-black print:p-0 ${activeTab === 'preview' ? 'block' : 'hidden print:block'}`}>
+                <div className="max-w-4xl mx-auto space-y-6 print:max-w-full">
+                  <h1 className="text-2xl font-black text-[var(--color-text-primary)] pb-3 border-b border-[var(--color-border)] print:text-black print:border-black">
+                    {title}
+                  </h1>
+                  <LiveDocumentRenderer content={content} projectId={projectId || ''} />
                 </div>
-              ) : (
-                <div className="h-full overflow-y-auto p-8 leading-relaxed custom-scrollbar bg-[var(--color-bg)] print:bg-white print:text-black print:p-0">
-                  <div className="max-w-4xl mx-auto space-y-6 print:max-w-full">
-                    <h1 className="text-2xl font-black text-[var(--color-text-primary)] pb-3 border-b border-[var(--color-border)] print:text-black print:border-black">
-                      {title}
-                    </h1>
-                    <LiveDocumentRenderer content={content} projectId={projectId || ''} />
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         ) : (
