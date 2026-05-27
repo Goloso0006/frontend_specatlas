@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { Card } from './Card'
 import { Button } from './Button'
 import { useSmartNavigate } from '../../hooks/useSmartNavigate'
