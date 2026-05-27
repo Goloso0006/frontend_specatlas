@@ -84,7 +84,7 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
               onChange={(e) => onUpdate({ title: e.target.value })}
               placeholder="Escribe el título del requisito..."
               maxLength={100}
-              className="w-full px-3 py-2 text-sm font-semibold bg-[var(--color-surface)]/20 border border-[var(--color-border)] focus:border-[var(--color-accent)]/50 focus:ring-0 rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/30 transition-all"
+              className="w-full px-3 py-2 text-sm font-semibold bg-[var(--color-surface)]/20 border border-[var(--color-border)] outline-none focus:outline-none focus:border-[var(--color-accent)]/50 focus:ring-0 rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/30 transition-all"
             />
           </div>
           <span className={`block text-right text-[9px] font-mono mt-1 ${
@@ -104,7 +104,7 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
               placeholder="Describe detalladamente la funcionalidad del requisito..."
               rows={5}
               maxLength={500}
-              className="w-full text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 focus:ring-0 resize-y leading-relaxed placeholder:text-[var(--color-text-muted)]/30"
+              className="w-full text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 outline-none focus:outline-none focus:ring-0 resize-y leading-relaxed placeholder:text-[var(--color-text-muted)]/30"
             />
           </div>
           <span className={`block text-right text-[9px] font-mono mt-1 ${
@@ -144,7 +144,7 @@ export const RequirementTableDetail: React.FC<RequirementTableDetailProps> = ({
                     placeholder="Dado que... cuando... entonces..."
                     rows={1}
                     maxLength={ACCEPTANCE_CRITERION_MAX_LENGTH}
-                    className="flex-1 text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 focus:ring-0 resize-none overflow-hidden leading-relaxed h-auto"
+                    className="flex-1 text-[13px] text-[var(--color-text-secondary)] focus:text-[var(--color-text-primary)] bg-transparent border-0 p-0 outline-none focus:outline-none focus:ring-0 resize-none overflow-hidden leading-relaxed h-auto"
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement
                       target.style.height = 'auto'
