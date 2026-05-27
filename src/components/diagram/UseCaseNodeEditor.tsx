@@ -99,6 +99,7 @@ export function UseCaseNodeEditor({
               value={node.name}
               onChange={(e) => onChange({ ...node, name: e.target.value })}
               placeholder={isActor ? 'Ej: Cliente' : 'Ej: Reservar cita'}
+              maxLength={50}
             />
             
             <div className="space-y-1">
@@ -110,6 +111,7 @@ export function UseCaseNodeEditor({
                 value={node.description || ''}
                 onChange={(e) => onChange({ ...node, description: e.target.value })}
                 placeholder={isActor ? 'Describe quién es este actor...' : 'Describe qué hace este caso de uso...'}
+                maxLength={100}
               />
             </div>
           </div>
@@ -124,6 +126,7 @@ export function UseCaseNodeEditor({
                 onChange={e => setNewRequirementCode(e.target.value)}
                 placeholder="Ej. RF-001"
                 className="flex-1"
+                maxLength={20}
               />
               <div className="flex items-end pb-0.5">
                 <Button onClick={handleAddRequirement} disabled={!newRequirementCode.trim()}>

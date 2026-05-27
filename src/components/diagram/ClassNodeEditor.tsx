@@ -176,6 +176,7 @@ export function ClassNodeEditor({
               label="Nombre de la clase"
               value={node.name}
               onChange={(e) => onChange({ ...node, name: e.target.value })}
+              maxLength={50}
             />
 
             <div className="space-y-1">
@@ -185,6 +186,7 @@ export function ClassNodeEditor({
                 value={(node as any).description || ''}
                 onChange={(e) => onChange({ ...node, description: e.target.value } as any)}
                 placeholder="Descripción o estereotipo..."
+                maxLength={100}
               />
             </div>
 
@@ -493,7 +495,7 @@ function AttributeForm({ attribute, availableEnums, onBack, onSave }: any) {
       </header>
       
       <div className="space-y-3">
-        <Input label="Nombre" value={data.name} onChange={e => setData({...data, name: e.target.value})} placeholder="ej. email" autoFocus />
+        <Input label="Nombre" value={data.name} onChange={e => setData({...data, name: e.target.value})} placeholder="ej. email" autoFocus maxLength={50} />
         
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Visibilidad</label>
@@ -660,7 +662,7 @@ function MethodForm({ method, availableEnums, onBack, onSave }: any) {
       </header>
       
       <div className="space-y-3">
-        <Input label="Nombre" value={data.name} onChange={e => setData({...data, name: e.target.value})} placeholder="ej. login" autoFocus />
+        <Input label="Nombre" value={data.name} onChange={e => setData({...data, name: e.target.value})} placeholder="ej. login" autoFocus maxLength={50} />
         
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Visibilidad</label>
@@ -677,7 +679,7 @@ function MethodForm({ method, availableEnums, onBack, onSave }: any) {
           </div>
         </div>
 
-        <Input label="Parámetros" value={data.paramStr} onChange={e => setData({...data, paramStr: e.target.value})} placeholder="ej. email: String, key: UUID" />
+        <Input label="Parámetros" value={data.paramStr} onChange={e => setData({...data, paramStr: e.target.value})} placeholder="ej. email: String, key: UUID" maxLength={150} />
         
         <DataTypeSelector label="Retorno" value={data.returnType} enums={availableEnums} onChange={val => setData({...data, returnType: val})} />
 
@@ -726,6 +728,7 @@ function EnumValuesPanel({ values, onAdd, onChange }: any) {
           <div key={v.id} className="flex items-center gap-2 p-1.5 rounded-xl border border-slate-150 dark:border-slate-700/60 bg-zinc-50 dark:bg-slate-800/40 group transition-all focus-within:border-blue-500">
             <input
               className="flex-1 bg-transparent border-none focus:ring-0 p-0.5 text-xs font-mono font-bold uppercase placeholder:opacity-50 text-slate-700 dark:text-slate-200 outline-none"
+              maxLength={100}
               value={v.name}
               onChange={(e) => update(v.id, e.target.value)}
               placeholder="VALOR_ENUM"
@@ -788,6 +791,7 @@ function DataTypeSelector({ value, enums, onChange, label = 'Tipo de dato' }: { 
           onChange={(e) => onChange(e.target.value)}
           placeholder="Ej. MiClase, Map<String, Object>"
           autoFocus
+          maxLength={30}
         />
       )}
     </div>
