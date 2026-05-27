@@ -81,6 +81,10 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
         else if (path === `${reqBase}/legacy`) {
           segments.push({ label: 'Legado', path: `${reqBase}/legacy`, isCurrent: true })
         }
+        // Map branch
+        else if (path === `${reqBase}/map`) {
+          segments.push({ label: 'Mapa de requisitos', path: `${reqBase}/map`, isCurrent: true })
+        }
       }
     }
     // ── Diagrams navigation flow ──────────────────────────────────
@@ -132,6 +136,8 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
           segments.push({ label: activeName, path: path, isCurrent: true })
         }
       }
+    } else if (path === `${base}/reports`) {
+      segments.push({ label: 'Documentación', path: `${base}/reports`, isCurrent: true })
     } else if (path === `${base}/validation-rules`) {
       segments.push({ label: 'Reglas', path: `${base}/validation-rules`, isCurrent: true })
     } else if (path === `${base}/info`) {

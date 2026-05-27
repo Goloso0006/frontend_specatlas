@@ -73,7 +73,7 @@ export function ProjectWorkspacePage() {
       path: `/app/projects/${project.id}/diagrams`
     },
     {
-      title: 'Documentación Viva',
+      title: 'Documentación',
       description: 'Crea reportes y especificaciones de ingeniería con tablas vivas sincronizadas en tiempo real.',
       icon: (
         <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
