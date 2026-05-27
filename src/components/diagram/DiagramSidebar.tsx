@@ -84,12 +84,14 @@ export function DiagramSidebar({
     }
   }, [isUseCase, editorTarget, projectId])
 
+  const originalNodeRef = useRef<DiagramNodeDTO | null>(null)
   const prevSelectedNodeIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     // Only reset draftNode and hasChanges when switching to a DIFFERENT node
     if (selectedNode?.id !== prevSelectedNodeIdRef.current) {
       setDraftNode(selectedNode)
+      originalNodeRef.current = selectedNode ? JSON.parse(JSON.stringify(selectedNode)) : null
       setHasChanges(false)
       setFeedbackMessage(null)
       setIsSubScreen(false)
@@ -104,11 +106,23 @@ export function DiagramSidebar({
     }
   }, [selectedNode, draftNode])
 
+  const originalEdgeRef = useRef<DiagramRelationDTO | null>(null)
+  const prevSelectedEdgeIdRef = useRef<string | null>(null)
+
   useEffect(() => {
-    setDraftEdge(selectedEdge)
-    setHasChanges(false)
-    setFeedbackMessage(null)
-  }, [selectedEdge?.id, selectedEdge])
+    if (selectedEdge?.id !== prevSelectedEdgeIdRef.current) {
+      setDraftEdge(selectedEdge)
+      originalEdgeRef.current = selectedEdge ? JSON.parse(JSON.stringify(selectedEdge)) : null
+      setHasChanges(false)
+      setFeedbackMessage(null)
+      prevSelectedEdgeIdRef.current = selectedEdge?.id ?? null
+    } else {
+      if (selectedEdge && JSON.stringify(selectedEdge) !== JSON.stringify(draftEdge)) {
+        setDraftEdge(selectedEdge)
+        setHasChanges(false)
+      }
+    }
+  }, [selectedEdge, draftEdge])
 
   const showTemporaryFeedback = (type: 'success' | 'info', text: string) => {
     setFeedbackMessage({ type, text })
@@ -136,31 +150,21 @@ export function DiagramSidebar({
     onUpdateEdge(updated)
   }
 
-  const applyNodeChanges = () => {
-    if (draftNode) {
-      onUpdateNode(draftNode)
-      setHasChanges(false)
-      showTemporaryFeedback('success', 'Cambios aplicados correctamente')
-    }
-  }
-
-  const applyEdgeChanges = () => {
-    if (draftEdge) {
-      onUpdateEdge(draftEdge)
-      setHasChanges(false)
-      showTemporaryFeedback('success', 'Cambios aplicados correctamente')
-    }
-  }
-
   const discardNodeChanges = () => {
-    setDraftNode(selectedNode)
+    if (originalNodeRef.current) {
+      setDraftNode(originalNodeRef.current)
+      onUpdateNode(originalNodeRef.current)
+    }
     setHasChanges(false)
     setFeedbackMessage(null)
     showTemporaryFeedback('info', 'Cambios descartados')
   }
 
   const discardEdgeChanges = () => {
-    setDraftEdge(selectedEdge)
+    if (originalEdgeRef.current) {
+      setDraftEdge(originalEdgeRef.current)
+      onUpdateEdge(originalEdgeRef.current)
+    }
     setHasChanges(false)
     setFeedbackMessage(null)
     showTemporaryFeedback('info', 'Cambios descartados')
@@ -334,11 +338,6 @@ export function DiagramSidebar({
                 {isClass ? 'Clase' : draftNode.kind === 'actor' ? 'Actor' : 'Caso de uso'}
               </p>
             </div>
-            {hasChanges && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 shrink-0">
-                Sin aplicar
-              </span>
-            )}
           </div>
 
           {onClose && (
@@ -536,28 +535,18 @@ export function DiagramSidebar({
               >
                 Eliminar
               </Button>
-              {hasChanges && (
-                <Button
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={discardNodeChanges}
-                >
-                  Descartar
-                </Button>
-              )}
               <Button
-                className={`flex-1 ${!hasChanges ? 'opacity-70' : ''}`}
-                onClick={applyNodeChanges}
+                variant="secondary"
+                className={`flex-1 ${!hasChanges ? 'opacity-50' : ''}`}
+                onClick={discardNodeChanges}
                 disabled={!hasChanges}
               >
-                Aplicar cambios
+                Descartar
               </Button>
             </div>
 
             <p className="text-[11px] text-center text-zinc-400 dark:text-zinc-500">
-              {hasChanges
-                ? 'Tienes cambios pendientes. Aplica o descarta para continuar.'
-                : 'Modifica los campos para editar el elemento.'}
+              Modifica los campos para editar el elemento.
             </p>
           </div>
         )}
@@ -590,11 +579,6 @@ export function DiagramSidebar({
                 Relación entre elementos
               </p>
             </div>
-            {hasChanges && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 shrink-0">
-                Sin aplicar
-              </span>
-            )}
           </div>
 
           {onClose && (
@@ -656,21 +640,13 @@ export function DiagramSidebar({
             >
               Eliminar relación
             </Button>
-            {hasChanges && (
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={discardEdgeChanges}
-              >
-                Descartar
-              </Button>
-            )}
             <Button
-              className={`flex-1 ${!hasChanges ? 'opacity-70' : ''}`}
-              onClick={applyEdgeChanges}
+              variant="secondary"
+              className={`flex-1 ${!hasChanges ? 'opacity-50' : ''}`}
+              onClick={discardEdgeChanges}
               disabled={!hasChanges}
             >
-              Aplicar cambios
+              Descartar
             </Button>
           </div>
         </div>
