@@ -101,7 +101,7 @@ export function ProjectMapPage() {
               onClick={handleUpdate}
               disabled={mapResource.isLoading}
               title="Actualiza el mapa (solicita al servicio/IA)"
-              className="ml-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-[var(--color-accent)] text-[var(--color-accent-foreground)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-accent-hover)] shadow-[0_4px_14px_rgba(114,87,53,0.2)] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="ml-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-app-accent text-app-accent-foreground cursor-pointer transition-all duration-200 hover:bg-app-accent-hover shadow-[0_4px_14px_rgba(114,87,53,0.2)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Actualizar
             </button>
