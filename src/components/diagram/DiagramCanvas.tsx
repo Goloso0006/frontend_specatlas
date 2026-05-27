@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useEffect, useState, useMemo } from 'react'
+import { useTheme } from '../../hooks/useTheme'
 
 import { DiagramEditorEmptyState } from './DiagramEditorEmptyState'
 import { ClassNode } from './ClassNode'
@@ -130,6 +131,7 @@ function DiagramCanvasInner({
   onAddActor,
 }: DiagramCanvasProps) {
   const { fitView, zoomTo, setCenter, getNodes, screenToFlowPosition } = useReactFlow()
+  const { theme } = useTheme()
 
   // 1. Local/Saved preferences
   const [gridType, setGridType] = useState<BackgroundVariant>(() => {
@@ -452,7 +454,7 @@ function DiagramCanvasInner({
         edgesReconnectable={true}
         minZoom={0.02}
         maxZoom={2.0}
-        colorMode="dark"
+        colorMode={theme === 'dark' ? 'dark' : 'light'}
         elevateEdgesOnSelect={false}
         elevateNodesOnSelect={false}
         defaultEdgeOptions={{
@@ -478,7 +480,7 @@ function DiagramCanvasInner({
             if (n.type === 'actorNode') return '#10b981'
             return '#6366f1'
           }}
-          maskColor="rgba(15, 23, 42, 0.4)"
+          maskColor={theme === 'dark' ? 'rgba(15, 23, 42, 0.4)' : 'rgba(244, 244, 242, 0.6)'}
           style={{
             backgroundColor: 'var(--color-bg-card)',
             borderRadius: '16px',

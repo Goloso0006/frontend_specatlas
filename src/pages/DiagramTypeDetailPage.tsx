@@ -153,16 +153,22 @@ export function DiagramTypeDetailPage({ type }: DiagramTypeDetailPageProps) {
         {config.isActive ? (
           <>
             {/* ── Featured Creation Card ── */}
-            <div className="relative overflow-hidden p-8 rounded-2xl border border-[var(--color-border-strong)] bg-gradient-to-br from-[var(--color-bg-card)] via-[var(--color-surface)] to-[var(--color-bg-card)] shadow-lg">
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="relative overflow-hidden p-8 md:p-10 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-bg-card)] shadow-[0_2px_24px_rgba(0,0,0,0.04)]">
+              {/* Subtle gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent)]/[0.03] via-transparent to-[var(--color-accent)]/[0.06] pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] text-[11px] font-semibold uppercase tracking-wider">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
+                    Nuevo diagrama
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
                     Crear nuevo {config.title.toLowerCase()}
                   </h2>
-                  <p className="text-sm text-[var(--color-text-secondary)] max-w-xl">
+                  <p className="text-sm text-[var(--color-text-secondary)] max-w-xl leading-relaxed">
                     Comienza a modelar tus requisitos de forma visual. Puedes diseñar el diagrama desde cero o dejar que SpecAtlas use la IA para estructurar el modelo basándose en tus requisitos existentes.
                   </p>
                 </div>
@@ -170,26 +176,32 @@ export function DiagramTypeDetailPage({ type }: DiagramTypeDetailPageProps) {
                   <Button
                     variant="secondary"
                     onClick={handleCreateNew}
-                    className="h-11 px-6 text-sm font-semibold border-[var(--color-border-strong)]"
+                    className="h-11 px-6 text-sm font-semibold border-[var(--color-border-strong)] !shadow-none"
                   >
-                    Crear Manualmente
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Crear Manualmente
+                    </span>
                   </Button>
                   <Button
                     onClick={handleGenerateIA}
-                    className="h-11 px-6 text-sm font-semibold bg-[var(--color-accent)] hover:opacity-90 text-[var(--color-accent-foreground)]"
+                    className="h-11 px-6 text-sm font-semibold bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] !shadow-none"
                   >
                     <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6A4.997 4.997 0 0 1 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.09-2.15 3.9z"/>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                       Generar con IA
                     </span>
                   </Button>
                 </div>
               </div>
-              <div className="absolute right-0 bottom-0 opacity-[0.03] text-[var(--color-text-primary)] pointer-events-none transform translate-y-6 translate-x-6">
-                <svg className="w-64 h-64" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M4 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              {/* Decorative background element */}
+              <div className="absolute -right-6 -bottom-6 opacity-[0.03] text-[var(--color-text-primary)] pointer-events-none">
+                <svg className="w-56 h-56" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
             </div>
