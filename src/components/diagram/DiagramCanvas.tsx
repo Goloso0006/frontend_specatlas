@@ -460,7 +460,7 @@ function DiagramCanvasInner({
         defaultEdgeOptions={{
           type: 'smoothstep',
           animated: false,
-          zIndex: 1000,
+          zIndex: 0,
         }}
       >
         <UmlMarkers />

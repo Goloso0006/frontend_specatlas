@@ -87,7 +87,13 @@ export function DiagramHeader({
           </svg>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 text-xs text-(--color-text-muted)">
+          <span className="hover:text-(--color-text-primary) cursor-pointer" onClick={() => navigate(`/app/projects/${projectId}`)}>Proyecto</span>
+          <span>/</span>
+          <span className="hover:text-(--color-text-primary) cursor-pointer" onClick={() => navigate(`/app/projects/${projectId}/diagrams/${diagramType === 'CLASS' ? 'class' : 'use-case'}`)}>
+            {diagramType === 'CLASS' ? 'Clases' : 'Casos de Uso'}
+          </span>
+          <span>/</span>
           <input
             className="bg-transparent border-b border-transparent hover:border-(--color-border) focus:border-(--color-accent) text-xs font-semibold text-(--color-text-primary) focus:outline-none px-1 py-0.5 transition-colors w-40"
             value={diagramName}

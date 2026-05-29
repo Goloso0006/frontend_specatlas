@@ -414,7 +414,7 @@ export function diagramSourceToReactFlow(source: DiagramSourceDTO): {
       type: edge.type || (source.diagramType === 'USE_CASE' ? 'useCaseEdge' : 'umlEdge'),
       data: edge,
       label: edge.data?.label || '',
-      zIndex: 1000, // edges always above nodes
+      zIndex: 0, // edges always behind nodes
     })),
   }
 }

@@ -1010,7 +1010,21 @@ export function useDiagramEditorController(): DiagramEditorController {
       ? () => diagramFacade.generateClassDiagram(projectId.trim())
       : () => diagramFacade.generateUseCaseDiagram(projectId.trim())
 
-    const data = await run(generator)
+    let data = null
+    let retries = 0
+    const maxRetries = 2
+
+    while (retries <= maxRetries) {
+      data = await run(generator)
+      if (data) break
+      
+      retries++
+      if (retries <= maxRetries) {
+        showFeedback('info', `La IA tardó en responder. Reintentando... (${retries}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, 2000 * retries))
+      }
+    }
+
     if (data) {
       setAiResponse(data)
       const source = parseDiagramSource(data.sourceJson)
@@ -1029,8 +1043,13 @@ export function useDiagramEditorController(): DiagramEditorController {
   function handleApplyAiReplace() {
     if (!aiProposal) return
     captureHistorySnapshot('Reemplazar con propuesta IA')
-    setNodes(convertAiNodes(aiProposal))
-    setEdges(convertAiEdges(aiProposal))
+    
+    const newNodes = convertAiNodes(aiProposal)
+    const newEdges = convertAiEdges(aiProposal)
+    const laidOutNodes = autoLayoutDiagram(newNodes, newEdges, diagramType)
+    
+    setNodes(laidOutNodes)
+    setEdges(newEdges)
     setShowAiModal(false)
     setAiProposal(null)
 
@@ -1061,7 +1080,10 @@ export function useDiagramEditorController(): DiagramEditorController {
     const currentSource = reactFlowToDiagramSource(nodes, edges, diagramType)
     const result = mergeDiagramSources(currentSource, aiProposal)
     const flow = diagramSourceToReactFlow({ ...currentSource, nodes: result.nodes, edges: result.edges })
-    setNodes(flow.nodes)
+    
+    const laidOutNodes = autoLayoutDiagram(flow.nodes, flow.edges, diagramType)
+    
+    setNodes(laidOutNodes)
     setEdges(flow.edges)
     setShowAiModal(false)
     setAiProposal(null)
