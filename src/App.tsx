@@ -27,6 +27,7 @@ import { ProjectDiagramsPage } from './pages/ProjectDiagramsPage'
 import { DiagramTypeDetailPage } from './pages/DiagramTypeDetailPage'
 import { ProjectMapPage } from './pages/ProjectMapPage'
 import ProjectReportsPage from './pages/ProjectReportsPage'
+import { PlaybackWorkshopPage } from './pages/PlaybackWorkshopPage'
 
 function App() {
   useTheme()
@@ -148,6 +149,9 @@ function App() {
         } />
         <Route path="/app/projects/:projectId/validation-rules" element={<AppShell hideSidebar><ValidationRulesPage /></AppShell>} />
         <Route path="/app/projects/:projectId/reports" element={<AppShell><ProjectReportsPage /></AppShell>} />
+
+        {/* Global Playback Workshop */}
+        <Route path="/app/playback-workshop" element={<AppShell hideSidebar><PlaybackWorkshopPage /></AppShell>} />
 
         {/* Legacy / Direct access */}
         <Route path="/app/projects" element={<Navigate to="/app" replace />} />
