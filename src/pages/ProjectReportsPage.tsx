@@ -23,6 +23,8 @@ export default function ProjectReportsPage() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const [projectDiagrams, setProjectDiagrams] = useState<DiagramSummaryResponse[]>([])
   const [isLoadingDiagrams, setIsLoadingDiagrams] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const exportCancelledRef = useRef(false)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -477,6 +479,80 @@ export default function ProjectReportsPage() {
   const handleExportPDF = async () => {
     if (!selectedReport || !projectId) return
 
+    // Prevent double triggers and show loader
+    if (isExporting) return
+    setIsExporting(true)
+    exportCancelledRef.current = false
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700')
+    if (!printWindow) {
+      setIsExporting(false)
+      throw new Error('No se pudo abrir la ventana de impresión')
+    }
+
+    const renderLoadingScreen = () => {
+      printWindow.document.open()
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Generando PDF...</title>
+            <style>
+              body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: Arial, sans-serif;
+                background: #f8fafc;
+                color: #1f2937;
+              }
+              .card {
+                padding: 24px 28px;
+                border: 1px solid #d1d5db;
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+                background: white;
+                text-align: center;
+                min-width: 280px;
+              }
+              .spinner {
+                width: 40px;
+                height: 40px;
+                margin: 0 auto 14px;
+                border: 4px solid #c7d2fe;
+                border-top-color: #4f46e5;
+                border-radius: 9999px;
+                animation: spin 1s linear infinite;
+              }
+              .title {
+                font-size: 15px;
+                font-weight: 700;
+              }
+              .subtitle {
+                margin-top: 6px;
+                font-size: 12px;
+                color: #6b7280;
+              }
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="spinner"></div>
+              <div class="title">Generando PDF, por favor espera...</div>
+              <div class="subtitle">La ventana se actualizará automáticamente cuando termine.</div>
+            </div>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+    }
+
+    renderLoadingScreen()
+
     try {
       // Extraer tabla de requisitos si existe
       const tableHeaders = ['Código', 'Título', 'Descripción', 'Tipo']
@@ -488,11 +564,31 @@ export default function ProjectReportsPage() {
       const hasNonFunctional = content.includes('{{REQUISITOS_TABLA_NO_FUNCIONAL}}')
 
       if (hasAll || hasFunctional || hasNonFunctional) {
-        try {
-          const reqs = await requirementsApi.getByProject(projectId)
+        // Reintentar hasta éxito o cancelación (sin límite de intentos)
+        let reqs: RequirementDTO[] | null = null
+        while (!exportCancelledRef.current) {
+          try {
+            reqs = await requirementsApi.getByProject(projectId)
+            break
+          } catch (err) {
+            console.warn('Fallo al cargar requisitos, reintentando:', err)
+            // Esperar antes de reintentar (backoff lineal)
+            const waitMs = 1000
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(resolve => setTimeout(resolve, waitMs))
+            // Si el usuario canceló mientras esperábamos, salimos
+            if (exportCancelledRef.current) break
+          }
+        }
+
+        if (exportCancelledRef.current) {
+          // usuario canceló; no continuar
+          throw new Error('Exportación cancelada por el usuario')
+        }
+
+        if (reqs && reqs.length > 0) {
           reqs.forEach(req => {
             const isFunctional = req.requirementType === 'FUNCTIONAL'
-
             if (hasAll || (hasFunctional && isFunctional) || (hasNonFunctional && !isFunctional)) {
               tableRows.push([
                 req.code,
@@ -502,8 +598,6 @@ export default function ProjectReportsPage() {
               ])
             }
           })
-        } catch (err) {
-          console.warn('No se pudieron cargar los requisitos:', err)
         }
       }
 
@@ -520,11 +614,7 @@ export default function ProjectReportsPage() {
         `
         : ''
 
-      const printWindow = window.open('', '_blank', 'width=900,height=700')
-      if (!printWindow) {
-        throw new Error('No se pudo abrir la ventana de impresión')
-      }
-
+      printWindow.document.open()
       printWindow.document.write(`
         <html>
           <head>
@@ -549,11 +639,18 @@ export default function ProjectReportsPage() {
         </html>
       `)
       printWindow.document.close()
-      printWindow.focus()
-      printWindow.print()
+      setTimeout(() => {
+        printWindow.focus()
+        printWindow.print()
+      }, 150)
     } catch (err) {
       console.error('Error exportando a PDF:', err)
-      alert('Error al exportar a PDF. Intenta de nuevo.')
+      printWindow.close()
+    }
+    finally {
+      // Ensure loader is hidden on any path
+      setIsExporting(false)
+      exportCancelledRef.current = false
     }
   }
 
@@ -708,6 +805,21 @@ export default function ProjectReportsPage() {
           }
         }
       `}</style>
+
+      {isExporting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-4">
+            <svg className="animate-spin h-10 w-10 text-[var(--color-accent)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <div className="text-sm font-bold text-[var(--color-text-primary)]">Generando PDF, por favor espera...</div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { exportCancelledRef.current = true; setIsExporting(false) }} className="px-3 py-1 rounded-md bg-[var(--color-danger-subtle)] hover:bg-[var(--color-danger)] text-[var(--color-danger)] text-xs font-bold">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sidebar Toggle Button — visible when sidebar is collapsed */}
       {!isSidebarOpen && (
