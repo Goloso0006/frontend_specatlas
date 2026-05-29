@@ -51,6 +51,13 @@ export function LoginPage() {
             <h2 className="mt-3 text-3xl font-black tracking-tight text-[var(--color-text-primary)]">Entra a tu workspace</h2>
             <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">Usa tus credenciales para abrir tus proyectos y requerimientos guardados.</p>
 
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+              <p className="font-bold">Acceso para demostración</p>
+              <p className="mt-2 leading-6">Usuario: kevin_final_test@uccc.edu.co</p>
+              <p className="leading-6">Contraseña: Password123</p>
+              <p className="mt-2 leading-6">"Usuario y contraseña para el acceso, No se puede registrar debido a que compañeros entraban a la pagina y se gastaban los tokens que compramos"</p>
+            </div>
+
             <div className="mt-8 grid gap-4">
               <label className="grid gap-2 text-sm font-bold text-[var(--color-text-primary)]">
                 Correo electrónico
