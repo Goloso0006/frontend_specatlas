@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useProject } from '../../context/ProjectContext'
 import type { DiagramEditorState } from '../../state/diagramEditor.machine'
 import type { SaveFeedback } from '../../hooks/useDiagramEditorController'
 
@@ -45,6 +46,7 @@ export function DiagramHeader({
   const [timeAgo, setTimeAgo] = useState('')
   const { projectId } = useParams()
   const navigate = useNavigate()
+  const { currentProject } = useProject()
 
   useEffect(() => {
     if (!lastSavedTime) {
@@ -88,10 +90,16 @@ export function DiagramHeader({
         </button>
 
         <div className="flex items-center gap-1.5 text-xs text-(--color-text-muted)">
-          <span className="hover:text-(--color-text-primary) cursor-pointer" onClick={() => navigate(`/app/projects/${projectId}`)}>Proyecto</span>
+          <span className="hover:text-(--color-text-primary) cursor-pointer" onClick={() => navigate(`/app/projects/${projectId}`)}>
+            {currentProject?.name || 'Proyecto'}
+          </span>
           <span>/</span>
           <span className="hover:text-(--color-text-primary) cursor-pointer" onClick={() => navigate(`/app/projects/${projectId}/diagrams/${diagramType === 'CLASS' ? 'class' : 'use-case'}`)}>
-            {diagramType === 'CLASS' ? 'Clases' : 'Casos de Uso'}
+            Diagramas
+          </span>
+          <span>/</span>
+          <span className="hover:text-(--color-text-primary) cursor-pointer" onClick={() => navigate(`/app/projects/${projectId}/diagrams/${diagramType === 'CLASS' ? 'class' : 'use-case'}`)}>
+            Diagrama de {diagramType === 'CLASS' ? 'clases' : 'casos de uso'}
           </span>
           <span>/</span>
           <input
@@ -100,6 +108,7 @@ export function DiagramHeader({
             onChange={e => setDiagramName(e.target.value)}
             placeholder="Sin nombre"
             title="Editar nombre del diagrama"
+            maxLength={40}
           />
         </div>
 

@@ -60,18 +60,30 @@ export function DiagramTypeDetailPage({ type }: DiagramTypeDetailPageProps) {
   const handleRename = async (id: string) => {
     const diagram = diagrams.find(d => d.id === id)
     if (!diagram) return
-    const newName = window.prompt('Nuevo nombre para el diagrama:', diagram.name)
-    if (newName && newName.trim() && newName !== diagram.name) {
+
+    let rawName: string | null = diagram.name
+    while (true) {
+      rawName = window.prompt('Nuevo nombre para el diagrama (máx. 40 caracteres):', rawName ?? diagram.name)
+      if (rawName === null) return // user cancelled
+      const trimmed = rawName.trim()
+      if (!trimmed) return // empty, discard
+      if (trimmed.length > 40) {
+        window.alert(`El nombre no puede superar los 40 caracteres. Actualmente tiene ${trimmed.length}.`)
+        continue // re-prompt with the value they typed
+      }
+      if (trimmed === diagram.name) return // no change
+      // Valid name — proceed to save
       await run(async () => {
         const full = await diagramFacade.getById(id)
         await diagramFacade.update(id, {
           projectId: full.projectId,
-          name: newName.trim(),
+          name: trimmed,
           sourceJson: typeof full.sourceJson === 'string' ? full.sourceJson : JSON.stringify(full.sourceJson),
-          plantUmlCode: full.plantUmlCode
+          plantUmlCode: full.plantUmlCode,
         })
         await diagramsResource.load(projectId as string)
       }, { errorMessage: 'Error al renombrar el diagrama.' })
+      break
     }
   }
 

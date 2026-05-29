@@ -175,6 +175,8 @@ export function useDiagramEditorController(): DiagramEditorController {
   const setDiagramName = useCallback((name: string) => {
     setDiagramNameState(name)
     localStorage.setItem('active_diagram_name', name)
+    // Dispatch custom event so breadcrumb in TopNavigationBar updates reactively
+    window.dispatchEvent(new Event('diagramNameChange'))
     const currentId = routeDiagramId || ''
     if (currentId) {
       localStorage.setItem(`active_diagram_name_${currentId}`, name)

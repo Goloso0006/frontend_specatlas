@@ -22,9 +22,32 @@ interface ProjectAction {
 
 // ── Breadcrumb builder ──────────────────────────────────────────────────────
 
+function useActiveDiagramName(): string {
+  const [activeName, setActiveName] = useState<string>(
+    () => localStorage.getItem('active_diagram_name') || ''
+  )
+
+  useEffect(() => {
+    const handleChange = () => {
+      setActiveName(localStorage.getItem('active_diagram_name') || '')
+    }
+    // Custom event dispatched by the controller when the name changes
+    window.addEventListener('diagramNameChange', handleChange)
+    // Also listen to storage events (cross-tab)
+    window.addEventListener('storage', handleChange)
+    return () => {
+      window.removeEventListener('diagramNameChange', handleChange)
+      window.removeEventListener('storage', handleChange)
+    }
+  }, [])
+
+  return activeName
+}
+
 function useBreadcrumbs(): BreadcrumbSegment[] {
   const location = useLocation()
   const { currentProject } = useProject()
+  const activeDiagramName = useActiveDiagramName()
 
   const projectIdMatch = location.pathname.match(/\/app\/projects\/([^/]+)/)
   const urlProjectId = projectIdMatch?.[1] ?? null
@@ -100,9 +123,8 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
 
           if (!isClassRoot) {
             const isNew = path === `${classBase}/new`
-            const activeName = localStorage.getItem('active_diagram_name') || 'Nuevo diagrama'
             segments.push({
-              label: isNew ? 'Nuevo diagrama' : activeName,
+              label: isNew ? 'Nuevo diagrama' : (activeDiagramName || 'Nuevo diagrama'),
               path: path,
               isCurrent: true
             })
@@ -114,9 +136,8 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
 
           if (!isUcRoot) {
             const isNew = path === `${ucBase}/new`
-            const activeName = localStorage.getItem('active_diagram_name') || 'Nuevo diagrama'
             segments.push({
-              label: isNew ? 'Nuevo diagrama' : activeName,
+              label: isNew ? 'Nuevo diagrama' : (activeDiagramName || 'Nuevo diagrama'),
               path: path,
               isCurrent: true
             })
@@ -132,8 +153,7 @@ function useBreadcrumbs(): BreadcrumbSegment[] {
         } else if (path === `${base}/diagrams/er`) {
           segments.push({ label: 'Diagrama entidad-relación', path: `${base}/diagrams/er`, isCurrent: true })
         } else {
-          const activeName = localStorage.getItem('active_diagram_name') || 'Editor'
-          segments.push({ label: activeName, path: path, isCurrent: true })
+          segments.push({ label: activeDiagramName || 'Editor', path: path, isCurrent: true })
         }
       }
     } else if (path === `${base}/reports`) {
