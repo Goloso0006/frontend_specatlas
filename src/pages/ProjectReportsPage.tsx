@@ -482,17 +482,25 @@ export default function ProjectReportsPage() {
       const tableHeaders = ['Código', 'Título', 'Descripción', 'Tipo']
       const tableRows: (string | number)[][] = []
 
-      // Si el contenido incluye requisitos, agregar datos de la tabla
-      if (content.includes('{{REQUISITOS_TABLA}}')) {
+      // Si el contenido incluye tags de tablas, cargar y filtrar requisitos
+      const hasAll = content.includes('{{REQUISITOS_TABLA}}')
+      const hasFunctional = content.includes('{{REQUISITOS_TABLA_FUNCIONAL}}')
+      const hasNonFunctional = content.includes('{{REQUISITOS_TABLA_NO_FUNCIONAL}}')
+
+      if (hasAll || hasFunctional || hasNonFunctional) {
         try {
           const reqs = await requirementsApi.getByProject(projectId)
           reqs.forEach(req => {
-            tableRows.push([
-              req.code,
-              req.title,
-              req.description,
-              req.requirementType === 'FUNCTIONAL' ? 'Funcional' : 'No Funcional'
-            ])
+            const isFunctional = req.requirementType === 'FUNCTIONAL'
+
+            if (hasAll || (hasFunctional && isFunctional) || (hasNonFunctional && !isFunctional)) {
+              tableRows.push([
+                req.code,
+                req.title,
+                req.description,
+                isFunctional ? 'Funcional' : 'No Funcional'
+              ])
+            }
           })
         } catch (err) {
           console.warn('No se pudieron cargar los requisitos:', err)
@@ -532,7 +540,10 @@ export default function ProjectReportsPage() {
           </head>
           <body>
             <h1>${title}</h1>
-            <p>${content}</p>
+            <p>${
+              // Eliminar las etiquetas de tabla del contenido para que no aparezcan literalmente
+              content.replace(/{{REQUISITOS_TABLA}}/g, '').replace(/{{REQUISITOS_TABLA_FUNCIONAL}}/g, '').replace(/{{REQUISITOS_TABLA_NO_FUNCIONAL}}/g, '')
+            }</p>
             ${printableRows}
           </body>
         </html>
