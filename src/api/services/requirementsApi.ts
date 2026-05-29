@@ -6,6 +6,8 @@ import {
   adaptRequirementDTO,
   adaptRequirementNodeList,
   adaptSearchResponseList,
+  adaptTraceabilityLink,
+  adaptTraceabilityLinkList,
 } from '../../adapters/requirements.adapter'
 import type { ApiResponse } from '../../types/api'
 import type {
@@ -197,25 +199,37 @@ export const validationRulesApi = {
 
 export const traceabilityApi = {
   async getByRequirement(requirementId: string): Promise<TraceabilityLink[]> {
-    const data = await httpProxy.get<TraceabilityLink[] | ApiResponse<TraceabilityLink[]>>(
+    const data = await httpProxy.get<any>(
       endpoints.traceability.byRequirement(requirementId),
     )
-    return unwrapData(data)
+    return adaptTraceabilityLinkList(unwrapData(data))
   },
 
   async listByProject(projectId: string): Promise<TraceabilityLink[]> {
-    const data = await httpProxy.get<TraceabilityLink[] | ApiResponse<TraceabilityLink[]>>(
+    const data = await httpProxy.get<any>(
       endpoints.traceability.byProject(projectId),
     )
-    return unwrapData(data)
+    return adaptTraceabilityLinkList(unwrapData(data))
   },
 
   async create(payload: TraceabilityLink): Promise<TraceabilityLink> {
-    const data = await httpProxy.post<TraceabilityLink | ApiResponse<TraceabilityLink>>(
+    // Adaptación: Convertir modelo UI (TraceabilityLink) a DTO Backend (TraceabilityLinkRequest)
+    const requestPayload = {
+      projectId: payload.projectId,
+      sourceType: 'REQUIREMENT', // En este contexto, la fuente siempre es REQUIREMENT
+      sourceId: payload.requirementId,
+      sourceCode: '', // Opcional en el backend
+      targetType: payload.targetType,
+      targetId: payload.targetId === 'MANUAL' ? null : payload.targetId,
+      targetCode: payload.targetName, // Mapea targetName a targetCode
+      relationType: payload.relationType,
+      description: payload.description,
+    }
+    const data = await httpProxy.post<any>(
       endpoints.traceability.base,
-      payload,
+      requestPayload,
     )
-    return unwrapData(data)
+    return adaptTraceabilityLink(unwrapData(data))
   },
 
   async delete(id: string): Promise<void> {

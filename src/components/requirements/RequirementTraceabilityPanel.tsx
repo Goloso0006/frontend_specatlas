@@ -18,12 +18,6 @@ interface RequirementTraceabilityPanelProps {
 
 const TARGET_TYPES: { value: TraceabilityTargetType; label: string }[] = [
   { value: 'REQUIREMENT', label: 'Requisito del proyecto' },
-  { value: 'TEST_CASE', label: 'Caso de prueba' },
-  { value: 'DIAGRAM', label: 'Diagrama' },
-  { value: 'CLASS', label: 'Clase' },
-  { value: 'COMPONENT', label: 'Componente' },
-  { value: 'MODULE', label: 'Módulo' },
-  { value: 'ARCHITECTURE_ELEMENT', label: 'Elemento arquitectónico' },
 ]
 
 const RELATION_TYPES: { value: TraceabilityRelationType; label: string }[] = [

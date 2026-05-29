@@ -3,6 +3,7 @@ import type {
   RequirementDTO,
   RequirementNode,
   SearchResponse,
+  TraceabilityLink,
 } from '../types/requirements'
 import { normalizeNumber, normalizeString, normalizeStringArray } from './common'
 import { sanitizeAcceptanceCriteriaList } from '../utils/acceptanceCriteria'
@@ -109,4 +110,39 @@ export function adaptDuplicateMatchResponseList(
   }
 
   return response.map(adaptDuplicateMatchResponse)
+}
+
+export function adaptTraceabilityLink(response: any): TraceabilityLink {
+  return {
+    id: normalizeString(response?.id),
+    projectId: normalizeString(response?.projectId),
+    requirementId: normalizeString(response?.sourceId), // mapea sourceId a requirementId
+    targetType: response?.targetType,
+    relationType: response?.relationType,
+    targetId: normalizeString(response?.targetId || 'MANUAL'),
+    targetName: normalizeString(response?.targetCode), // mapea targetCode a targetName
+    description: response?.description ? normalizeString(response.description) : undefined,
+    createdAt: response?.createdAt ? normalizeString(response.createdAt) : undefined,
+  }
+}
+
+export function adaptTraceabilityLinkList(response: any[] | null | undefined): TraceabilityLink[] {
+  if (!Array.isArray(response)) {
+    return []
+  }
+  return response.map(adaptTraceabilityLink)
+}
+
+export function adaptTraceabilityLinkRequest(link: any): any {
+  return {
+    projectId: link?.projectId,
+    sourceType: 'REQUIREMENT',
+    sourceId: link?.requirementId,
+    sourceCode: 'REQ',
+    targetType: link?.targetType,
+    targetId: link?.targetId || 'MANUAL',
+    targetCode: link?.targetName,
+    relationType: link?.relationType,
+    description: link?.description || '',
+  }
 }

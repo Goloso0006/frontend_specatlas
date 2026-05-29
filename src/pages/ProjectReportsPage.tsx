@@ -17,6 +17,7 @@ export default function ProjectReportsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   // Command palette state
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
@@ -24,6 +25,124 @@ export default function ProjectReportsPage() {
   const [isLoadingDiagrams, setIsLoadingDiagrams] = useState(false)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({})
+  const [isNewMenuOpen, setIsNewMenuOpen] = useState(false)
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [emptyFolders, setEmptyFolders] = useState<string[]>(() => {
+    if (!projectId) return []
+    const stored = localStorage.getItem(`specatlas_empty_folders_${projectId}`)
+    return stored ? JSON.parse(stored) : []
+  })
+  const [moveConfirm, setMoveConfirm] = useState<{
+    reportId: string;
+    reportTitle: string;
+    targetFolder: string | null;
+  } | null>(null)
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    reportId: string;
+    fullTitle: string;
+  } | null>(null)
+
+  const [activeMenu, setActiveMenu] = useState<{
+    type: 'folder' | 'document';
+    id: string;
+  } | null>(null)
+
+  const [renameModal, setRenameModal] = useState<{
+    type: 'folder' | 'document';
+    id: string;
+    currentTitle: string;
+  } | null>(null)
+  const [renameInputValue, setRenameInputValue] = useState('')
+
+  const [folderMoveConfirm, setFolderMoveConfirm] = useState<{
+    sourceFolder: string;
+    targetFolder: string;
+  } | null>(null)
+
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem(`specatlas_empty_folders_${projectId}`, JSON.stringify(emptyFolders))
+    }
+  }, [emptyFolders, projectId])
+
+  const toggleFolder = (folderName: string) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folderName]: prev[folderName] === false ? true : false
+    }))
+  }
+
+  const handleCreateEmptyFolderSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const folder = newFolderName.trim()
+    if (!folder) return
+    if (folder.length > 30) return
+
+    // Check if folder name already exists in reports or empty folders
+    const existsInReports = reports.some(r => r.title.split('/')[0].trim().toLowerCase() === folder.toLowerCase())
+    const existsInEmpty = emptyFolders.some(f => f.toLowerCase() === folder.toLowerCase())
+
+    if (existsInReports || existsInEmpty) {
+      alert('Esta carpeta ya existe.')
+      return
+    }
+
+    setEmptyFolders(prev => [...prev, folder])
+    setIsFolderModalOpen(false)
+    setNewFolderName('')
+    setIsSidebarOpen(true)
+    setExpandedFolders(prev => ({ ...prev, [folder]: true }))
+  }
+
+  const handleMoveReportToFolder = async (reportId: string, targetFolder: string | null) => {
+    const report = reports.find(r => r.id === reportId)
+    if (!report) return
+
+    // Calculate new title
+    let newTitle = ''
+    // Get the bare document name (last segment after all folder prefixes)
+    const bareTitle = report.title.includes('/') 
+      ? report.title.split('/').pop()!.trim()
+      : report.title.trim()
+    
+    if (targetFolder) {
+      newTitle = `${targetFolder} / ${bareTitle}`
+    } else {
+      // Remove ALL folder prefixes
+      newTitle = bareTitle
+    }
+
+    try {
+      setIsLoading(true)
+      const updated = await projectsApi.updateReport(projectId || '', reportId, {
+        title: newTitle,
+        content: report.content
+      })
+      
+      // Update local state
+      setReports(prev => prev.map(r => r.id === reportId ? updated : r))
+      
+      // If currently selected, update title and state
+      if (selectedReport?.id === reportId) {
+        setSelectedReport(updated)
+        setTitle(updated.title)
+      }
+      
+      // Remove folder from empty folders list if it was empty and now has a document
+      if (targetFolder) {
+        setEmptyFolders(prev => prev.filter(f => f !== targetFolder))
+      }
+    } catch (err) {
+      console.error('Error al mover reporte:', err)
+    } finally {
+      setIsLoading(false)
+      setMoveConfirm(null)
+    }
+  }
 
   useEffect(() => {
     if (projectId) {
@@ -52,11 +171,142 @@ export default function ProjectReportsPage() {
         content: '# Título del Reporte\n\nEste es un reporte vivo del proyecto.\n\nEscribe /// para abrir la paleta de comandos o usa los botones de inserción rápida.\n\n{{REQUISITOS_TABLA}}\n\nFin del reporte.'
       })
       setReports(prev => [newReport, ...prev])
+      setIsSidebarOpen(true)
       handleSelectReport(newReport)
     } catch (err) {
       console.error('Error al crear reporte:', err)
     }
   }
+
+  const handleCreateReportInFolder = async (folderName: string) => {
+    if (!projectId) return
+    try {
+      const newReport = await projectsApi.createReport(projectId, {
+        title: `${folderName} / Nuevo Documento`,
+        content: '# Título del Documento\n\nEscribe aquí el contenido del documento.\n\nEscribe /// para abrir la paleta de comandos.'
+      })
+      setReports(prev => [newReport, ...prev])
+      setIsSidebarOpen(true)
+      // Expand all parent folder segments
+      const segments = folderName.split(' / ')
+      const expandUpdates: Record<string, boolean> = {}
+      let path = ''
+      segments.forEach((seg, i) => {
+        path = i === 0 ? seg : `${path} / ${seg}`
+        expandUpdates[path] = true
+      })
+      setExpandedFolders(prev => ({ ...prev, ...expandUpdates }))
+      // Remove from empty folders since it now has a document
+      setEmptyFolders(prev => prev.filter(f => f !== folderName))
+      handleSelectReport(newReport)
+    } catch (err) {
+      console.error('Error al crear reporte en carpeta:', err)
+    }
+  }
+
+  const handleMoveFolderIntoFolder = async (sourceFolder: string, targetFolder: string) => {
+    if (!projectId || sourceFolder === targetFolder) return
+    try {
+      setIsLoading(true)
+
+      // Check if source folder has documents
+      const sourceDocs = reports.filter(r => r.title.startsWith(`${sourceFolder} /`))
+
+      // Rename documents: "sourceFolder / doc" → "targetFolder / sourceFolder / doc"
+      const updatedList = await Promise.all(
+        reports.map(async (r) => {
+          if (r.title.startsWith(`${sourceFolder} /`)) {
+            const cleanName = r.title.split('/').slice(1).join('/').trim()
+            const updated = await projectsApi.updateReport(projectId, r.id, {
+              title: `${targetFolder} / ${sourceFolder} / ${cleanName}`,
+              content: r.content
+            })
+            return updated
+          }
+          return r
+        })
+      )
+      setReports(updatedList)
+
+      // Remove source from top-level emptyFolders
+      setEmptyFolders(prev => {
+        const next = prev.filter(f => f !== sourceFolder)
+        // Add nested sub-folder path so it persists in sidebar
+        const nestedPath = `${targetFolder} / ${sourceFolder}`
+        if (!next.includes(nestedPath) && sourceDocs.length === 0) {
+          next.push(nestedPath)
+        }
+        return next
+      })
+
+      // Update selected report if it was in the moved folder
+      const currentSelected = updatedList.find(r => r.id === selectedReport?.id)
+      if (currentSelected) {
+        setSelectedReport(currentSelected)
+        setTitle(currentSelected.title)
+      }
+
+      // Expand target folder
+      setExpandedFolders(prev => ({ ...prev, [targetFolder]: true }))
+    } catch (err) {
+      console.error('Error al mover carpeta:', err)
+    } finally {
+      setIsLoading(false)
+      setFolderMoveConfirm(null)
+    }
+  }
+
+  const handleExtractFolderToRoot = async (nestedFolderPath: string) => {
+    if (!projectId) return
+    // nestedFolderPath is like "saludo / hola"
+    const parts = nestedFolderPath.split(' / ')
+    const folderName = parts[parts.length - 1] // "hola"
+    
+    try {
+      setIsLoading(true)
+
+      // Rename all documents: "saludo / hola / doc" → "hola / doc"
+      const updatedList = await Promise.all(
+        reports.map(async (r) => {
+          if (r.title.startsWith(`${nestedFolderPath} /`)) {
+            const cleanName = r.title.substring(nestedFolderPath.length + 3).trim()
+            const updated = await projectsApi.updateReport(projectId, r.id, {
+              title: `${folderName} / ${cleanName}`,
+              content: r.content
+            })
+            return updated
+          }
+          return r
+        })
+      )
+      setReports(updatedList)
+
+      // Update emptyFolders: remove nested path, add root-level name
+      setEmptyFolders(prev => {
+        const next = prev.filter(f => f !== nestedFolderPath)
+        if (!next.includes(folderName)) {
+          next.push(folderName)
+        }
+        return next
+      })
+
+      // Update selected if affected
+      const currentSelected = updatedList.find(r => r.id === selectedReport?.id)
+      if (currentSelected) {
+        setSelectedReport(currentSelected)
+        setTitle(currentSelected.title)
+      }
+
+      setExpandedFolders(prev => ({ ...prev, [folderName]: true }))
+    } catch (err) {
+      console.error('Error al extraer carpeta:', err)
+    } finally {
+      setIsLoading(false)
+      setFolderMoveConfirm(null)
+    }
+  }
+
+
 
   const handleSelectReport = (report: ProjectReport) => {
     setSelectedReport(report)
@@ -64,6 +314,15 @@ export default function ProjectReportsPage() {
     setContent(report.content)
     setIsEditing(true)
     setActiveTab('edit')
+
+    // Auto-expand folder if it has one
+    if (report.title.includes('/')) {
+      const folderName = report.title.split('/')[0].trim()
+      setExpandedFolders(prev => ({
+        ...prev,
+        [folderName]: true
+      }))
+    }
   }
 
   const latestDataRef = useRef({ title, content, id: selectedReport?.id });
@@ -99,11 +358,14 @@ export default function ProjectReportsPage() {
     return () => clearTimeout(timer);
   }, [title, content, projectId, selectedReport]);
 
-  const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
+  const handleDeleteReportRequest = (reportId: string, fullTitle: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!projectId) return
-    const confirm = window.confirm('¿Estás seguro de que deseas eliminar este reporte de forma permanente?')
-    if (!confirm) return
+    setDeleteConfirm({ reportId, fullTitle })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!projectId || !deleteConfirm) return
+    const { reportId } = deleteConfirm
     try {
       await projectsApi.deleteReport(projectId, reportId)
       setReports(prev => prev.filter(r => r.id !== reportId))
@@ -113,6 +375,8 @@ export default function ProjectReportsPage() {
       }
     } catch (err) {
       console.error('Error al eliminar reporte:', err)
+    } finally {
+      setDeleteConfirm(null)
     }
   }
 
@@ -321,65 +585,588 @@ export default function ProjectReportsPage() {
         }
       `}</style>
 
+      {/* Sidebar Toggle Button — visible when sidebar is collapsed */}
+      {!isSidebarOpen && (
+        <div className="flex flex-col items-center pt-4 pb-2 px-1.5 border-r border-[var(--color-border)] bg-[var(--color-bg-card)] no-print shrink-0">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/30 hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-foreground)] text-[var(--color-accent)] transition-all shadow-sm cursor-pointer group"
+            title="Abrir panel de documentos"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="transition-transform group-hover:translate-x-0.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </button>
+          <span className="text-[8px] font-bold text-[var(--color-text-muted)] mt-1.5 uppercase tracking-wider writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>Wiki</span>
+        </div>
+      )}
+
       {/* Sidebar List */}
-      <div className="w-80 border-r border-[var(--color-border)] bg-[var(--color-bg-card)] flex flex-col flex-shrink-0 no-print">
-        <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
+      <div
+        className={`border-r border-[var(--color-border)] bg-[var(--color-bg-card)] flex flex-col flex-shrink-0 no-print transition-all duration-300 ease-in-out overflow-hidden ${
+          isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+        }`}
+      >
+        <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between min-w-[320px]">
           <h2 className="text-sm font-black tracking-tight text-[var(--color-text-primary)] flex items-center gap-2">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} className="text-[var(--color-accent)]">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
             Wiki del Proyecto
           </h2>
-          <button
-            onClick={handleCreateReport}
-            className="p-1.5 px-3 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] font-bold text-xs flex items-center gap-1 shadow-md transition-all active:scale-95"
-          >
-            <span>+</span> Nuevo
-          </button>
-        </div>
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <button
+                onClick={() => setIsNewMenuOpen(!isNewMenuOpen)}
+                className="p-1.5 px-3 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] font-bold text-xs flex items-center gap-1 shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <span>+</span> New
+            </button>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {isNewMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsNewMenuOpen(false)} />
+                <div className="absolute right-0 mt-2 w-44 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button
+                    onClick={() => {
+                      setIsNewMenuOpen(false)
+                      void handleCreateReport()
+                    }}
+                    className="w-full text-left p-2 px-3 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-xs font-semibold flex items-center gap-2 text-[var(--color-text-secondary)] transition-all"
+                  >
+                    <span>📝</span> Crear Documento
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsNewMenuOpen(false)
+                      setIsFolderModalOpen(true)
+                      setNewFolderName('')
+                    }}
+                    className="w-full text-left p-2 px-3 rounded-xl hover:bg-[var(--color-success-subtle)] hover:text-emerald-400 text-xs font-semibold flex items-center gap-2 text-[var(--color-text-secondary)] transition-all"
+                  >
+                    <span>📁</span> Crear Carpeta
+                  </button>
+                </div>
+              </>
+            )}
+            </div>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+              title="Ocultar panel"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-10 space-y-2 text-[var(--color-text-muted)]">
               <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
               <span className="text-[10px]">Cargando reportes...</span>
             </div>
-          ) : reports.length === 0 ? (
+          ) : reports.length === 0 && emptyFolders.length === 0 ? (
             <div className="text-center py-12 text-[var(--color-text-muted)] space-y-1">
               <span className="text-2xl block">📁</span>
               <p className="text-[11px]">No hay documentos creados aún.</p>
             </div>
-          ) : (
-            reports.map(report => (
-              <div
-                key={report.id}
-                onClick={() => handleSelectReport(report)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 group relative overflow-hidden ${
-                  selectedReport?.id === report.id
-                    ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
-                    : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-xs text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
-                    {report.title}
-                  </h3>
-                  <button
-                    onClick={(e) => handleDeleteReport(report.id, e)}
-                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[var(--color-text-muted)] transition-all"
-                    title="Eliminar reporte"
+          ) : (() => {
+            // Group reports by virtual folder
+            const foldersMap: Record<string, ProjectReport[]> = {}
+            const rootReports: ProjectReport[] = []
+
+            // Initialize top-level empty folders in map
+            emptyFolders.forEach(folder => {
+              if (!folder.includes(' / ')) {
+                if (!foldersMap[folder]) foldersMap[folder] = []
+              } else {
+                // Nested empty folder like "saludo / hola": ensure parent exists
+                const parent = folder.split(' / ')[0].trim()
+                if (!foldersMap[parent]) foldersMap[parent] = []
+              }
+            })
+
+            reports.forEach(report => {
+              if (report.title.includes('/')) {
+                const parts = report.title.split('/')
+                const folderName = parts[0].trim()
+                if (!foldersMap[folderName]) {
+                  foldersMap[folderName] = []
+                }
+                foldersMap[folderName].push(report)
+              } else {
+                rootReports.push(report)
+              }
+            })
+
+            return (
+              <div className="space-y-3">
+                {/* Virtual Folders */}
+                {Object.keys(foldersMap).sort().map(folderName => (
+                  <div key={folderName} className="space-y-1">
+                    <div 
+                      onClick={() => toggleFolder(folderName)}
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', `folder:${folderName}`)
+                        e.currentTarget.classList.add('opacity-40')
+                      }}
+                      onDragEnd={(e) => {
+                        e.currentTarget.classList.remove('opacity-40')
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.add('bg-[var(--color-accent-subtle)]')
+                      }}
+                      onDragLeave={(e) => {
+                        e.currentTarget.classList.remove('bg-[var(--color-accent-subtle)]')
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        e.currentTarget.classList.remove('bg-[var(--color-accent-subtle)]')
+                        const dragData = e.dataTransfer.getData('text/plain')
+
+                        if (dragData.startsWith('folder:')) {
+                          const sourceFolder = dragData.replace('folder:', '')
+                          // Ignore drops of own sub-folders (they're already inside this folder)
+                          if (sourceFolder !== folderName && !sourceFolder.startsWith(`${folderName} / `)) {
+                            setFolderMoveConfirm({ sourceFolder, targetFolder: folderName })
+                          }
+                        } else {
+                          const reportId = dragData
+                          const targetReport = reports.find(r => r.id === reportId)
+                          if (targetReport) {
+                            setMoveConfirm({
+                              reportId,
+                              reportTitle: targetReport.title,
+                              targetFolder: folderName
+                            })
+                          }
+                        }
+                      }}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--color-surface)] cursor-pointer text-xs font-bold text-[var(--color-text-secondary)] transition-all select-none border border-transparent"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{expandedFolders[folderName] !== false ? '📂' : '📁'}</span>
+                        <span className="truncate">{folderName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-[var(--color-text-muted)] font-mono bg-[var(--color-surface)] px-1.5 py-0.5 rounded border border-[var(--color-border)]">
+                          {foldersMap[folderName].length}
+                        </span>
+                        <div className="relative shrink-0 flex items-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActiveMenu(prev => prev?.type === 'folder' && prev.id === folderName ? null : { type: 'folder', id: folderName })
+                            }}
+                            className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer text-[10px]"
+                            title="Opciones de carpeta"
+                          >
+                            ⋮
+                          </button>
+                          
+                          {activeMenu?.type === 'folder' && activeMenu.id === folderName && (
+                            <>
+                              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                              <div className="absolute right-0 mt-8 w-36 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-45 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveMenu(null)
+                                    setRenameModal({ type: 'folder', id: folderName, currentTitle: folderName })
+                                    setRenameInputValue(folderName)
+                                  }}
+                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                >
+                                  ✏️ Editar Nombre
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveMenu(null)
+                                    void handleCreateReportInFolder(folderName)
+                                  }}
+                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                >
+                                  📝 Crear Documento
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveMenu(null)
+                                    if (foldersMap[folderName].length > 0) {
+                                      alert('No se puede eliminar una carpeta que contiene documentos. Mueve o elimina los documentos primero.')
+                                    } else {
+                                      setEmptyFolders(prev => prev.filter(f => f !== folderName))
+                                    }
+                                  }}
+                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Folder content */}
+                    {expandedFolders[folderName] !== false && (
+                      <div className="pl-3.5 space-y-1.5 border-l border-[var(--color-border)] ml-3.5 py-1">
+                        {/* Nested sub-folders */}
+                        {(() => {
+                          // Find nested empty sub-folders for this parent
+                          const nestedSubFolders = emptyFolders
+                            .filter(f => f.startsWith(`${folderName} / `))
+                            .map(f => f.substring(folderName.length + 3).trim())
+                          
+                          // Find sub-folders from documents with 3+ level paths
+                          const docSubFolders = new Set<string>()
+                          foldersMap[folderName].forEach(report => {
+                            const cleanTitle = report.title.split('/').slice(1).join('/').trim()
+                            if (cleanTitle.includes('/')) {
+                              docSubFolders.add(cleanTitle.split('/')[0].trim())
+                            }
+                          })
+
+                          // Merge sub-folder names
+                          const allSubFolders = Array.from(new Set([...nestedSubFolders, ...Array.from(docSubFolders)])).sort()
+
+                          return allSubFolders.map(subName => {
+                            const subKey = `${folderName} / ${subName}`
+                            const subDocs = foldersMap[folderName].filter(r => {
+                              const cleanTitle = r.title.split('/').slice(1).join('/').trim()
+                              return cleanTitle.startsWith(`${subName} /`)
+                            })
+
+                            return (
+                              <div key={subKey} className="space-y-1">
+                                <div
+                                  onClick={() => toggleFolder(subKey)}
+                                  draggable={true}
+                                  onDragStart={(e) => {
+                                    e.stopPropagation()
+                                    e.dataTransfer.setData('text/plain', `folder:${subKey}`)
+                                    e.currentTarget.classList.add('opacity-40')
+                                  }}
+                                  onDragEnd={(e) => {
+                                    e.currentTarget.classList.remove('opacity-40')
+                                  }}
+                                  onDragOver={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    e.currentTarget.classList.add('bg-[var(--color-accent-subtle)]')
+                                  }}
+                                  onDragLeave={(e) => {
+                                    e.currentTarget.classList.remove('bg-[var(--color-accent-subtle)]')
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    e.currentTarget.classList.remove('bg-[var(--color-accent-subtle)]')
+                                    const dragData = e.dataTransfer.getData('text/plain')
+                                    if (dragData.startsWith('folder:')) return
+                                    const reportId = dragData
+                                    const targetReport = reports.find(r => r.id === reportId)
+                                    if (targetReport) {
+                                      setMoveConfirm({
+                                        reportId,
+                                        reportTitle: targetReport.title,
+                                        targetFolder: subKey
+                                      })
+                                    }
+                                  }}
+                                  className="flex items-center justify-between p-1.5 rounded-lg hover:bg-[var(--color-surface)] cursor-pointer text-[11px] font-bold text-[var(--color-text-muted)] transition-all select-none border border-transparent"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs">{expandedFolders[subKey] !== false ? '📂' : '📁'}</span>
+                                    <span className="truncate">{subName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] text-[var(--color-text-muted)] font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded border border-[var(--color-border)]">
+                                      {subDocs.length}
+                                    </span>
+                                    <div className="relative shrink-0 flex items-center">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setActiveMenu(prev => prev?.type === 'folder' && prev.id === subKey ? null : { type: 'folder', id: subKey })
+                                        }}
+                                        className="p-0.5 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer text-[10px]"
+                                        title="Opciones de sub-carpeta"
+                                      >
+                                        ⋮
+                                      </button>
+
+                                      {activeMenu?.type === 'folder' && activeMenu.id === subKey && (
+                                        <>
+                                          <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                                          <div className="absolute right-0 mt-8 w-36 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-45 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setActiveMenu(null)
+                                                void handleCreateReportInFolder(subKey)
+                                              }}
+                                              className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                            >
+                                              📝 Crear Documento
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setActiveMenu(null)
+                                                setFolderMoveConfirm({ sourceFolder: subKey, targetFolder: '__ROOT__' })
+                                              }}
+                                              className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                            >
+                                              📤 Sacar de Carpeta
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setActiveMenu(null)
+                                                if (subDocs.length > 0) {
+                                                  alert('No se puede eliminar una sub-carpeta que contiene documentos. Mueve o elimina los documentos primero.')
+                                                } else {
+                                                  setEmptyFolders(prev => prev.filter(f => f !== subKey))
+                                                }
+                                              }}
+                                              className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                            >
+                                              🗑️ Eliminar
+                                            </button>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                {expandedFolders[subKey] !== false && subDocs.length > 0 && (
+                                  <div className="pl-3 space-y-1 border-l border-[var(--color-border)]/50 ml-2.5">
+                                    {subDocs.map(report => {
+                                      const subCleanTitle = report.title.split('/').slice(2).join('/').trim() || report.title
+                                      return (
+                                        <div
+                                          key={report.id}
+                                          onClick={() => handleSelectReport(report)}
+                                          draggable={true}
+                                          onDragStart={(e) => {
+                                            e.dataTransfer.setData('text/plain', report.id)
+                                            e.currentTarget.classList.add('opacity-40')
+                                          }}
+                                          onDragEnd={(e) => {
+                                            e.currentTarget.classList.remove('opacity-40')
+                                          }}
+                                          className={`p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 group relative overflow-hidden ${
+                                            selectedReport?.id === report.id
+                                              ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
+                                              : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
+                                          }`}
+                                        >
+                                          <h3 className="font-bold text-[11px] text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
+                                            📄 {subCleanTitle}
+                                          </h3>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })
+                        })()}
+
+                        {/* Direct documents (no sub-folder) */}
+                        {foldersMap[folderName].filter(r => {
+                          const cleanTitle = r.title.split('/').slice(1).join('/').trim()
+                          return !cleanTitle.includes('/')
+                        }).map(report => {
+                          const parts = report.title.split('/')
+                          const cleanTitle = parts.slice(1).join('/').trim() || report.title
+
+                          return (
+                            <div
+                              key={report.id}
+                              onClick={() => handleSelectReport(report)}
+                              draggable={true}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', report.id)
+                                e.currentTarget.classList.add('opacity-40')
+                              }}
+                              onDragEnd={(e) => {
+                                e.currentTarget.classList.remove('opacity-40')
+                              }}
+                              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group relative overflow-hidden ${
+                                selectedReport?.id === report.id
+                                  ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
+                                  : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
+                              }`}
+                            >
+                              <h3 className="font-bold text-xs text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
+                                📄 {cleanTitle}
+                              </h3>
+                              <div className="relative shrink-0 flex items-center">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveMenu(prev => prev?.type === 'document' && prev.id === report.id ? null : { type: 'document', id: report.id })
+                                  }}
+                                  className="p-1 hover:bg-[var(--color-surface)]/20 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all opacity-0 group-hover:opacity-100 cursor-pointer text-[10px]"
+                                  title="Opciones de documento"
+                                >
+                                  ⋮
+                                </button>
+                                
+                                {activeMenu?.type === 'document' && activeMenu.id === report.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                                    <div className="absolute right-0 mt-8 w-36 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-45 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setActiveMenu(null)
+                                          const cleanTitle = report.title.includes('/') ? report.title.split('/').slice(1).join('/').trim() : report.title.trim()
+                                          setRenameModal({ type: 'document', id: report.id, currentTitle: report.title })
+                                          setRenameInputValue(cleanTitle)
+                                        }}
+                                        className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                      >
+                                        ✏️ Editar Nombre
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setActiveMenu(null)
+                                          handleDeleteReportRequest(report.id, report.title, e)
+                                        }}
+                                        className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                      >
+                                        🗑️ Eliminar
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Root Reports / Drop Zone to remove from folders */}
+                <div 
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.add('bg-[var(--color-accent-subtle)]/30')
+                    }}
+                    onDragLeave={(e) => {
+                      e.currentTarget.classList.remove('bg-[var(--color-accent-subtle)]/30')
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('bg-[var(--color-accent-subtle)]/30')
+                      const dragData = e.dataTransfer.getData('text/plain')
+                      if (dragData.startsWith('folder:')) {
+                        // Handle extracting a nested folder to root
+                        const folderPath = dragData.replace('folder:', '')
+                        if (folderPath.includes(' / ')) {
+                          setFolderMoveConfirm({ sourceFolder: folderPath, targetFolder: '__ROOT__' })
+                        }
+                        return
+                      }
+                      const reportId = dragData
+                      const targetReport = reports.find(r => r.id === reportId)
+                      if (targetReport && targetReport.title.includes('/')) {
+                        setMoveConfirm({
+                          reportId,
+                          reportTitle: targetReport.title,
+                          targetFolder: null
+                        })
+                      }
+                    }}
+                    className="space-y-1.5 pt-3 mt-2 border-2 border-dashed border-[var(--color-border)] rounded-xl transition-all min-h-[50px] px-2 pb-2"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-                <span className="text-[9px] text-[var(--color-text-muted)] font-medium">
-                  Modificado: {new Date(report.updatedAt).toLocaleDateString()}
-                </span>
+                    <div className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-1 mb-1 flex items-center justify-between">
+                      <span>📥 Documentos Libres</span>
+                      <span className="text-[8px] font-normal text-[var(--color-text-muted)] lowercase">(arrastra aquí para liberar)</span>
+                    </div>
+                    {rootReports.map(report => (
+                      <div
+                        key={report.id}
+                        onClick={() => handleSelectReport(report)}
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', report.id)
+                          e.currentTarget.classList.add('opacity-40')
+                        }}
+                        onDragEnd={(e) => {
+                          e.currentTarget.classList.remove('opacity-40')
+                        }}
+                        className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group relative overflow-hidden ${
+                          selectedReport?.id === report.id
+                            ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
+                            : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
+                        }`}
+                      >
+                        <h3 className="font-bold text-xs text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
+                          📄 {report.title}
+                        </h3>
+                        <div className="relative shrink-0 flex items-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActiveMenu(prev => prev?.type === 'document' && prev.id === report.id ? null : { type: 'document', id: report.id })
+                            }}
+                            className="p-1 hover:bg-[var(--color-surface)]/20 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all opacity-0 group-hover:opacity-100 cursor-pointer text-[10px]"
+                            title="Opciones de documento"
+                          >
+                            ⋮
+                          </button>
+                          
+                          {activeMenu?.type === 'document' && activeMenu.id === report.id && (
+                            <>
+                              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                              <div className="absolute right-0 mt-8 w-36 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-45 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveMenu(null)
+                                    const cleanTitle = report.title.includes('/') ? report.title.split('/').slice(1).join('/').trim() : report.title.trim()
+                                    setRenameModal({ type: 'document', id: report.id, currentTitle: report.title })
+                                    setRenameInputValue(cleanTitle)
+                                  }}
+                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                >
+                                  ✏️ Editar Nombre
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveMenu(null)
+                                    handleDeleteReportRequest(report.id, report.title, e)
+                                  }}
+                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
               </div>
-            ))
-          )}
+            )
+          })()}
         </div>
       </div>
 
@@ -451,6 +1238,31 @@ export default function ProjectReportsPage() {
               <div className={`h-full flex flex-col no-print ${activeTab === 'edit' ? 'flex' : 'hidden'}`}>
                 {/* Rich Editing Bar */}
                 <div className="p-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center gap-1.5 rich-bar overflow-x-auto">
+                    {/* Heading Buttons */}
+                    <button
+                      onClick={() => insertTagAtCursor('\n# ')}
+                      className="p-1.5 px-2.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] hover:border-[var(--color-accent)]/50 font-black text-[11px] flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+                      title="Título Principal (H1)"
+                    >
+                      H1
+                    </button>
+                    <button
+                      onClick={() => insertTagAtCursor('\n## ')}
+                      className="p-1.5 px-2.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:border-[var(--color-accent)]/50 font-bold text-[10px] flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+                      title="Subtítulo (H2)"
+                    >
+                      H2
+                    </button>
+                    <button
+                      onClick={() => insertTagAtCursor('\n### ')}
+                      className="p-1.5 px-2.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-secondary)] hover:border-[var(--color-accent)]/50 font-semibold text-[10px] flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+                      title="Encabezado Pequeño (H3)"
+                    >
+                      H3
+                    </button>
+
+                    <div className="h-4 w-px bg-[var(--color-border)] shrink-0" />
+
                     <button
                       onClick={() => insertTagAtCursor('{{REQUISITOS_TABLA}}')}
                       className="p-1.5 px-3 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/30 text-[var(--color-accent)] hover:opacity-80 font-bold text-[10px] flex items-center gap-1.5 transition-all shrink-0"
@@ -501,7 +1313,15 @@ export default function ProjectReportsPage() {
                   <h1 className="text-2xl font-black text-[var(--color-text-primary)] pb-3 border-b border-[var(--color-border)] print:text-black print:border-black">
                     {title}
                   </h1>
-                  <LiveDocumentRenderer content={content} projectId={projectId || ''} />
+                  <LiveDocumentRenderer
+                    content={content}
+                    projectId={projectId || ''}
+                    reports={reports}
+                    onSelectReport={(targetId) => {
+                      const found = reports.find(r => r.id === targetId)
+                      if (found) handleSelectReport(found)
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -603,6 +1423,334 @@ export default function ProjectReportsPage() {
                 </div>
               )}
             </div>
+
+            <div className="space-y-2 pt-2 border-t border-[var(--color-border)]/50">
+              <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wide">Enlazar a Documento de la Wiki</p>
+              {reports.filter(r => r.id !== selectedReport?.id).length === 0 ? (
+                <div className="text-center py-2 text-[10px] text-[var(--color-text-muted)]">No hay otros documentos para enlazar.</div>
+              ) : (
+                <div className="max-h-32 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+                  {reports.filter(r => r.id !== selectedReport?.id).map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => insertTagAtCursor(`[🔗 ${r.title}](wiki://${r.id})`)}
+                      className="w-full text-left p-2.5 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] border border-transparent hover:border-[var(--color-accent)]/20 text-xs font-bold transition-all flex items-center justify-between text-[var(--color-text-secondary)]"
+                    >
+                      <span className="truncate">🔗 {r.title}</span>
+                      <span className="text-[9px] font-mono text-[var(--color-text-muted)]">wiki://</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move Confirmation Modal */}
+      {moveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5">
+              <span>🔀</span> Confirmar Movimiento de Documento
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              ¿Estás seguro de que deseas mover el documento <strong className="text-[var(--color-text-primary)]">"{moveConfirm.reportTitle.includes('/') ? moveConfirm.reportTitle.split('/').slice(1).join('/').trim() : moveConfirm.reportTitle}"</strong> a{' '}
+              {moveConfirm.targetFolder ? (
+                <span>
+                  la carpeta <strong className="text-emerald-400">"{moveConfirm.targetFolder}"</strong>?
+                </span>
+              ) : (
+                <span>la sección de <strong className="text-[var(--color-accent)]">Documentos Libres</strong> (raíz)?</span>
+              )}
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]/50">
+              <button
+                onClick={() => setMoveConfirm(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void handleMoveReportToFolder(moveConfirm.reportId, moveConfirm.targetFolder)}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Folder Creation Modal */}
+      {isFolderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <form onSubmit={handleCreateEmptyFolderSubmit} className="w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5">
+                <span>📁</span> Crear Nueva Carpeta Virtual
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsFolderModalOpen(false)}
+                className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">
+                Nombre de la Carpeta
+              </label>
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value.substring(0, 30))}
+                placeholder="Ej. Requisitos, Arquitectura, Pruebas..."
+                maxLength={30}
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] transition-all"
+              />
+              <div className="flex justify-between items-center text-[10px] text-[var(--color-text-muted)] mt-1">
+                <span>Máximo 30 caracteres</span>
+                <span className={newFolderName.length === 30 ? "text-[var(--color-danger)] font-bold" : ""}>
+                  {newFolderName.length} / 30
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]/50">
+              <button
+                type="button"
+                onClick={() => setIsFolderModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                Crear Carpeta
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Rename Modal */}
+      {renameModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault()
+              const value = renameInputValue.trim()
+              if (!value) return
+
+              try {
+                if (renameModal.type === 'document') {
+                  const report = reports.find(r => r.id === renameModal.id)
+                  if (report) {
+                    let newTitle = ''
+                    if (report.title.includes('/')) {
+                      const parts = report.title.split('/')
+                      newTitle = `${parts[0].trim()} / ${value}`
+                    } else {
+                      newTitle = value
+                    }
+
+                    const updated = await projectsApi.updateReport(projectId || '', renameModal.id, {
+                      title: newTitle,
+                      content: report.content
+                    })
+
+                    setReports(prev => prev.map(r => r.id === renameModal.id ? updated : r))
+                    if (selectedReport?.id === renameModal.id) {
+                      setSelectedReport(updated)
+                      setTitle(updated.title)
+                    }
+                  }
+                } else {
+                  // Folder rename
+                  const oldFolder = renameModal.id
+                  const newFolder = value
+
+                  // Rename empty folder list
+                  setEmptyFolders(prev => prev.map(f => f === oldFolder ? newFolder : f))
+
+                  // Rename all documents inside folder
+                  const updatedList = await Promise.all(
+                    reports.map(async (r) => {
+                      if (r.title.startsWith(`${oldFolder} /`)) {
+                        const cleanName = r.title.split('/').slice(1).join('/').trim()
+                        const updated = await projectsApi.updateReport(projectId || '', r.id, {
+                          title: `${newFolder} / ${cleanName}`,
+                          content: r.content
+                        })
+                        return updated
+                      }
+                      return r
+                    })
+                  )
+                  setReports(updatedList)
+
+                  // If selected report is in this folder, update title state
+                  const currentSelected = updatedList.find(r => r.id === selectedReport?.id)
+                  if (currentSelected) {
+                    setSelectedReport(currentSelected)
+                    setTitle(currentSelected.title)
+                  }
+                }
+              } catch (err) {
+                console.error('Error al renombrar:', err)
+              } finally {
+                setRenameModal(null)
+              }
+            }}
+            className="w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5">
+                <span>✏️</span> Renombrar {renameModal.type === 'folder' ? 'Carpeta' : 'Documento'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setRenameModal(null)}
+                className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">
+                Nuevo Nombre
+              </label>
+              <input
+                type="text"
+                value={renameInputValue}
+                onChange={(e) => setRenameInputValue(e.target.value.substring(0, 30))}
+                maxLength={30}
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] transition-all"
+              />
+              <div className="flex justify-between items-center text-[10px] text-[var(--color-text-muted)] mt-1">
+                <span>Máximo 30 caracteres</span>
+                <span>{renameInputValue.length} / 30</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]/50">
+              <button
+                type="button"
+                onClick={() => setRenameModal(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-foreground)] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-wider text-[var(--color-danger)] flex items-center gap-1.5">
+              <span>⚠️</span> Eliminar Documento Permanentemente
+            </h3>
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">
+                Ruta del Documento
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={deleteConfirm.fullTitle}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs text-[var(--color-text-muted)] cursor-not-allowed outline-none select-all font-mono"
+              />
+            </div>
+
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              ¿Estás completamente seguro de que deseas eliminar este documento de forma permanente? Esta acción no se puede deshacer.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]/50">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl bg-[var(--color-danger)] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                Eliminar Permanentemente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Folder Move Confirmation Modal */}
+      {folderMoveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4">
+            {folderMoveConfirm.targetFolder === '__ROOT__' ? (
+              <>
+                <h3 className="text-sm font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5">
+                  <span>📤</span> Extraer Carpeta
+                </h3>
+                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                  ¿Estás seguro de que deseas extraer la carpeta <strong className="text-[var(--color-text-primary)]">"{folderMoveConfirm.sourceFolder.split(' / ').pop()}"</strong> y convertirla en una carpeta independiente?
+                </p>
+                <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
+                  La carpeta y todos sus documentos serán movidos al nivel raíz del proyecto.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-sm font-black uppercase tracking-wider text-[var(--color-accent)] flex items-center gap-1.5">
+                  <span>📁</span> Mover Carpeta
+                </h3>
+                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                  ¿Estás seguro de que deseas mover la carpeta <strong className="text-[var(--color-text-primary)]">"{folderMoveConfirm.sourceFolder}"</strong> dentro de la carpeta <strong className="text-emerald-400">"{folderMoveConfirm.targetFolder}"</strong>?
+                </p>
+                <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
+                  La carpeta <strong>"{folderMoveConfirm.sourceFolder}"</strong> aparecerá como sub-carpeta dentro de <code className="px-1.5 py-0.5 rounded bg-[var(--color-surface)] border border-[var(--color-border)] font-mono">{folderMoveConfirm.targetFolder}</code>.
+                </p>
+              </>
+            )}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]/50">
+              <button
+                onClick={() => setFolderMoveConfirm(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (folderMoveConfirm.targetFolder === '__ROOT__') {
+                    void handleExtractFolderToRoot(folderMoveConfirm.sourceFolder)
+                  } else {
+                    void handleMoveFolderIntoFolder(folderMoveConfirm.sourceFolder, folderMoveConfirm.targetFolder)
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                {folderMoveConfirm.targetFolder === '__ROOT__' ? 'Extraer Carpeta' : 'Mover Carpeta'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -610,8 +1758,11 @@ export default function ProjectReportsPage() {
   )
 }
 
-function LiveDocumentRenderer({ content, projectId }: { content: string; projectId: string }) {
+function LiveDocumentRenderer({ content, projectId, onSelectReport, reports }: { content: string; projectId: string; onSelectReport: (id: string) => void; reports: ProjectReport[] }) {
   if (!content) return null
+  
+  // Read reports length to satisfy TS unused variable checks
+  if (reports.length === 0) { /* no-op */ }
 
   // Highly robust line-by-line custom parser for premium document formatting
   const lines = content.split('\n')
@@ -699,7 +1850,7 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
     if (trimmed.startsWith('- ')) {
       return (
         <ul key={index} className="list-disc pl-5 text-sm text-[var(--color-text-secondary)] space-y-1 print:text-black">
-          <li>{parseMarkdownLinks(trimmed.substring(2))}</li>
+          <li>{parseMarkdownLinks(trimmed.substring(2), onSelectReport)}</li>
         </ul>
       )
     }
@@ -707,7 +1858,7 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
     // Default line rendering
     return (
       <p key={index} className="text-sm text-[var(--color-text-secondary)] leading-relaxed min-h-[1rem] whitespace-pre-wrap print:text-black">
-        {parseMarkdownLinks(line)}
+        {parseMarkdownLinks(line, onSelectReport)}
       </p>
     )
   }
@@ -720,7 +1871,7 @@ function LiveDocumentRenderer({ content, projectId }: { content: string; project
 }
 
 // Inline Markdown link parser helper [Text](URL)
-function parseMarkdownLinks(text: string): React.ReactNode {
+function parseMarkdownLinks(text: string, onSelectReport: (id: string) => void): React.ReactNode {
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
   const parts = []
   let lastIndex = 0
@@ -736,16 +1887,29 @@ function parseMarkdownLinks(text: string): React.ReactNode {
       parts.push(text.substring(lastIndex, index))
     }
 
-    // Add beautifully styled Link component
-    parts.push(
-      <Link
-        key={index}
-        to={linkUrl}
-        className="inline-flex items-center gap-1 p-1 px-2.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 text-xs font-bold transition-all shadow-sm print:text-blue-600 print:underline print:bg-transparent print:border-none print:p-0 no-print"
-      >
-        <span>🔗</span> {linkText}
-      </Link>
-    )
+    if (linkUrl.startsWith('wiki://')) {
+      const targetId = linkUrl.replace('wiki://', '')
+      parts.push(
+        <button
+          key={index}
+          onClick={() => onSelectReport(targetId)}
+          className="inline-flex items-center gap-1.5 p-1 px-2.5 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all shadow-sm cursor-pointer no-print"
+        >
+          <span>📄</span> {linkText}
+        </button>
+      )
+    } else {
+      // Add beautifully styled Link component
+      parts.push(
+        <Link
+          key={index}
+          to={linkUrl}
+          className="inline-flex items-center gap-1 p-1 px-2.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 text-xs font-bold transition-all shadow-sm print:text-blue-600 print:underline print:bg-transparent print:border-none print:p-0 no-print"
+        >
+          <span>🔗</span> {linkText}
+        </Link>
+      )
+    }
     
     // Fallback printable text representation
     parts.push(

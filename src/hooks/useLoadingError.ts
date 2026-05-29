@@ -42,9 +42,7 @@ export function useApiOperation() {
         return result
       } catch (error) {
         const originalMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.'
-        const message = options?.errorMessage 
-          ? `${options.errorMessage} (Detalle: ${originalMessage})` 
-          : originalMessage
+        const message = options?.errorMessage ?? originalMessage
         
         addError(message, options?.retry)
         return null

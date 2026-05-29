@@ -56,8 +56,8 @@ export function SimilarityBadge({ value }: { value: number }) {
   if (value > 100) percent = value / 100;
   else if (value <= 1) percent = value * 100;
   
-  const displayPct = percent.toFixed(2);
-  const color = percent >= 85 ? 'bg-rose-500' : percent >= 65 ? 'bg-amber-500' : 'bg-emerald-500'
+  const displayPct = Math.round(percent);
+  const color = percent >= 80 ? 'bg-emerald-500' : percent >= 50 ? 'bg-amber-500' : 'bg-rose-500'
 
   return (
     <div className="flex items-center gap-2">

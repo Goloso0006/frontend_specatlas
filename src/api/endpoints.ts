@@ -53,10 +53,10 @@ export const endpoints = {
     inferRelations: (projectId: string) => `/api/graph/infer-relations/${projectId}`,
   },
   traceability: {
-    base: '/api/traceability',
-    byRequirement: (id: string) => `/api/traceability/requirement/${id}`,
-    byProject: (projectId: string) => `/api/traceability/project/${projectId}`,
-    byId: (id: string) => `/api/traceability/${id}`,
+    base: '/api/traceability-links',
+    byRequirement: (id: string) => `/api/requirements/${id}/traceability`,
+    byProject: (projectId: string) => `/api/projects/${projectId}/traceability-links`,
+    byId: (id: string) => `/api/traceability-links/${id}`,
   },
   testCases: {
     base: '/api/test-cases',
