@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { projectsApi, exportApi } from '../api/services/projectsApi'
+import { projectsApi } from '../api/services/projectsApi'
 import { requirementsApi } from '../api/services/requirementsApi'
 import { diagramsApi } from '../api/services/diagramsApi'
 import type { ProjectReport } from '../types/projects'
@@ -499,51 +499,50 @@ export default function ProjectReportsPage() {
         }
       }
 
-      // Generar PDF local
-      await exportApi.exportToPDFLocal(title, content, tableRows.length > 0 ? tableHeaders : undefined, tableRows.length > 0 ? tableRows : undefined)
+      const printableRows = tableRows.length > 0
+        ? `
+          <table>
+            <thead>
+              <tr>${tableHeaders.map(header => `<th>${header}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell ?? ''}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+        `
+        : ''
+
+      const printWindow = window.open('', '_blank', 'width=900,height=700')
+      if (!printWindow) {
+        throw new Error('No se pudo abrir la ventana de impresión')
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 32px; color: #1f2937; }
+              h1 { color: #4F46E5; margin-bottom: 16px; }
+              p { white-space: pre-wrap; line-height: 1.6; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
+              th { background: #eef2ff; }
+            </style>
+          </head>
+          <body>
+            <h1>${title}</h1>
+            <p>${content}</p>
+            ${printableRows}
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.focus()
+      printWindow.print()
     } catch (err) {
       console.error('Error exportando a PDF:', err)
       alert('Error al exportar a PDF. Intenta de nuevo.')
-    }
-  }
-
-  const handleExportGoogleDocs = async () => {
-    if (!selectedReport || !projectId) return
-
-    try {
-      // Extraer tabla de requisitos si existe
-      const tableHeaders = ['Código', 'Título', 'Descripción', 'Tipo']
-      const tableRows: (string | number)[][] = []
-
-      // Si el contenido incluye requisitos, agregar datos de la tabla
-      if (content.includes('{{REQUISITOS_TABLA}}')) {
-        try {
-          const reqs = await requirementsApi.getByProject(projectId)
-          reqs.forEach(req => {
-            tableRows.push([
-              req.code,
-              req.title,
-              req.description,
-              req.requirementType === 'FUNCTIONAL' ? 'Funcional' : 'No Funcional'
-            ])
-          })
-        } catch (err) {
-          console.warn('No se pudieron cargar los requisitos:', err)
-        }
-      }
-
-      const result = await exportApi.exportToGoogleDocs({
-        title,
-        content,
-        tableHeaders: tableRows.length > 0 ? tableHeaders : undefined,
-        tableRows: tableRows.length > 0 ? tableRows : undefined,
-      })
-
-      // Abre el documento en Google Docs en nueva pestaña
-      window.open(result.documentLink, '_blank')
-    } catch (err) {
-      console.error('Error exportando a Google Docs:', err)
-      alert('Error al exportar a Google Docs. Intenta de nuevo.')
     }
   }
 
@@ -1328,7 +1327,6 @@ export default function ProjectReportsPage() {
                     const val = e.target.value;
                     if (val === 'pdf') handleExportPDF();
                     if (val === 'word') handleExportWord();
-                    if (val === 'docs') handleExportGoogleDocs();
                     e.target.value = '';
                   }}
                   className="p-1.5 pl-3 pr-8 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs transition-all cursor-pointer outline-none focus:border-[var(--color-accent)]"
@@ -1336,7 +1334,6 @@ export default function ProjectReportsPage() {
                   <option value="" disabled hidden>📤 Exportar</option>
                   <option value="pdf">📄 PDF Local</option>
                   <option value="word">📝 Word</option>
-                  <option value="docs">📘 Google Docs</option>
                 </select>
 
                 {/* Delete Button */}
