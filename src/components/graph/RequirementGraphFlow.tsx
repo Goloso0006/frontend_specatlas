@@ -66,10 +66,6 @@ function inferRequirementType(code: string, requirement?: RequirementDTO | null)
   return 'REQ'
 }
 
-function extractArray(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isRecord) : []
-}
-
 function isEdgeLikeEntry(entry: Record<string, unknown>): boolean {
   // Normalize keys to ignore accents and case
   const keys = Object.keys(entry).map(k => k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, ""))
@@ -91,16 +87,6 @@ function isEdgeLikeEntry(entry: Record<string, unknown>): boolean {
   })
   
   return validCodes.length >= 2
-}
-
-function buildRequirementMap(requirements?: RequirementDTO[]) {
-  const map = new Map<string, RequirementDTO>()
-  for (const requirement of requirements ?? []) {
-    if (requirement.code) {
-      map.set(requirement.code, requirement)
-    }
-  }
-  return map
 }
 
 function layoutRequirementNodes(
