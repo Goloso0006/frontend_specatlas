@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useCallback } from 'react'
 import { analyzeRequirementText } from '../../utils/requirementQualityAnalyzer'
 import {
   ReactFlow,
@@ -71,9 +71,26 @@ function extractArray(value: unknown): Record<string, unknown>[] {
 }
 
 function isEdgeLikeEntry(entry: Record<string, unknown>): boolean {
-  return Boolean(
-    entry.fromCode || entry.toCode || entry.from || entry.to || entry.source || entry.target || entry.relationType || entry.relationship,
-  )
+  // Normalize keys to ignore accents and case
+  const keys = Object.keys(entry).map(k => k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, ""))
+  
+  const hasFrom = keys.some(k => k === 'from' || k === 'source' || k === 'origen' || k === 'start' || k.includes('origen'))
+  const hasTo = keys.some(k => k === 'to' || k === 'target' || k === 'destino' || k === 'end' || k.includes('destino'))
+  const hasRelation = keys.some(k => k === 'relation' || k === 'relacion' || k === 'tipo' || k === 'type')
+  
+  if ((hasFrom && hasTo) || (hasFrom && hasRelation) || (hasTo && hasRelation)) {
+    return true
+  }
+
+  // Ultimate heuristic: If an object has 2 or more values that look like requirement codes, it's an edge!
+  // Nodes typically only have 1 code.
+  const validCodes = Object.values(entry).filter(v => {
+    if (typeof v !== 'string') return false
+    const upper = v.trim().toUpperCase()
+    return upper.startsWith('RF') || upper.startsWith('RNF') || upper.startsWith('REQ')
+  })
+  
+  return validCodes.length >= 2
 }
 
 function buildRequirementMap(requirements?: RequirementDTO[]) {
@@ -94,11 +111,21 @@ function layoutRequirementNodes(
 
   if (nodes.length === 0) return { positions, headers }
 
+  // Deduplicate by ID (uppercase) to prevent overlapping ghosts
+  const seenIds = new Set<string>()
+  const uniqueNodes: RequirementGraphNode[] = []
+  for (const node of nodes) {
+    const key = node.id.toUpperCase()
+    if (seenIds.has(key)) continue
+    seenIds.add(key)
+    uniqueNodes.push(node)
+  }
+
   const rnfNodes: RequirementGraphNode[] = []
   const rfNodes: RequirementGraphNode[] = []
   const otherNodes: RequirementGraphNode[] = []
 
-  nodes.forEach(node => {
+  uniqueNodes.forEach(node => {
     const type = (node.data.requirementType || '').toUpperCase()
     if (type === 'RNF' || type === 'NON_FUNCTIONAL' || node.id.toUpperCase().startsWith('RNF')) {
       rnfNodes.push(node)
@@ -109,78 +136,78 @@ function layoutRequirementNodes(
     }
   })
 
-  const rowHeight = 195
-  const yStart = 110
+  // STACKED GRID LAYOUT
+  const colWidth = 400
+  const colGap = 50
+  const rowHeight = 450
+  const maxCols = 5
+  
+  let currentY = 100
 
-  // 1. RNF columns
-  const rnfCols = Math.max(1, Math.ceil(rnfNodes.length / 5))
-  rnfNodes.forEach((node, index) => {
-    const col = index % rnfCols
-    const row = Math.floor(index / rnfCols)
-    positions[node.id] = {
-      x: 80 + col * 290,
-      y: yStart + row * rowHeight
-    }
-  })
-
-  // 2. RF columns
-  const rfStartIdx = 80 + rnfCols * 300
-  const rfCols = Math.max(1, Math.ceil(rfNodes.length / 5))
-  rfNodes.forEach((node, index) => {
-    const col = index % rfCols
-    const row = Math.floor(index / rfCols)
-    positions[node.id] = {
-      x: rfStartIdx + col * 290,
-      y: yStart + row * rowHeight
-    }
-  })
-
-  // 3. Other columns
-  const otherStartIdx = rfStartIdx + rfCols * 310
-  const otherCols = Math.max(1, Math.ceil(otherNodes.length / 5))
-  otherNodes.forEach((node, index) => {
-    const col = index % otherCols
-    const row = Math.floor(index / otherCols)
-    positions[node.id] = {
-      x: otherStartIdx + col * 290,
-      y: yStart + row * rowHeight
-    }
-  })
-
-  // Add category headers centered over their columns
+  // 1. RNF Section
   if (rnfNodes.length > 0) {
-    const rnfCenterX = 80 + ((rnfCols - 1) * 290) / 2
     headers.push({
       id: 'header-rnf',
       type: 'header',
-      position: { x: rnfCenterX + 10, y: 30 },
+      position: { x: 100, y: currentY - 60 },
       draggable: false,
       selectable: false,
       data: { label: 'Requisitos No Funcionales (RNF)' }
     })
+
+    rnfNodes.forEach((node, i) => {
+      const col = i % maxCols
+      const row = Math.floor(i / maxCols)
+      positions[node.id] = {
+        x: 100 + col * (colWidth + colGap),
+        y: currentY + row * rowHeight
+      }
+    })
+    const rnfRows = Math.ceil(rnfNodes.length / maxCols)
+    currentY += rnfRows * rowHeight + 100
   }
 
+  // 2. RF Section
   if (rfNodes.length > 0) {
-    const rfCenterX = rfStartIdx + ((rfCols - 1) * 290) / 2
     headers.push({
       id: 'header-rf',
       type: 'header',
-      position: { x: rfCenterX + 10, y: 30 },
+      position: { x: 100, y: currentY - 60 },
       draggable: false,
       selectable: false,
       data: { label: 'Requisitos Funcionales (RF)' }
     })
+
+    rfNodes.forEach((node, i) => {
+      const col = i % maxCols
+      const row = Math.floor(i / maxCols)
+      positions[node.id] = {
+        x: 100 + col * (colWidth + colGap),
+        y: currentY + row * rowHeight
+      }
+    })
+    const rfRows = Math.ceil(rfNodes.length / maxCols)
+    currentY += rfRows * rowHeight + 100
   }
 
+  // 3. Other Nodes Section
   if (otherNodes.length > 0) {
-    const otherCenterX = otherStartIdx + ((otherCols - 1) * 290) / 2
     headers.push({
       id: 'header-other',
       type: 'header',
-      position: { x: otherCenterX + 10, y: 30 },
+      position: { x: 100, y: currentY - 60 },
       draggable: false,
       selectable: false,
       data: { label: 'Otros Elementos' }
+    })
+
+    otherNodes.forEach((node, i) => {
+      const col = i % maxCols
+      const row = Math.floor(i / maxCols)
+      positions[node.id] = {
+        x: 100 + col * (colWidth + colGap),
+        y: currentY + row * rowHeight
+      }
     })
   }
 
@@ -201,22 +228,67 @@ function translateRelationType(type: string): string {
 }
 
 function normalizeRequirementGraph(graphData: GraphData, requirements?: RequirementDTO[]): NormalizedGraph {
-  const rawJson = graphData ? JSON.stringify(graphData, null, 2) : ''
-  const requirementMap = buildRequirementMap(requirements)
+  let rawJson = ''
+  let parsedData = graphData
+
+  // Sometimes AI returns a JSON string (potentially with markdown ```json)
+  if (typeof graphData === 'string') {
+    rawJson = graphData
+    try {
+      parsedData = JSON.parse(graphData)
+    } catch {
+      try {
+        const clean = graphData.replace(/```json/gi, '').replace(/```/g, '').trim()
+        parsedData = JSON.parse(clean)
+      } catch {
+        // Leave as string if unparseable
+      }
+    }
+  } else if (graphData) {
+    rawJson = JSON.stringify(graphData, null, 2)
+  }
+
+  const requirementMap = new Map<string, RequirementDTO>()
+  const titleToCodeMap = new Map<string, string>()
+  
+  if (requirements) {
+    for (const req of requirements) {
+      if (req.code) {
+        const cleanCode = req.code.trim().toUpperCase()
+        requirementMap.set(cleanCode, req)
+        if (req.title) {
+          titleToCodeMap.set(req.title.trim().toUpperCase(), cleanCode)
+        }
+      }
+    }
+  }
+
+  function resolveCode(raw: unknown): string {
+    const val = toStringValue(raw).trim().toUpperCase()
+    if (!val) return ''
+    if (requirementMap.has(val)) return val
+    if (titleToCodeMap.has(val)) return titleToCodeMap.get(val)!
+    
+    // Fallback: Check if the string starts with a known code (e.g., "RF-001: Description")
+    for (const code of requirementMap.keys()) {
+      if (val.startsWith(code)) return code
+    }
+    return val
+  }
 
   // Safely resolve the payload structure, unwrapping the 'data' key if present
   let payload: Record<string, unknown> | null = null
 
-  if (graphData) {
-    if (Array.isArray(graphData)) {
-      const arrayEntries = graphData.filter(isRecord)
+  if (parsedData) {
+    if (Array.isArray(parsedData)) {
+      const arrayEntries = parsedData.filter(isRecord)
       const looksLikeEdges = arrayEntries.some(isEdgeLikeEntry)
       payload = {
         nodes: looksLikeEdges ? [] : arrayEntries,
         edges: looksLikeEdges ? arrayEntries : [],
       }
-    } else if (isRecord(graphData)) {
-      payload = graphData
+    } else if (isRecord(parsedData)) {
+      payload = parsedData
       if (isRecord(payload.data)) {
         payload = payload.data as Record<string, unknown>
       }
@@ -230,8 +302,8 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
   if (requirements && requirements.length > 0) {
     for (const req of requirements) {
       if (!req.code) continue
-      const code = req.code
-      const title = req.title || code
+      const code = req.code.trim().toUpperCase()
+      const title = req.title || req.code
       const description = req.description || ''
       const requirementType = req.requirementType || inferRequirementType(code, req)
       
@@ -244,20 +316,53 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
     }
   }
 
-  const nodesSource = payload ? extractArray(payload.nodes) : []
-  const edgesSource = payload ? extractArray(payload.edges) : []
-  const relationsSource = payload ? extractArray(payload.relations) : []
-  const combinedEdges = edgesSource.length > 0 ? edgesSource : relationsSource
+  let nodesSource: Record<string, unknown>[] = []
+  let combinedEdges: Record<string, unknown>[] = []
+
+  if (payload) {
+    // Debug: log the raw AI payload so we can diagnose issues
+    console.log('[RequirementGraphFlow] Raw AI payload keys:', Object.keys(payload))
+    
+    // Dynamically detect nodes and edges arrays in the payload
+    for (const [key, value] of Object.entries(payload)) {
+      if (Array.isArray(value)) {
+        const arr = value.filter(isRecord)
+        const lowerKey = key.toLowerCase()
+        
+        // Classify by key name first, then by content inspection
+        const isEdgeKey = lowerKey.includes('edge') || lowerKey.includes('relacion') || lowerKey.includes('arista') || lowerKey.includes('conexion') || lowerKey.includes('link') || lowerKey.includes('dependencia')
+        const isNodeKey = lowerKey.includes('node') || lowerKey.includes('req') || lowerKey.includes('nodo')
+        
+        if (isEdgeKey) {
+          combinedEdges = combinedEdges.concat(arr)
+        } else if (isNodeKey) {
+          nodesSource = nodesSource.concat(arr)
+        } else if (arr.some(isEdgeLikeEntry)) {
+          combinedEdges = combinedEdges.concat(arr)
+        }
+      }
+    }
+    // Fallback if payload itself is just an object containing edge-like properties
+    if (isEdgeLikeEntry(payload)) {
+      combinedEdges.push(payload)
+    }
+  }
 
   // Augment or update nodes from payload nodesSource if any exist
   for (const entry of nodesSource) {
-    const code = toStringValue(entry.code ?? entry.id ?? entry.requirementCode ?? entry.label ?? entry.title ?? entry.name)
+    const rawCode = entry.code ?? entry.id ?? entry.requirementCode ?? entry.label ?? entry.title ?? entry.name
+    const code = resolveCode(rawCode)
     if (!code) continue
 
     const requirement = requirementMap.get(code) ?? null
     const title = toStringValue(entry.title ?? entry.name) || requirement?.title?.trim() || code
     const description = toStringValue(entry.description) || requirement?.description?.trim() || ''
-    const requirementType = toStringValue(entry.requirementType ?? entry.type) || inferRequirementType(code, requirement)
+    
+    // Only override type if the AI provided a strong non-default type, otherwise use the existing or inferred one
+    let requirementType = toStringValue(entry.requirementType ?? entry.type).toUpperCase()
+    if (!requirementType || requirementType === 'DEFAULT') {
+      requirementType = requirementMap.get(code)?.requirementType || inferRequirementType(code, requirement)
+    }
 
     nodeMap.set(code, {
       id: code,
@@ -269,13 +374,51 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
 
   const edgeEntries = combinedEdges.filter(isRecord)
 
+  // Helper to extract values from an object using a list of keyword substrings
+  function extractValueByKeywords(entry: Record<string, unknown>, keywords: string[]): unknown {
+    const entryKeys = Object.keys(entry)
+    for (const kw of keywords) {
+      for (const k of entryKeys) {
+        // Strip accents and non-alphanumeric chars
+        const cleanK = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "")
+        
+        // Exact matching for short dangerous keywords like 'to' and 'from'
+        if (kw === 'to' || kw === 'from') {
+          if (cleanK === kw || cleanK === `${kw}code` || cleanK === `${kw}id` || cleanK === `id${kw}` || cleanK === `req${kw}` || cleanK === `nodo${kw}`) {
+            return entry[k]
+          }
+        } else {
+          // Flexible substring match for longer safer words
+          if (cleanK.includes(kw)) {
+            return entry[k]
+          }
+        }
+      }
+    }
+    return undefined
+  }
+
   for (const entry of edgeEntries) {
-    const fromCode = toStringValue(entry.fromCode ?? entry.from ?? entry.source ?? entry.sourceCode ?? entry.sourceId)
-    const toCode = toStringValue(entry.toCode ?? entry.to ?? entry.target ?? entry.targetCode ?? entry.targetId)
+    let rawFrom = extractValueByKeywords(entry, ['from', 'source', 'origen', 'start', 'depende', 'req1', 'nodo1'])
+    let rawTo = extractValueByKeywords(entry, ['to', 'target', 'destino', 'end', 'impacta', 'req2', 'nodo2'])
+    
+    if (!rawFrom || !rawTo) {
+      const allVals = Object.values(entry).map(toStringValue)
+      const validCodes = allVals.map(v => resolveCode(v)).filter(Boolean)
+      if (validCodes.length >= 2) {
+        if (!rawFrom) rawFrom = validCodes[0]
+        if (!rawTo) rawTo = validCodes[1]
+      }
+    }
+    
+    if (!rawFrom || !rawTo) continue
+    
+    const fromCode = resolveCode(rawFrom)
+    const toCode = resolveCode(rawTo)
     if (!fromCode || !toCode) continue
 
-    const relationType = toStringValue(entry.relationType ?? entry.type ?? entry.relationship ?? entry.label) || 'RELATES_TO'
-    const reason = toStringValue(entry.reason ?? entry.description)
+    const relationType = toStringValue(extractValueByKeywords(entry, ['relation', 'relacion', 'type', 'tipo', 'label'])) || 'RELATES_TO'
+    const reason = toStringValue(extractValueByKeywords(entry, ['reason', 'description', 'razon', 'motivo', 'justificacion']))
 
     const fromRequirement = requirementMap.get(fromCode) ?? null
     const toRequirement = requirementMap.get(toCode) ?? null
@@ -319,38 +462,76 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
     }
   }
 
-  const layout = layoutRequirementNodes(Array.from(nodeMap.values()))
-  const reqNodes = Array.from(nodeMap.values()).map((node) => ({
-    ...node,
-    position: layout.positions[node.id] ?? { x: 80, y: 80 },
-  }))
+  // Deduplicate nodeMap entries by uppercase key (safety net)
+  const dedupedNodes = Array.from(nodeMap.values())
+  const layout = layoutRequirementNodes(dedupedNodes)
+  
+  // Use a unique fallback position for any node without a layout slot (prevents overlap at 0,0)
+  let fallbackIndex = 0
+  const reqNodes = dedupedNodes.map((node) => {
+    let pos = layout.positions[node.id]
+    if (!pos) {
+      // Place fallback nodes WAY below the normal grid so they never stack on top of real nodes
+      pos = { x: 80 + fallbackIndex * 350, y: 5000 + fallbackIndex * 350 }
+      fallbackIndex++
+    }
+    return { ...node, position: pos }
+  })
   const nodes = [...layout.headers, ...reqNodes]
 
   const edges = edgeEntries.flatMap((entry, index) => {
-    const fromCode = toStringValue(entry.fromCode ?? entry.from ?? entry.source ?? entry.sourceCode ?? entry.sourceId)
-    const toCode = toStringValue(entry.toCode ?? entry.to ?? entry.target ?? entry.targetCode ?? entry.targetId)
-    if (!fromCode || !toCode) return []
+    let rawFrom = extractValueByKeywords(entry, ['from', 'source', 'origen', 'start', 'depende', 'req1', 'nodo1'])
+    let rawTo = extractValueByKeywords(entry, ['to', 'target', 'destino', 'end', 'impacta', 'req2', 'nodo2'])
+    
+    if (!rawFrom || !rawTo) {
+      const allVals = Object.values(entry).map(toStringValue)
+      const validCodes = allVals.map(v => resolveCode(v)).filter(Boolean)
+      if (validCodes.length >= 2) {
+        if (!rawFrom) rawFrom = validCodes[0]
+        if (!rawTo) rawTo = validCodes[1]
+      }
+    }
+    
+    if (!rawFrom || !rawTo) return []
 
-    const relationType = toStringValue(entry.relationType ?? entry.type ?? entry.relationship ?? entry.label) || 'RELATES_TO'
-    const reason = toStringValue(entry.reason ?? entry.description)
+    const fromCode = resolveCode(rawFrom)
+    const toCode = resolveCode(rawTo)
+    if (!fromCode || !toCode) return []
+    // Skip self-referencing edges
+    if (fromCode === toCode) return []
+
+    const relationType = toStringValue(extractValueByKeywords(entry, ['relation', 'relacion', 'type', 'tipo', 'label'])) || 'RELATES_TO'
+    const reason = toStringValue(extractValueByKeywords(entry, ['reason', 'description', 'razon', 'motivo', 'justificacion']))
 
     let stroke = 'var(--color-text-muted)'
     let animated = false
     let strokeDasharray: string | undefined = undefined
 
-    switch (relationType.toUpperCase()) {
+    let canonicalType = relationType.toUpperCase()
+    
+    switch (canonicalType) {
       case 'DEPENDS_ON':
+      case 'DEPENDE_DE':
+      case 'DEPENDENCIA':
+        canonicalType = 'DEPENDS_ON'
         stroke = 'var(--color-text-primary)'
         break
       case 'CONFLICTS_WITH':
+      case 'CONFLICTO':
+        canonicalType = 'CONFLICTS_WITH'
         stroke = '#f59e0b'
         strokeDasharray = '5 5'
         break
       case 'IMPACTS':
+      case 'IMPACTA':
+      case 'IMPACTO':
+        canonicalType = 'IMPACTS'
         stroke = 'var(--color-accent)'
         animated = true
         break
       case 'CONSTRAINS':
+      case 'CONDICIONA':
+        canonicalType = 'CONSTRAINS'
         strokeDasharray = '5 5'
         break
     }
@@ -359,12 +540,12 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
       id: toStringValue(entry.id) || `${fromCode}-${toCode}-${relationType}-${index}`,
       source: fromCode,
       target: toCode,
-      label: translateRelationType(relationType),
+      label: translateRelationType(canonicalType),
       labelStyle: { fill: 'var(--color-text-primary)', fontSize: 10, fontWeight: 600 },
       labelBgStyle: { fill: 'var(--color-bg)', fillOpacity: 0.8 },
       animated,
       type: 'smoothstep',
-      data: { reason, originalType: relationType.toUpperCase() },
+      data: { reason, originalType: canonicalType },
       markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
       style: {
         stroke,
@@ -374,12 +555,21 @@ function normalizeRequirementGraph(graphData: GraphData, requirements?: Requirem
     } satisfies Edge]
   })
 
+  // Debug logging
+  console.log(`[RequirementGraphFlow] Parsed: ${nodes.length} nodes, ${edges.length} edges, ${combinedEdges.length} raw edge entries`)
+  if (edges.length > 0) {
+    console.log('[RequirementGraphFlow] Sample edges:', edges.slice(0, 3).map(e => `${e.source} -> ${e.target} (${e.data?.originalType})`))
+  }
+  if (combinedEdges.length > 0 && edges.length === 0) {
+    console.log('[RequirementGraphFlow] WARNING: Raw edges exist but none parsed! Sample raw:', combinedEdges.slice(0, 2))
+  }
+
   return {
     nodes,
     edges,
     reasons,
     rawJson,
-    hasKnownShape: nodesSource.length > 0 || edgesSource.length > 0 || relationsSource.length > 0,
+    hasKnownShape: nodesSource.length > 0 || combinedEdges.length > 0,
   }
 }
 
@@ -429,11 +619,11 @@ function RequirementGraphNodeView({ data, selected }: NodeProps<RequirementGraph
 
   let simClass = ''
   if (isSimActive) {
-    simClass = 'bg-[var(--color-bg-card)] border-cyan-500 ring-2 ring-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.35)] scale-105 z-50'
+    simClass = 'bg-[var(--color-bg-card)] border-cyan-500 ring-2 ring-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.35)] z-50'
   } else if (isSimImpacted) {
-    simClass = 'bg-[var(--color-bg-card)] border-amber-500 ring-2 ring-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.3)] scale-102 z-40'
+    simClass = 'bg-[var(--color-bg-card)] border-amber-500 ring-2 ring-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.3)] z-40'
   } else if (isSimDimmed) {
-    simClass = 'bg-[var(--color-bg-card)]/50 border-[var(--color-border)]/50 opacity-40 scale-98'
+    simClass = 'bg-[var(--color-bg-card)]/50 border-[var(--color-border)]/50 opacity-40'
   } else if (selected) {
     simClass = 'border-[var(--color-accent)] ring-2 ring-[var(--color-accent)] shadow-[0_0_20px_rgba(var(--color-accent-rgb),0.2)] bg-[var(--color-surface)]'
   } else {
@@ -526,6 +716,20 @@ export function RequirementGraphFlow({
   const [filter, setFilter] = useState('ALL')
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [clickedNodeId, setClickedNodeId] = useState<string | null>(null)
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleNodeMouseEnter = useCallback((_: unknown, node: { type?: string; id: string }) => {
+    if (node.type !== 'requirement') return
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    setHoveredNodeId(node.id)
+  }, [])
+
+  const handleNodeMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => {
+      setHoveredNodeId(null)
+    }, 80)
+  }, [])
 
   const graph = useMemo(
     () => normalizeRequirementGraph(graphData, requirements),
@@ -549,9 +753,15 @@ export function RequirementGraphFlow({
 
     // Filtros de usuario de la UI
     if (filter === 'RNF') {
-      filteredNodes = filteredNodes.filter(n => (n.data.requirementType || inferRequirementType(n.data.code)) === 'RNF')
+      filteredNodes = filteredNodes.filter(n => {
+        const t = (n.data.requirementType || inferRequirementType(n.data.code)).toUpperCase()
+        return t === 'RNF' || t === 'NON_FUNCTIONAL'
+      })
     } else if (filter === 'RF') {
-      filteredNodes = filteredNodes.filter(n => (n.data.requirementType || inferRequirementType(n.data.code)) === 'RF')
+      filteredNodes = filteredNodes.filter(n => {
+        const t = (n.data.requirementType || inferRequirementType(n.data.code)).toUpperCase()
+        return t === 'RF' || t === 'FUNCTIONAL'
+      })
     } else if (filter !== 'ALL') {
       filteredEdges = filteredEdges.filter(e => e.data?.originalType === filter)
     }
@@ -647,11 +857,13 @@ export function RequirementGraphFlow({
     })
   }, [filteredGraph.edges, activeSimNodeId, impactedNodeIds])
 
-  if (!graphData) {
+  const hasRequirements = requirements && requirements.length > 0;
+  
+  if (!graphData && !hasRequirements) {
     return (
       <div className={['space-y-3', className].join(' ')}>
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-muted)]">
-          No hay datos de grafo para mostrar todavía.
+          No hay requisitos ni datos de grafo para mostrar todavía.
         </div>
       </div>
     )
@@ -733,12 +945,8 @@ export function RequirementGraphFlow({
             panOnDrag={true}
             panOnScroll={false}
             zoomOnScroll={true}
-            onNodeMouseEnter={(_, node) => {
-              if (node.type === 'requirement') {
-                setHoveredNodeId(node.id)
-              }
-            }}
-            onNodeMouseLeave={() => setHoveredNodeId(null)}
+            onNodeMouseEnter={handleNodeMouseEnter}
+            onNodeMouseLeave={handleNodeMouseLeave}
             onNodeClick={(_, node) => {
               if (node.type === 'requirement') {
                 setClickedNodeId(prev => prev === node.id ? null : node.id)
