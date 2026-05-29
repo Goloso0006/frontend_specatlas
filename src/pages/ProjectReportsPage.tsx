@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { projectsApi } from '../api/services/projectsApi'
 import { requirementsApi } from '../api/services/requirementsApi'
 import { diagramsApi } from '../api/services/diagramsApi'
+import { exportApi } from '../api/services/exportApi'
 import type { ProjectReport } from '../types/projects'
 import type { RequirementDTO } from '../types/requirements'
 import type { DiagramSummaryResponse, DiagramResponse, DiagramSourceDTO, DiagramNodeDTO, DiagramRelationDTO } from '../types/diagrams'
@@ -61,6 +62,11 @@ export default function ProjectReportsPage() {
   const [folderMoveConfirm, setFolderMoveConfirm] = useState<{
     sourceFolder: string;
     targetFolder: string;
+  } | null>(null)
+
+  const [deleteFolderConfirm, setDeleteFolderConfirm] = useState<{
+    folderName: string;
+    docCount: number;
   } | null>(null)
 
   useEffect(() => {
@@ -380,6 +386,48 @@ export default function ProjectReportsPage() {
     }
   }
 
+  const handleConfirmDeleteFolder = async () => {
+    if (!deleteFolderConfirm) return
+    const { folderName } = deleteFolderConfirm
+
+    try {
+      // Get all documents in this folder (including subfolders)
+      const docsToDelete = reports.filter(r => {
+        const cleanTitle = r.title.split('/')[0].trim()
+        return cleanTitle === folderName
+      })
+
+      // Delete all documents in this folder
+      for (const doc of docsToDelete) {
+        if (projectId) {
+          await projectsApi.deleteReport(projectId, doc.id)
+        }
+      }
+
+      // Remove the folder from emptyFolders
+      setEmptyFolders(prev => prev.filter(f => !f.startsWith(folderName)))
+      
+      // Update reports list
+      setReports(prev => prev.filter(r => {
+        const cleanTitle = r.title.split('/')[0].trim()
+        return cleanTitle !== folderName
+      }))
+
+      // Clear selection if the deleted folder's document is selected
+      if (selectedReport) {
+        const selectedCleanTitle = selectedReport.title.split('/')[0].trim()
+        if (selectedCleanTitle === folderName) {
+          setIsEditing(false)
+          setSelectedReport(null)
+        }
+      }
+    } catch (err) {
+      console.error('Error al eliminar carpeta:', err)
+    } finally {
+      setDeleteFolderConfirm(null)
+    }
+  }
+
   // Intercept textarea changes for command palette trigger
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
@@ -427,10 +475,77 @@ export default function ProjectReportsPage() {
   }
 
   // Exports
-  const handleExportPDF = () => {
-    // Because the preview is always rendered and visible via print:block,
-    // we can just print directly without switching tabs.
-    window.print()
+  const handleExportPDF = async () => {
+    if (!selectedReport || !projectId) return
+
+    try {
+      // Extraer tabla de requisitos si existe
+      const tableHeaders = ['Código', 'Título', 'Descripción', 'Tipo']
+      const tableRows: (string | number)[][] = []
+
+      // Si el contenido incluye requisitos, agregar datos de la tabla
+      if (content.includes('{{REQUISITOS_TABLA}}')) {
+        try {
+          const reqs = await requirementsApi.getByProject(projectId)
+          reqs.forEach(req => {
+            tableRows.push([
+              req.code,
+              req.title,
+              req.description,
+              req.requirementType === 'FUNCTIONAL' ? 'Funcional' : 'No Funcional'
+            ])
+          })
+        } catch (err) {
+          console.warn('No se pudieron cargar los requisitos:', err)
+        }
+      }
+
+      // Generar PDF local
+      await exportApi.exportToPDFLocal(title, content, tableRows.length > 0 ? tableHeaders : undefined, tableRows.length > 0 ? tableRows : undefined)
+    } catch (err) {
+      console.error('Error exportando a PDF:', err)
+      alert('Error al exportar a PDF. Intenta de nuevo.')
+    }
+  }
+
+  const handleExportGoogleDocs = async () => {
+    if (!selectedReport || !projectId) return
+
+    try {
+      // Extraer tabla de requisitos si existe
+      const tableHeaders = ['Código', 'Título', 'Descripción', 'Tipo']
+      const tableRows: (string | number)[][] = []
+
+      // Si el contenido incluye requisitos, agregar datos de la tabla
+      if (content.includes('{{REQUISITOS_TABLA}}')) {
+        try {
+          const reqs = await requirementsApi.getByProject(projectId)
+          reqs.forEach(req => {
+            tableRows.push([
+              req.code,
+              req.title,
+              req.description,
+              req.requirementType === 'FUNCTIONAL' ? 'Funcional' : 'No Funcional'
+            ])
+          })
+        } catch (err) {
+          console.warn('No se pudieron cargar los requisitos:', err)
+        }
+      }
+
+      const result = await exportApi.exportToGoogleDocs({
+        title,
+        content,
+        tableHeaders: tableRows.length > 0 ? tableHeaders : undefined,
+        tableRows: tableRows.length > 0 ? tableRows : undefined,
+      })
+
+      // Abre el documento en Google Docs en nueva pestaña
+      window.open(result.documentLink, '_blank')
+    } catch (err) {
+      console.error('Error exportando a Google Docs:', err)
+      alert('Error al exportar a Google Docs. Intenta de nuevo.')
+    }
   }
 
   const handleExportWord = async () => {
@@ -798,11 +913,7 @@ export default function ProjectReportsPage() {
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setActiveMenu(null)
-                                    if (foldersMap[folderName].length > 0) {
-                                      alert('No se puede eliminar una carpeta que contiene documentos. Mueve o elimina los documentos primero.')
-                                    } else {
-                                      setEmptyFolders(prev => prev.filter(f => f !== folderName))
-                                    }
+                                    setDeleteFolderConfirm({ folderName, docCount: foldersMap[folderName].length })
                                   }}
                                   className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
                                 >
@@ -931,11 +1042,7 @@ export default function ProjectReportsPage() {
                                               onClick={(e) => {
                                                 e.stopPropagation()
                                                 setActiveMenu(null)
-                                                if (subDocs.length > 0) {
-                                                  alert('No se puede eliminar una sub-carpeta que contiene documentos. Mueve o elimina los documentos primero.')
-                                                } else {
-                                                  setEmptyFolders(prev => prev.filter(f => f !== subKey))
-                                                }
+                                                setDeleteFolderConfirm({ folderName: subKey, docCount: subDocs.length })
                                               }}
                                               className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
                                             >
@@ -963,7 +1070,7 @@ export default function ProjectReportsPage() {
                                           onDragEnd={(e) => {
                                             e.currentTarget.classList.remove('opacity-40')
                                           }}
-                                          className={`p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 group relative overflow-hidden ${
+                                          className={`p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 group relative overflow-visible ${
                                             selectedReport?.id === report.id
                                               ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
                                               : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
@@ -1002,7 +1109,7 @@ export default function ProjectReportsPage() {
                               onDragEnd={(e) => {
                                 e.currentTarget.classList.remove('opacity-40')
                               }}
-                              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group relative overflow-hidden ${
+                              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group relative overflow-visible ${
                                 selectedReport?.id === report.id
                                   ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
                                   : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
@@ -1025,8 +1132,8 @@ export default function ProjectReportsPage() {
                                 
                                 {activeMenu?.type === 'document' && activeMenu.id === report.id && (
                                   <>
-                                    <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
-                                    <div className="absolute right-0 mt-8 w-36 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-45 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                    <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                                    <div className="absolute right-0 top-full mt-1 w-40 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-lg shadow-lg z-[100] p-1 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation()
@@ -1035,17 +1142,18 @@ export default function ProjectReportsPage() {
                                           setRenameModal({ type: 'document', id: report.id, currentTitle: report.title })
                                           setRenameInputValue(cleanTitle)
                                         }}
-                                        className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                        className="w-full text-left px-3 py-2 rounded-md hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-xs font-semibold flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors cursor-pointer"
                                       >
                                         ✏️ Editar Nombre
                                       </button>
+                                      <div className="h-px bg-[var(--color-border)]/30" />
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           setActiveMenu(null)
                                           handleDeleteReportRequest(report.id, report.title, e)
                                         }}
-                                        className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                        className="w-full text-left px-3 py-2 rounded-md hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-xs font-semibold flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors cursor-pointer"
                                       >
                                         🗑️ Eliminar
                                       </button>
@@ -1110,7 +1218,7 @@ export default function ProjectReportsPage() {
                         onDragEnd={(e) => {
                           e.currentTarget.classList.remove('opacity-40')
                         }}
-                        className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group relative overflow-hidden ${
+                        className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group relative overflow-visible ${
                           selectedReport?.id === report.id
                             ? 'bg-[var(--color-accent-subtle)] border-[var(--color-accent)]'
                             : 'bg-[var(--color-bg)] border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
@@ -1133,8 +1241,8 @@ export default function ProjectReportsPage() {
                           
                           {activeMenu?.type === 'document' && activeMenu.id === report.id && (
                             <>
-                              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
-                              <div className="absolute right-0 mt-8 w-36 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-2xl shadow-xl z-45 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                              <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                              <div className="absolute right-0 top-full mt-1 w-40 bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-lg shadow-lg z-[100] p-1 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
@@ -1143,17 +1251,18 @@ export default function ProjectReportsPage() {
                                     setRenameModal({ type: 'document', id: report.id, currentTitle: report.title })
                                     setRenameInputValue(cleanTitle)
                                   }}
-                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                  className="w-full text-left px-3 py-2 rounded-md hover:bg-[var(--color-accent-subtle)] hover:text-[var(--color-accent)] text-xs font-semibold flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors cursor-pointer"
                                 >
                                   ✏️ Editar Nombre
                                 </button>
+                                <div className="h-px bg-[var(--color-border)]/30" />
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setActiveMenu(null)
                                     handleDeleteReportRequest(report.id, report.title, e)
                                   }}
-                                  className="w-full text-left p-2 rounded-xl hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-[11px] font-bold flex items-center gap-1.5 text-[var(--color-text-secondary)] transition-all cursor-pointer"
+                                  className="w-full text-left px-3 py-2 rounded-md hover:bg-[var(--color-danger-subtle)] hover:text-[var(--color-danger)] text-xs font-semibold flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors cursor-pointer"
                                 >
                                   🗑️ Eliminar
                                 </button>
@@ -1220,14 +1329,29 @@ export default function ProjectReportsPage() {
                     const val = e.target.value;
                     if (val === 'pdf') handleExportPDF();
                     if (val === 'word') handleExportWord();
+                    if (val === 'docs') handleExportGoogleDocs();
                     e.target.value = '';
                   }}
                   className="p-1.5 pl-3 pr-8 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold text-xs transition-all cursor-pointer outline-none focus:border-[var(--color-accent)]"
                 >
                   <option value="" disabled hidden>📤 Exportar</option>
-                  <option value="pdf">📄 PDF</option>
+                  <option value="pdf">📄 PDF Local</option>
                   <option value="word">📝 Word</option>
+                  <option value="docs">📘 Google Docs</option>
                 </select>
+
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => {
+                    if (selectedReport) {
+                      handleDeleteReportRequest(selectedReport.id, selectedReport.title, e)
+                    }
+                  }}
+                  className="p-1.5 px-3 rounded-lg bg-[var(--color-danger-subtle)] hover:bg-[var(--color-danger)] text-[var(--color-danger)] hover:text-white border border-[var(--color-danger)]/30 hover:border-[var(--color-danger)] font-bold text-xs transition-all cursor-pointer"
+                  title="Eliminar documento permanentemente"
+                >
+                  🗑️ Eliminar
+                </button>
 
               </div>
             </div>
@@ -1749,6 +1873,46 @@ export default function ProjectReportsPage() {
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
               >
                 {folderMoveConfirm.targetFolder === '__ROOT__' ? 'Extraer Carpeta' : 'Mover Carpeta'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Folder Confirmation Modal */}
+      {deleteFolderConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border-strong)] rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-wider text-[var(--color-danger)] flex items-center gap-1.5">
+              <span>⚠️</span> Eliminar Carpeta
+            </h3>
+            
+            <div className="space-y-2">
+              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                ¿Estás seguro de que deseas eliminar la carpeta <strong className="text-[var(--color-text-primary)]">"{deleteFolderConfirm.folderName}"</strong>?
+              </p>
+              {deleteFolderConfirm.docCount > 0 && (
+                <p className="text-xs text-[var(--color-warning)] leading-relaxed px-3 py-2 rounded-lg bg-[var(--color-warning-subtle)]">
+                  ⚡ Esta carpeta contiene <strong>{deleteFolderConfirm.docCount}</strong> documento{deleteFolderConfirm.docCount !== 1 ? 's' : ''} que serán eliminados permanentemente.
+                </p>
+              )}
+              <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
+                Esta acción no se puede deshacer.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]/50">
+              <button
+                onClick={() => setDeleteFolderConfirm(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDeleteFolder}
+                className="px-4 py-2 rounded-xl bg-[var(--color-danger)] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                Eliminar Permanentemente
               </button>
             </div>
           </div>
