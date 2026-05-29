@@ -17,6 +17,7 @@ export const ProjectSearchBar: React.FC<{
         placeholder="Buscar por nombre del proyecto..."
         value={value}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+        maxLength={60}
         className="h-12 pl-12 text-base shadow-none focus:border-[var(--color-accent)] focus:ring-[var(--color-accent-subtle)]"
       />
     </label>

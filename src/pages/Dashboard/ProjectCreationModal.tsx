@@ -82,18 +82,18 @@ export function ProjectCreationModal({
           <label className="project-field">
             <span>Descripción</span>
             <textarea
-              maxLength={240}
+              maxLength={300}
               value={form.description}
               onChange={(event) => setForm({ ...form, description: event.target.value })}
               placeholder="Describe alcance, módulos principales o el problema que resolverá este proyecto."
             />
-            <small>{form.description.length}/240 caracteres</small>
+            <small>{form.description.length}/300 caracteres</small>
           </label>
 
           <div className="project-field">
             <span>Estado</span>
             <input
-              value="🟢 Activo — listo para trabajar"
+              value="🟤 Activo — listo para trabajar"
               readOnly
               disabled
               style={{ opacity: 0.7, cursor: 'not-allowed', color: 'var(--color-text-secondary)' }}
